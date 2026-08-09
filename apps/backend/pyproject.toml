@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flobrief-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.115.5",
+    "uvicorn[standard]==0.32.1",
+    "sqlalchemy[asyncio]==2.0.36",
+    "asyncpg==0.30.0",
+    "alembic==1.14.0",
+    "pydantic-settings==2.6.1",
+    "pydantic[email]==2.10.2",
+    "python-jose[cryptography]==3.3.0",
+    "bcrypt==5.0.0",
+    "python-multipart==0.0.12",
+    "httpx==0.28.0",
+    "redis==5.2.1",
+    "tenacity==9.0.0",
+    "fpdf2==2.8.3",
+    "pypdf==5.1.0",
+    "pymupdf==1.28.0",
+    "Pillow>=10.0.0",
+    "tzdata>=2024.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+    "pytest-asyncio==0.24.0",
+    "pytest-cov==6.0.0",
+    "httpx==0.28.0",
+    "ruff==0.8.3",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ANN"]
+ignore = [
+    "ANN401",  # dynamically typed expressions (Any is acceptable)
+    "B008",    # FastAPI Depends() in function defaults is the correct pattern
+]
+
+[tool.ruff.lint.per-file-ignores]
+"app/tests/*" = ["ANN", "S101", "N811"]
+"scripts/*" = ["ANN", "E501"]
+"alembic/*" = ["ANN"]
+"alembic/versions/*" = ["E501", "UP007", "UP035", "I001", "W291"]
+"app/services/email_service.py" = ["E501"]
+"app/services/resend_email_provider.py" = ["E501"]
+"app/api/v1/platform/notification_providers.py" = ["E501"]
+"app/schemas/email_provider.py" = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["app/tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

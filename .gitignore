@@ -1,0 +1,88 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Alembic — ignore root-level only; backend migrations are version-controlled
+/alembic/versions/*.py
+!/alembic/versions/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Scratch / one-off debug scripts (not part of the permanent seed scripts)
+apps/backend/scripts/_tmp_*.py
+
+# graphify tool output (generated knowledge-graph cache, not project source)
+graphify-out/
+
+# Docker volumes
+postgres_data/
+redis_data/
+
+# Uploads
+uploads/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Claude Code working directory
+.claude/
+
+# Local notes
+*.TXT
+GECELIK*
+
+# Real Next.js Route Handler, not a local note — *.TXT above matches the
+# directory name "robots.txt" case-insensitively, so it must be un-ignored.
+!apps/frontend/app/robots.txt/
+!apps/frontend/app/robots.txt/route.ts
+
+# Media uploads (user-generated content)
+apps/backend/media/
+
+.vercel
+.env*

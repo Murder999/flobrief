@@ -1,0 +1,59 @@
+# Flobrief — Next Work
+
+The historical 15-part implementation plan is complete. Production release remains conditional on the readiness checklist.
+
+## Immediate release gates
+
+1. Confirm Alembic has one head and upgrade a clean staging database.
+2. Complete every applicable item in `docs/LAUNCH_CHECKLIST.md`.
+
+Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, Ruff check/format, 1595 backend tests, TypeScript, lint, Node 20 production build (85/85 static pages), the 9-test demo/route regression suite, commercial-metric exclusion checks, and the 42-test critical Playwright release matrix against the current API and live WebSocket.
+
+## Provider verification
+
+- Configure a fresh Resend API key and verified sender domain; pass test mode before real recipients.
+- WhatsApp/Twilio (Part 6A plumbing + Part 6B-1 event routing complete — see PROJECT_STATE.md):
+  local Twilio sandbox credentials are already configured and verified live-connected, and all 16
+  domain events (brief.created, comment.added, deliverable.*, invoice.*, etc.) now route through the
+  approved-template registry via `NotificationDispatcher`. Remaining before any real event message
+  can go out: (1) join the Twilio sandbox with a real controlled number ("join <code>" via
+  WhatsApp) for dev testing, (2) for each of the 16 seeded `whatsapp_templates` codes that should go
+  live, create a real Content Template, get it Meta-approved, then set that row's `content_sid`,
+  `variable_schema` (Twilio placeholder number → allowlisted field name, see
+  `whatsapp_payload_builder.ALLOWED_VARIABLE_FIELDS`), and `status=approved`. Set exact
+  `BACKEND_PUBLIC_URL` for signed webhook delivery in any non-local environment.
+- Part 6B-2 (deferred, not started): premium per-category WhatsApp preference UI for end users, and
+  an admin template-management screen (currently DB-only via the template registry).
+- Verify iyzico sandbox checkout and V3 webhook idempotency, then production merchant credentials.
+
+## Self-service demo activation
+
+- Configure production Cloudflare Turnstile site/secret keys.
+- In `/platform/demo`, keep CAPTCHA required, set duration/capacity/per-IP quotas, then explicitly enable the public demo.
+- Run two simultaneous public sessions and verify tenant isolation, suppressed external delivery, immediate expiry, cleanup, and commercial-metric exclusion.
+
+## Infrastructure and operations
+
+- Configure production DNS, TLS renewal, CORS, `NEXT_PUBLIC_API_URL`, and `NEXT_PUBLIC_WS_URL`.
+- Establish off-host PostgreSQL and `media_data` backups; perform a restore drill.
+- Add Sentry or equivalent error monitoring and centralized log retention.
+- Enable PostgreSQL slow-query monitoring and document alert ownership.
+- Implement S3/R2 storage before horizontal deployments that cannot share a durable media volume.
+
+## Test/maintenance follow-up
+
+- Replace `_tmp_media_gallery_e2e_seed.py` with a maintained fixture or remove it.
+- Keep `npm run e2e:critical` green for every release; run the broader 166-test/20-spec matrix before major workflow changes.
+- Audit raw `<img>` uses: migrate ordinary logos/thumbnails to `next/image` while retaining native elements where canvas, blob URLs, or authenticated media require them.
+- Resolve remaining deprecation warnings in JWT/report test dependencies without weakening coverage.
+
+## Deployment sequence
+
+Follow `docs/DEPLOYMENT.md`; do not deploy from this file. The short order is:
+
+1. Populate root `.env` and backend `.env.prod`.
+2. Build images with the final public API/WebSocket origins.
+3. Back up database and media.
+4. Start PostgreSQL/Redis, run migrations and seed plans.
+5. Start application services and verify health/critical flows.
+6. Bootstrap the platform admin only through the CLI script.

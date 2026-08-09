@@ -1,0 +1,433 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { authApi } from "@/lib/api-client";
+import { PhoneNumberInput } from "@/components/forms/PhoneNumberInput";
+import { PasswordChangeForm } from "@/components/settings/password-change-form";
+import { applyTheme, getTheme, type Theme } from "@/lib/theme";
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export default function ProfilePage() {
+  const { user, accessToken, refreshUser, logout } = useAuth();
+  const [currentTheme, setCurrentTheme] = useState<Theme>("system");
+
+  // Editable profile state
+  const [fullName, setFullName] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Phone number only — WhatsApp consent itself is granted from the
+  // Notifications settings panel (/dashboard/settings/notifications), never
+  // implied by phone presence.
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [savingWhatsApp, setSavingWhatsApp] = useState(false);
+  const [whatsAppSaveError, setWhatsAppSaveError] = useState<string | null>(null);
+  const [whatsAppSaveSuccess, setWhatsAppSaveSuccess] = useState(false);
+
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !accessToken) return;
+    setAvatarUploading(true);
+    setAvatarError(null);
+    try {
+      await authApi.uploadAvatar(file, accessToken);
+      if (refreshUser) await refreshUser();
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setAvatarError(error?.message ?? "Profil resmi yüklenemedi.");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!accessToken) return;
+    setAvatarUploading(true);
+    setAvatarError(null);
+    try {
+      await authApi.deleteAvatar(accessToken);
+      if (refreshUser) await refreshUser();
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setAvatarError(error?.message ?? "Profil resmi kaldırılamadı.");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  useEffect(() => {
+    setCurrentTheme(getTheme());
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name ?? "");
+      setJobTitle(user.job_title ?? "");
+      setPhoneNumber(user.phone_number ?? "");
+    }
+  }, [user]);
+
+  const handleThemeChange = (theme: Theme) => {
+    setCurrentTheme(theme);
+    applyTheme(theme);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!accessToken || !fullName.trim()) return;
+    setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+    try {
+      await authApi.updateProfile(
+        { full_name: fullName.trim(), job_title: jobTitle.trim() || null },
+        accessToken
+      );
+      if (refreshUser) await refreshUser();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      setSaveError(err?.message ?? "Kaydedilemedi.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const THEME_OPTIONS: { value: Theme; label: string; description: string; iconPath: string }[] = [
+    {
+      value: "dark",
+      label: "Koyu",
+      description: "Koyu tema",
+      iconPath: "M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z",
+    },
+    {
+      value: "light",
+      label: "Açık",
+      description: "Açık tema",
+      iconPath: "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z",
+    },
+    {
+      value: "system",
+      label: "Sistem",
+      description: "Sistem ayarını kullan",
+      iconPath: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+    },
+  ];
+
+  const handleSaveWhatsApp = async () => {
+    if (!accessToken) return;
+    setSavingWhatsApp(true);
+    setWhatsAppSaveError(null);
+    setWhatsAppSaveSuccess(false);
+    try {
+      await authApi.updateProfile(
+        { phone_number: phoneNumber.trim() || null },
+        accessToken
+      );
+      if (refreshUser) await refreshUser();
+      setWhatsAppSaveSuccess(true);
+      setTimeout(() => setWhatsAppSaveSuccess(false), 3000);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      setWhatsAppSaveError(err?.message ?? "Kaydedilemedi.");
+    } finally {
+      setSavingWhatsApp(false);
+    }
+  };
+
+  const isDirty = fullName !== (user?.full_name ?? "") || jobTitle !== (user?.job_title ?? "");
+  const isWhatsAppDirty = phoneNumber !== (user?.phone_number ?? "");
+
+  return (
+    <div className="max-w-2xl mx-auto px-6 py-10">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-text">Profilim</h1>
+        <p className="mt-1 text-sm text-text-muted">Hesap bilgilerinizi ve tercihlerinizi yönetin.</p>
+      </div>
+
+      {/* Editable Profile */}
+      <div className="bg-surface border border-border rounded-2xl p-6 mb-4">
+        <div className="flex items-center gap-5 mb-6">
+          <div className="relative flex-shrink-0 group/avatar">
+            {user?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.avatar_url}
+                alt={user.full_name}
+                className="w-16 h-16 rounded-full object-cover border border-border"
+              />
+            ) : (
+              <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center">
+                <span className="text-xl font-bold text-accent">
+                  {user?.full_name
+                    ?.split(" ")
+                    .map((w) => w[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase() ?? "?"}
+                </span>
+              </div>
+            )}
+            <label
+              className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer text-white text-[10px] font-medium"
+              title="Profil resmini değiştir"
+            >
+              {avatarUploading ? "…" : "Değiştir"}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                disabled={avatarUploading}
+                onChange={handleAvatarSelect}
+              />
+            </label>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-text">{user?.full_name ?? "—"}</h2>
+            <p className="text-sm text-text-muted">{user?.email ?? "—"}</p>
+            {user?.job_title && (
+              <p className="text-xs text-accent mt-0.5">{user.job_title}</p>
+            )}
+            {user?.avatar_url && (
+              <button
+                type="button"
+                onClick={handleAvatarRemove}
+                disabled={avatarUploading}
+                className="text-xs text-text-muted hover:text-red-600 transition-colors mt-1 disabled:opacity-50"
+              >
+                Profil resmini kaldır
+              </button>
+            )}
+          </div>
+        </div>
+
+        {avatarError && (
+          <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{avatarError}</div>
+        )}
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-text mb-1.5">
+              Ad Soyad <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
+              placeholder="Ad ve soyadınız"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text mb-1.5">
+              Meslek / Unvan
+            </label>
+            <input
+              type="text"
+              value={jobTitle}
+              onChange={(e) => setJobTitle(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
+              placeholder="örn. Kreatif Direktör, Sosyal Medya Uzmanı"
+            />
+            <p className="text-xs text-text-muted mt-1.5">
+              Yorumlarda isminizin altında görünür. @etiketlemede kullanıcılar sizi bulabilir.
+            </p>
+          </div>
+
+          {saveError && (
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{saveError}</div>
+          )}
+
+          {saveSuccess && (
+            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Profil güncellendi
+            </div>
+          )}
+
+          <button
+            onClick={handleSaveProfile}
+            disabled={saving || !isDirty || !fullName.trim()}
+            className="px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            {saving ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Kaydediliyor…
+              </>
+            ) : "Kaydet"}
+          </button>
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-border divide-y divide-border">
+          <div className="flex items-center justify-between py-3">
+            <span className="text-sm text-text-muted">E-posta</span>
+            <span className="text-sm font-medium text-text">{user?.email ?? "—"}</span>
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <span className="text-sm text-text-muted">E-posta Doğrulama</span>
+            <span className={`text-sm font-medium ${user?.is_verified ? "text-emerald-500" : "text-amber-500"}`}>
+              {user?.is_verified ? "Doğrulandı" : "Doğrulanmadı"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <span className="text-sm text-text-muted">Üyelik Tarihi</span>
+            <span className="text-sm font-medium text-text">{formatDate(user?.created_at ?? null)}</span>
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <span className="text-sm text-text-muted">Son Giriş</span>
+            <span className="text-sm font-medium text-text">{formatDate(user?.last_login_at ?? null)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <PasswordChangeForm accessToken={accessToken} onCompleted={() => void logout()} />
+      </div>
+
+      {/* MFA Status */}
+      <div className="bg-surface border border-border rounded-2xl p-6 mb-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-text mb-1">İki Faktörlü Kimlik Doğrulama (MFA)</h3>
+            <p className="text-xs text-text-muted">
+              {user?.mfa_enabled
+                ? "MFA aktif — hesabınız koruma altında."
+                : "MFA devre dışı — hesap güvenliğinizi artırmak için etkinleştirin."}
+            </p>
+          </div>
+          <span
+            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+              user?.mfa_enabled
+                ? "bg-success/10 text-success"
+                : "bg-warning/10 text-warning"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
+            {user?.mfa_enabled ? "Aktif" : "Devre Dışı"}
+          </span>
+        </div>
+      </div>
+
+      {/* WhatsApp Opt-In */}
+      <div className="bg-surface border border-border rounded-2xl p-6 mb-4">
+        <div className="mb-5">
+          <h3 className="text-sm font-semibold text-text mb-1">WhatsApp Bildirimleri</h3>
+          <p className="text-xs text-text-muted">
+            Telefon numaranızı girerek WhatsApp üzerinden Flobrief bildirimleri alabilirsiniz.
+          </p>
+        </div>
+        <div className="space-y-4">
+          <PhoneNumberInput
+            id="profile-phone"
+            label="Telefon Numarası"
+            value={phoneNumber}
+            onChange={(e164) => setPhoneNumber(e164)}
+            defaultCountry="TR"
+            helperText="WhatsApp bildirimleri için kullanılır. Ülke kodlu biçimde saklanır."
+          />
+
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3">
+            <p className="text-xs text-text-muted leading-relaxed">
+              WhatsApp bildirimlerini açmak, kapatmak ve bildirim türlerini seçmek için
+              Bildirim Ayarları sayfasındaki WhatsApp bölümünü kullanın.
+            </p>
+            <a
+              href="/dashboard/settings/notifications"
+              className="text-xs font-medium text-accent hover:underline whitespace-nowrap flex-shrink-0"
+            >
+              Bildirim ayarlarına git →
+            </a>
+          </div>
+
+          {whatsAppSaveError && (
+            <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">
+              {whatsAppSaveError}
+            </div>
+          )}
+          {whatsAppSaveSuccess && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-500">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Telefon numaranız güncellendi.
+            </div>
+          )}
+
+          <button
+            onClick={handleSaveWhatsApp}
+            disabled={savingWhatsApp || !isWhatsAppDirty}
+            className="px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            {savingWhatsApp ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Kaydediliyor…
+              </>
+            ) : "Telefon & WhatsApp Kaydet"}
+          </button>
+        </div>
+      </div>
+
+      {/* Theme Preference */}
+      <div className="bg-surface border border-border rounded-2xl p-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-text mb-1">Tema Tercihi</h3>
+          <p className="text-xs text-text-muted">Uygulama görünümünü özelleştirin.</p>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {THEME_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleThemeChange(opt.value)}
+              className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border-2 transition-all ${
+                currentTheme === opt.value
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border hover:border-border-hover text-text-muted hover:text-text"
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={opt.iconPath} />
+              </svg>
+              <div className="text-center">
+                <p className="text-xs font-semibold">{opt.label}</p>
+                <p className="text-[10px] mt-0.5 opacity-70">{opt.description}</p>
+              </div>
+              {currentTheme === opt.value && (
+                <div className="w-4 h-4 rounded-full bg-accent flex items-center justify-center">
+                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

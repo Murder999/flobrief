@@ -1,0 +1,526 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { planApi, type PlanRead } from "@/lib/api-client";
+import { useAuth } from "@/hooks/useAuth";
+import { storePendingPlan } from "@/lib/workspace";
+import {
+  Check, Minus, ChevronDown, ArrowLeft, Zap,
+  Building2, Sparkles, Shield, Users, FileText,
+  BarChart3, Globe, MessageSquare, Star, ArrowRight,
+} from "lucide-react";
+
+const ES = [0.16, 1, 0.3, 1] as const;
+const vUp = { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: ES } } };
+
+/* ── helpers ─────────────────────────────────────────────────────────────── */
+
+function fmt(cents: number, currency: string) {
+  const locale = currency === "TRY" ? "tr-TR" : "en-US";
+  return new Intl.NumberFormat(locale, { style: "currency", currency, minimumFractionDigits: 0 }).format(cents / 100);
+}
+
+/* ── Plan card ───────────────────────────────────────────────────────────── */
+
+const PLAN_META: Record<string, { icon: React.ElementType; color: string; badge?: string }> = {
+  brand_solo:     { icon: Users,     color: "text-success" },
+  starter_agency: { icon: Building2, color: "text-info" },
+  pro_agency:     { icon: Zap,       color: "text-accent", badge: "En Popüler" },
+  agency_plus:    { icon: Sparkles,  color: "text-purple" },
+  enterprise:     { icon: Shield,    color: "text-text-secondary" },
+};
+
+function PricingCard({
+  plan, yearly, onSelect, highlighted,
+}: {
+  plan: PlanRead; yearly: boolean; onSelect: (p: PlanRead) => void; highlighted: boolean;
+}) {
+  const meta = PLAN_META[plan.code] ?? { icon: Star, color: "text-text" };
+  const Icon = meta.icon;
+  const isEnterprise = plan.monthly_price_cents === 0;
+  const priceMonthly = yearly && plan.yearly_price_cents
+    ? plan.yearly_price_cents / 12
+    : plan.monthly_price_cents;
+
+  return (
+    <div
+      className={`relative flex h-full flex-col rounded-2xl border p-6 transition-all duration-200 ${
+        highlighted
+          ? "border-accent/50 bg-surface shadow-[0_0_0_1px_var(--color-accent)/10,0_8px_40px_var(--color-accent)/10] scale-[1.02]"
+          : "border-border bg-surface hover:border-border-hover hover:shadow-card-hover"
+      }`}
+    >
+      {meta.badge && (
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+          <span
+            className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white"
+            style={{ background: "var(--gradient-accent)" }}
+          >
+            <Zap className="w-3 h-3" />
+            {meta.badge}
+          </span>
+        </div>
+      )}
+
+      <div className="mb-5 min-h-[100px]">
+        <div className={`w-9 h-9 rounded-xl bg-surface-2 flex items-center justify-center mb-3 ${meta.color}`}>
+          <Icon className="w-4.5 h-4.5" style={{ width: "1.125rem", height: "1.125rem" }} />
+        </div>
+        <h3 className="text-base font-bold text-text line-clamp-1">{plan.name}</h3>
+        {plan.description && (
+          <p className="mt-1 text-xs text-text-muted leading-relaxed line-clamp-2">{plan.description}</p>
+        )}
+      </div>
+
+      <div className="mb-6 pb-6 border-b border-border">
+        {isEnterprise ? (
+          <>
+            <p className="text-3xl font-bold text-text">Özel Fiyat</p>
+            <p className="mt-1 text-xs text-text-muted">Satış ekibimizle görüşün</p>
+          </>
+        ) : (
+          <>
+            <div className="flex items-end gap-1">
+              <p className="text-3xl font-bold text-text">{fmt(priceMonthly, plan.currency)}</p>
+              <span className="text-sm text-text-muted mb-1">/ay</span>
+            </div>
+            {yearly && plan.yearly_price_cents ? (
+              <p className="mt-1 text-xs text-success-text font-medium">
+                Yıllık {fmt(plan.yearly_price_cents, plan.currency)} — %20 tasarruf
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-text-muted">Aylık faturalandırma</p>
+            )}
+          </>
+        )}
+      </div>
+
+      <ul className="flex-1 space-y-2.5 mb-6 text-sm">
+        <li className="flex items-center gap-2.5 text-text">
+          <Check className="w-3.5 h-3.5 text-success flex-shrink-0" />
+          {plan.max_brands !== null ? `${plan.max_brands} marka` : "Sınırsız marka"}
+        </li>
+        <li className="flex items-center gap-2.5 text-text">
+          <Check className="w-3.5 h-3.5 text-success flex-shrink-0" />
+          {plan.max_users !== null ? `${plan.max_users} kullanıcı` : "Sınırsız kullanıcı"}
+        </li>
+        <li className="flex items-center gap-2.5 text-text">
+          <Check className="w-3.5 h-3.5 text-success flex-shrink-0" />
+          {plan.max_brief_templates !== null ? `${plan.max_brief_templates} şablon` : "Sınırsız şablon"}
+        </li>
+        <li className="flex items-center gap-2.5 text-text">
+          <Check className="w-3.5 h-3.5 text-success flex-shrink-0" />
+          {plan.max_storage_gb !== null ? `${plan.max_storage_gb} GB depolama` : "Sınırsız depolama"}
+        </li>
+        {(plan.pdf_export_enabled) && (
+          <li className="flex items-center gap-2.5 text-text">
+            <Check className="w-3.5 h-3.5 text-success flex-shrink-0" />
+            PDF export
+          </li>
+        )}
+        {(plan.advanced_reporting_enabled) && (
+          <li className="flex items-center gap-2.5 text-text">
+            <Check className="w-3.5 h-3.5 text-success flex-shrink-0" />
+            Gelişmiş raporlama
+          </li>
+        )}
+        {(plan.white_label_enabled) && (
+          <li className="flex items-center gap-2.5 text-text">
+            <Check className="w-3.5 h-3.5 text-success flex-shrink-0" />
+            White label portal
+          </li>
+        )}
+        {(plan.whatsapp_infrastructure_enabled) && (
+          <li className="flex items-center gap-2.5 text-text">
+            <Check className="w-3.5 h-3.5 text-success flex-shrink-0" />
+            WhatsApp altyapısı
+          </li>
+        )}
+        {isEnterprise && (
+          <li className="flex items-center gap-2.5 text-text">
+            <Check className="w-3.5 h-3.5 text-success flex-shrink-0" />
+            Öncelikli destek
+          </li>
+        )}
+      </ul>
+
+      <button
+        onClick={() => onSelect(plan)}
+        className={`mt-auto w-full rounded-xl py-2.5 text-sm font-semibold transition-all ${
+          highlighted
+            ? "text-white hover:opacity-90"
+            : isEnterprise
+              ? "bg-surface-2 border border-border text-text hover:bg-surface-3"
+              : "bg-surface-2 border border-border text-text hover:bg-accent hover:text-white hover:border-accent/0"
+        }`}
+        style={highlighted ? { background: "var(--gradient-accent)" } : undefined}
+      >
+        {isEnterprise ? "Satışla İletişim" : "Bu Planı Seç"}
+        <ArrowRight className="inline w-3.5 h-3.5 ml-1.5 -mt-px" />
+      </button>
+    </div>
+  );
+}
+
+/* ── Feature comparison ──────────────────────────────────────────────────── */
+
+type CellValue = string | boolean;
+type Row = { label: string; icon: React.ElementType; values: CellValue[] };
+
+const TABLE_PLANS = ["Solo", "Starter", "Pro", "Plus", "Enterprise"];
+const TABLE_POPULAR_INDEX = TABLE_PLANS.indexOf("Pro");
+
+const TABLE_ROWS: Row[] = [
+  { label: "Marka",              icon: Building2,     values: ["1", "5", "15", "Sınırsız", "Sınırsız"] },
+  { label: "Kullanıcı",          icon: Users,         values: ["5", "10", "25", "Sınırsız", "Sınırsız"] },
+  { label: "Brief Şablonu",      icon: FileText,      values: ["10", "25", "Sınırsız", "Sınırsız", "Sınırsız"] },
+  { label: "Depolama",           icon: BarChart3,     values: ["10 GB", "25 GB", "50 GB", "200 GB", "Sınırsız"] },
+  { label: "PDF Export",         icon: FileText,      values: [true, true, true, true, true] },
+  { label: "Gelişmiş Raporlama", icon: BarChart3,     values: [false, true, true, true, true] },
+  { label: "Herkese Açık Link",  icon: Globe,         values: [false, true, true, true, true] },
+  { label: "White Label",        icon: Sparkles,      values: [false, false, false, true, true] },
+  { label: "WhatsApp Altyapısı", icon: MessageSquare, values: [false, false, true, true, true] },
+  { label: "Öncelikli Destek",   icon: Shield,        values: [false, false, false, false, true] },
+];
+
+function ComparisonTable() {
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border bg-surface-2">
+            <th className="px-5 py-4 text-left text-xs font-semibold text-text-muted uppercase tracking-wider w-52">
+              Özellik
+            </th>
+            {TABLE_PLANS.map((name, i) => (
+              <th
+                key={name}
+                className={`px-5 py-4 text-center text-xs font-bold uppercase tracking-wider ${
+                  i === TABLE_POPULAR_INDEX ? "text-accent" : "text-text-muted"
+                }`}
+              >
+                {name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border bg-surface">
+          {TABLE_ROWS.map(({ label, icon: Icon, values }) => (
+            <tr key={label} className="hover:bg-surface-2 transition-colors">
+              <td className="px-5 py-3.5">
+                <div className="flex items-center gap-2.5 text-text">
+                  <Icon className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
+                  {label}
+                </div>
+              </td>
+              {values.map((val, i) => (
+                <td key={i} className="px-5 py-3.5 text-center">
+                  {typeof val === "boolean" ? (
+                    val ? (
+                      <Check className="w-4 h-4 text-success mx-auto" />
+                    ) : (
+                      <Minus className="w-4 h-4 text-border mx-auto" />
+                    )
+                  ) : (
+                    <span className={`text-sm font-medium ${i === TABLE_POPULAR_INDEX ? "text-accent" : "text-text"}`}>
+                      {val}
+                    </span>
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── FAQ ─────────────────────────────────────────────────────────────────── */
+
+const FAQS = [
+  {
+    q: "Ücretsiz deneme var mı?",
+    a: "Evet. Tüm yeni ajans hesapları 14 günlük ücretsiz deneme süresiyle başlar. Kredi kartı gerekmez.",
+  },
+  {
+    q: "İstediğim zaman iptal edebilir miyim?",
+    a: "Evet, istediğiniz zaman iptal edebilirsiniz. İptali dönem sonunda geçerli olur; mevcut dönemin geri kalan süresi için erişiminiz devam eder.",
+  },
+  {
+    q: "Planlar arası geçiş nasıl çalışır?",
+    a: "Üst plana geçişte fark tutarı anlık olarak tahsil edilir. Alt plana geçiş ise dönem sonunda geçerli olur ve limit aşımı kontrolü yapılır.",
+  },
+  {
+    q: "Yıllık plan daha sonra aylığa dönebilir mi?",
+    a: "Mevcut yıllık dönem tamamlandıktan sonra aylık faturalandırmaya geçiş yapabilirsiniz.",
+  },
+  {
+    q: "Faturalar nasıl kesiliyor?",
+    a: "Türkiye'de iyzico altyapısıyla güvenli ödeme alınır. Her dönem başında otomatik fatura kesilir ve panel üzerinden indirilebilir.",
+  },
+];
+
+function FAQ() {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div className="space-y-2">
+      {FAQS.map((item, i) => (
+        <div key={i} className="border border-border rounded-xl overflow-hidden bg-surface">
+          <button
+            className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-text hover:bg-surface-2 transition-colors"
+            onClick={() => setOpen(open === i ? null : i)}
+          >
+            {item.q}
+            <ChevronDown
+              className={`w-4 h-4 text-text-muted flex-shrink-0 ml-3 transition-transform duration-200 ${open === i ? "rotate-180" : ""}`}
+            />
+          </button>
+          <AnimatePresence initial={false}>
+            {open === i && (
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: "auto" }}
+                exit={{ height: 0 }}
+                transition={{ duration: 0.2, ease: ES }}
+                className="overflow-hidden"
+              >
+                <p className="px-5 pb-4 text-sm text-text-muted leading-relaxed border-t border-border pt-3">
+                  {item.a}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Page ─────────────────────────────────────────────────────────────────── */
+
+const PLAN_ORDER = ["brand_solo", "starter_agency", "pro_agency", "agency_plus", "enterprise"];
+
+export default function PricingPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [plans, setPlans] = useState<PlanRead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [yearly, setYearly] = useState(false);
+
+  useEffect(() => {
+    planApi
+      .list()
+      .then((data) =>
+        setPlans(
+          data
+            .filter((p) => PLAN_ORDER.includes(p.code))
+            .sort((a, b) => PLAN_ORDER.indexOf(a.code) - PLAN_ORDER.indexOf(b.code))
+        )
+      )
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  function handleSelect(plan: PlanRead) {
+    if (plan.monthly_price_cents === 0) {
+      window.location.href = "mailto:sales@flobrief.com?subject=Enterprise Plan";
+      return;
+    }
+    storePendingPlan({ planId: plan.id, yearly });
+    if (user) {
+      router.push(`/dashboard/settings/billing?upgrade=${plan.id}&yearly=${yearly}`);
+    } else {
+      router.push(`/auth/register?plan=${plan.code}&yearly=${yearly}`);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+
+      {/* Nav */}
+      <nav className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center"
+              style={{ background: "var(--gradient-accent)" }}
+            >
+              <span className="text-white font-bold text-xs">F</span>
+            </div>
+            <span className="text-sm font-semibold text-text group-hover:text-accent transition-colors tracking-tight">Flobrief</span>
+          </Link>
+          <Link href="/" className="flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Ana Sayfa
+          </Link>
+        </div>
+      </nav>
+
+      <div className="mx-auto max-w-6xl px-6 py-20">
+
+        {/* Hero */}
+        <motion.div
+          className="text-center mb-14 relative"
+          initial="hidden"
+          animate="visible"
+          variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
+        >
+          <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent/6 rounded-full blur-3xl" />
+
+          <motion.div variants={vUp} className="relative">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-xs font-medium text-accent mb-5">
+              <Zap className="w-3.5 h-3.5" />
+              Şeffaf Fiyatlandırma
+            </span>
+          </motion.div>
+
+          <motion.h1
+            variants={vUp}
+            className="relative text-4xl sm:text-5xl font-bold text-text tracking-tight mb-4 leading-tight"
+          >
+            Ajansınıza uygun planı seçin
+          </motion.h1>
+
+          <motion.p variants={vUp} className="relative text-base text-text-muted max-w-lg mx-auto mb-8 leading-relaxed">
+            Her ölçekten ajans için esnek planlar. İstediğiniz zaman yükseltin, alçaltın veya iptal edin.
+          </motion.p>
+
+          {/* Billing toggle */}
+          <motion.div variants={vUp} className="relative inline-flex items-center gap-1 rounded-xl border border-border bg-surface p-1">
+            <button
+              onClick={() => setYearly(false)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                !yearly ? "bg-background shadow-sm text-text" : "text-text-muted hover:text-text"
+              }`}
+            >
+              Aylık
+            </button>
+            <button
+              onClick={() => setYearly(true)}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                yearly ? "bg-background shadow-sm text-text" : "text-text-muted hover:text-text"
+              }`}
+            >
+              Yıllık
+              <span className="rounded-full bg-success/15 border border-success/20 px-2 py-0.5 text-[11px] font-semibold text-success-text">
+                −%20
+              </span>
+            </button>
+          </motion.div>
+        </motion.div>
+
+        {/* Plan cards */}
+        {loading ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-20">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-[420px] animate-pulse rounded-2xl border border-border bg-surface" />
+            ))}
+          </div>
+        ) : (
+          <motion.div
+            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5 items-stretch mb-20"
+            initial="hidden"
+            animate="visible"
+            variants={{ visible: { transition: { staggerChildren: 0.07, delayChildren: 0.15 } } }}
+          >
+            {plans.map((plan) => (
+              <motion.div key={plan.id} variants={vUp} className="h-full">
+                <PricingCard
+                  plan={plan}
+                  yearly={yearly}
+                  highlighted={plan.code === "pro_agency"}
+                  onSelect={handleSelect}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Comparison table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: ES }}
+          className="mb-20"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-xl font-bold text-text">Plan Karşılaştırması</h2>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <ComparisonTable />
+        </motion.div>
+
+        {/* FAQ */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: ES }}
+          className="mb-20"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <h2 className="text-xl font-bold text-text">Sık Sorulan Sorular</h2>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <div className="max-w-2xl">
+            <FAQ />
+          </div>
+        </motion.div>
+
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.5, ease: ES }}
+          className="relative rounded-2xl border border-border bg-surface overflow-hidden p-10 text-center"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/4 via-transparent to-purple/3" />
+          <div className="relative">
+            <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
+              <MessageSquare className="w-6 h-6 text-accent" />
+            </div>
+            <h2 className="text-2xl font-bold text-text mb-2">Hâlâ kararsız mısınız?</h2>
+            <p className="text-text-muted mb-6 max-w-md mx-auto text-sm leading-relaxed">
+              Ekibimiz ihtiyaçlarınıza en uygun planı belirlemenize yardımcı olmaktan memnuniyet duyar.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href="mailto:sales@flobrief.com"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+                style={{ background: "var(--gradient-accent)" }}
+              >
+                Satışla İletişim
+                <ArrowRight className="w-4 h-4" />
+              </a>
+              <Link
+                href="/auth/register"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-text border border-border bg-background hover:border-border-hover hover:shadow-sm transition-all"
+              >
+                Ücretsiz Başla
+              </Link>
+            </div>
+            <p className="mt-4 text-xs text-text-muted">14 günlük ücretsiz deneme · Kredi kartı gerekmez</p>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-border">
+        <div className="mx-auto max-w-6xl px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-text-muted">
+          <span>© {new Date().getFullYear()} Flobrief. Tüm hakları saklıdır.</span>
+          <div className="flex items-center gap-4">
+            <Link href="/pricing" className="hover:text-text transition-colors">Fiyatlandırma</Link>
+            <a href="mailto:sales@flobrief.com" className="hover:text-text transition-colors">İletişim</a>
+            <Link href="/" className="hover:text-text transition-colors">Ana Sayfa</Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
