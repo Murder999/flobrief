@@ -5,6 +5,7 @@ import { CheckCircle2, ChevronRight } from "lucide-react";
 import type { BriefRead } from "@/lib/api-client";
 import { BriefPriorityBadge } from "@/components/briefs/brief-status-badge";
 import { deriveActionItems, waitingSinceLabel, fmtShortDate } from "./shared";
+import { useLocale } from "@/context/locale-context";
 
 function RowSkeleton() {
   return (
@@ -20,6 +21,7 @@ function RowSkeleton() {
 }
 
 export function ActionQueueCard({ briefs }: { briefs: BriefRead[] | null }) {
+  const { t } = useLocale();
   const items = briefs ? deriveActionItems(briefs) : null;
   const visible = items?.slice(0, 4) ?? [];
 
@@ -27,7 +29,7 @@ export function ActionQueueCard({ briefs }: { briefs: BriefRead[] | null }) {
     <div className="flex h-full flex-col rounded-xl border border-border bg-surface overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-text">Aksiyon Bekleyenlerim</h2>
+          <h2 className="text-sm font-semibold text-text">{t("dashboard.brand.actionQueue")}</h2>
           {items !== null && items.length > 0 && (
             <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
               {items.length}
@@ -36,7 +38,7 @@ export function ActionQueueCard({ briefs }: { briefs: BriefRead[] | null }) {
         </div>
         {items !== null && items.length > 4 && (
           <Link href="/brand/approvals" className="text-xs text-accent hover:underline">
-            Tüm {items.length} aksiyonu gör
+            {t("dashboard.brand.viewAllActions", { count: items.length })}
           </Link>
         )}
       </div>
@@ -51,8 +53,8 @@ export function ActionQueueCard({ briefs }: { briefs: BriefRead[] | null }) {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10">
             <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500" />
           </div>
-          <p className="text-[13px] font-medium text-text">Bekleyen aksiyonunuz yok</p>
-          <p className="text-[11.5px] text-text-muted">Tüm süreçler güncel.</p>
+          <p className="text-[13px] font-medium text-text">{t("dashboard.brand.noPending")}</p>
+          <p className="text-[11.5px] text-text-muted">{t("dashboard.brand.upToDate")}</p>
         </div>
       ) : (
         <div>
@@ -66,7 +68,7 @@ export function ActionQueueCard({ briefs }: { briefs: BriefRead[] | null }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-medium text-text group-hover:text-accent">{brief.title}</p>
                 <div className="mt-0.5 flex items-center gap-2 text-[11px] text-text-muted">
-                  {brief.deadline && <span>Son tarih: {fmtShortDate(brief.deadline)}</span>}
+                  {brief.deadline && <span>{t("dashboard.brand.deadline", { date: fmtShortDate(brief.deadline) })}</span>}
                   <span>·</span>
                   <span>{waitingSinceLabel(brief)}</span>
                   <BriefPriorityBadge priority={brief.priority} />

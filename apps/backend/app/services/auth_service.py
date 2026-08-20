@@ -1,4 +1,3 @@
-import contextlib
 from datetime import UTC, datetime
 from typing import Any
 
@@ -74,6 +73,7 @@ class AuthService:
             is_verified=settings.is_development,
             phone_number=data.phone_number,
             whatsapp_opt_in=data.whatsapp_opt_in,
+            locale=data.locale,
         )
         if data.whatsapp_opt_in:
             user.whatsapp_opt_in_at = datetime.now(UTC)
@@ -91,10 +91,9 @@ class AuthService:
             )
             await self.db.commit()
 
-            with contextlib.suppress(Exception):
-                await email_service.send_verification_email(
-                    user.email, user.full_name, token_plaintext
-                )
+            await email_service.send_verification_email(
+                self.db, user.email, user.full_name, token_plaintext, user.locale
+            )
         else:
             await self.db.commit()
 
@@ -281,8 +280,9 @@ class AuthService:
         )
         await self.db.commit()
 
-        with contextlib.suppress(Exception):
-            await email_service.send_verification_email(user.email, user.full_name, token_plaintext)
+        await email_service.send_verification_email(
+            self.db, user.email, user.full_name, token_plaintext, user.locale
+        )
 
     async def forgot_password(self, data: PasswordResetRequest) -> None:
         user = await self.user_repo.get_by_email(data.email)
@@ -301,10 +301,9 @@ class AuthService:
         )
         await self.db.commit()
 
-        with contextlib.suppress(Exception):
-            await email_service.send_password_reset_email(
-                user.email, user.full_name, token_plaintext
-            )
+        await email_service.send_password_reset_email(
+            self.db, user.email, user.full_name, token_plaintext, user.locale
+        )
 
     async def reset_password(self, data: PasswordResetConfirm) -> None:
         token_hash = hash_token(data.token)

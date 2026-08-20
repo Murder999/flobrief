@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -21,6 +23,8 @@ import { PublicFooter } from "./PublicFooter";
 import { PublicHeader } from "./PublicHeader";
 import { LandingTitleSync } from "./LandingTitleSync";
 import { SEO_LANDING_PAGES, type LandingFeature, type LandingPageConfig, type LandingSlug } from "./seo-landing-data";
+import { SEO_LANDING_PAGES_EN } from "./seo-landing-data-en";
+import { useLocale } from "@/context/locale-context";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -49,6 +53,14 @@ const relatedLabels: Record<LandingSlug, string> = {
   "revizyon-takip": "Revizyon takibi",
   "musteri-portali": "Müşteri portalı",
   "online-brief": "Online brief",
+};
+
+const relatedLabelsEn: Record<LandingSlug, string> = {
+  "ajans-programi": "Agency management software",
+  "musteri-onay-sistemi": "Client approval software",
+  "revizyon-takip": "Creative proofing software",
+  "musteri-portali": "Client portal software",
+  "online-brief": "Online creative briefs",
 };
 
 function AgencyVisual() {
@@ -167,7 +179,12 @@ function BriefVisual() {
   );
 }
 
-function ProductVisual({ type }: { type: LandingPageConfig["visual"] }) {
+function EnglishProductVisual() {
+  return <div className="rounded-3xl border border-border bg-surface p-5 shadow-xl sm:p-7" aria-label="PostPiloter creative workflow preview"><div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-semibold text-text">Summer campaign</p><p className="mt-1 text-[10px] text-text-muted">Client and agency workspace</p></div><span className="rounded-full bg-warning-subtle px-2.5 py-1 text-[10px] font-semibold text-warning">In review</span></div><div className="grid gap-3 sm:grid-cols-2">{["Creative brief", "Deliverable review", "Client feedback", "Final approval"].map((label, index) => <div key={label} className="rounded-xl border border-border bg-background p-4"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-subtle text-[10px] font-bold text-accent">{index + 1}</span><p className="mt-3 text-xs font-semibold text-text">{label}</p></div>)}</div></div>;
+}
+
+function ProductVisual({ type, locale }: { type: LandingPageConfig["visual"]; locale: "en" | "tr" }) {
+  if (locale === "en") return <EnglishProductVisual />;
   if (type === "approval") return <ApprovalVisual />;
   if (type === "revision") return <RevisionVisual />;
   if (type === "portal") return <PortalVisual />;
@@ -175,7 +192,7 @@ function ProductVisual({ type }: { type: LandingPageConfig["visual"] }) {
   return <AgencyVisual />;
 }
 
-function ProblemSection({ config }: { config: LandingPageConfig }) {
+function ProblemSection({ config, locale }: { config: LandingPageConfig; locale: "en" | "tr" }) {
   const tone = toneClasses[config.tone];
   return (
     <section className="border-y border-border bg-surface py-20 sm:py-24" aria-labelledby={`${config.slug}-problem-title`}>
@@ -195,7 +212,7 @@ function ProblemSection({ config }: { config: LandingPageConfig }) {
           <h3 className="text-2xl font-bold leading-tight tracking-tight text-text sm:text-3xl">{config.solution.title}</h3>
           <p className="mt-5 text-base leading-relaxed text-text-secondary">{config.solution.description}</p>
           <Link href="/demo" className={`mt-7 inline-flex min-h-11 items-center gap-2 rounded-xl border bg-surface px-4 text-sm font-semibold ${tone.border} ${tone.text}`}>
-            Ürün akışını incele <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            {locale === "tr" ? "Ürün akışını incele" : "Explore the workflow"} <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -203,13 +220,13 @@ function ProblemSection({ config }: { config: LandingPageConfig }) {
   );
 }
 
-function WorkflowSection({ config }: { config: LandingPageConfig }) {
+function WorkflowSection({ config, locale }: { config: LandingPageConfig; locale: "en" | "tr" }) {
   const tone = toneClasses[config.tone];
   return (
     <section className="py-20 sm:py-24" aria-labelledby={`${config.slug}-workflow-title`}>
       <div className="mx-auto max-w-7xl px-6">
         <div className={config.hero === "centered" ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}>
-          <p className={`mb-3 text-xs font-bold uppercase tracking-[0.16em] ${tone.text}`}>Süreç</p>
+          <p className={`mb-3 text-xs font-bold uppercase tracking-[0.16em] ${tone.text}`}>{locale === "tr" ? "Süreç" : "Workflow"}</p>
           <h2 id={`${config.slug}-workflow-title`} className="text-3xl font-black tracking-tight text-text sm:text-4xl">{config.workflow.title}</h2>
           <p className="mt-4 text-base leading-relaxed text-text-secondary">{config.workflow.description}</p>
         </div>
@@ -226,12 +243,12 @@ function WorkflowSection({ config }: { config: LandingPageConfig }) {
   );
 }
 
-function FeaturesSection({ config }: { config: LandingPageConfig }) {
+function FeaturesSection({ config, locale }: { config: LandingPageConfig; locale: "en" | "tr" }) {
   const tone = toneClasses[config.tone];
   return (
     <section className="border-y border-border bg-surface py-20 sm:py-24" aria-labelledby={`${config.slug}-features-title`}>
       <div className="mx-auto max-w-7xl px-6">
-        <div className="mx-auto max-w-3xl text-center"><p className={`mb-3 text-xs font-bold uppercase tracking-[0.16em] ${tone.text}`}>İlgili ürün özellikleri</p><h2 id={`${config.slug}-features-title`} className="text-3xl font-black tracking-tight text-text sm:text-4xl">Bu akışı destekleyen gerçek PostPiloter özellikleri</h2></div>
+        <div className="mx-auto max-w-3xl text-center"><p className={`mb-3 text-xs font-bold uppercase tracking-[0.16em] ${tone.text}`}>{locale === "tr" ? "İlgili ürün özellikleri" : "Product capabilities"}</p><h2 id={`${config.slug}-features-title`} className="text-3xl font-black tracking-tight text-text sm:text-4xl">{locale === "tr" ? "Bu akışı destekleyen gerçek PostPiloter özellikleri" : "The tools behind a clearer creative workflow"}</h2></div>
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           {config.features.map((feature) => {
             const Icon = iconMap[feature.icon];
@@ -243,17 +260,17 @@ function FeaturesSection({ config }: { config: LandingPageConfig }) {
   );
 }
 
-function ScenarioSection({ config }: { config: LandingPageConfig }) {
+function ScenarioSection({ config, locale }: { config: LandingPageConfig; locale: "en" | "tr" }) {
   const tone = toneClasses[config.tone];
   return (
     <section className="py-20 sm:py-24" aria-labelledby={`${config.slug}-scenario-title`}>
       <div className="mx-auto max-w-6xl px-6">
         <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-lg">
           <div className="grid lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="p-7 sm:p-10"><p className={`mb-3 text-xs font-bold uppercase tracking-[0.16em] ${tone.text}`}>Kullanım senaryosu</p><h2 id={`${config.slug}-scenario-title`} className="text-3xl font-black leading-tight tracking-tight text-text">{config.scenario.title}</h2><p className="mt-5 text-base leading-relaxed text-text-secondary">{config.scenario.description}</p></div>
+            <div className="p-7 sm:p-10"><p className={`mb-3 text-xs font-bold uppercase tracking-[0.16em] ${tone.text}`}>{locale === "tr" ? "Kullanım senaryosu" : "In practice"}</p><h2 id={`${config.slug}-scenario-title`} className="text-3xl font-black leading-tight tracking-tight text-text">{config.scenario.title}</h2><p className="mt-5 text-base leading-relaxed text-text-secondary">{config.scenario.description}</p></div>
             <div className={`grid gap-3 border-t p-6 lg:border-l lg:border-t-0 ${tone.border} ${tone.soft}`}>
-              <div className="rounded-2xl border border-border bg-surface p-5"><div className="mb-3 flex items-center gap-2 text-xs font-bold text-text"><Users className={`h-4 w-4 ${tone.text}`} />Ajans tarafı</div><p className="text-sm leading-relaxed text-text-secondary">{config.scenario.agency}</p></div>
-              <div className="rounded-2xl border border-border bg-surface p-5"><div className="mb-3 flex items-center gap-2 text-xs font-bold text-text"><BriefcaseBusiness className={`h-4 w-4 ${tone.text}`} />Müşteri tarafı</div><p className="text-sm leading-relaxed text-text-secondary">{config.scenario.customer}</p></div>
+              <div className="rounded-2xl border border-border bg-surface p-5"><div className="mb-3 flex items-center gap-2 text-xs font-bold text-text"><Users className={`h-4 w-4 ${tone.text}`} />{locale === "tr" ? "Ajans tarafı" : "Agency view"}</div><p className="text-sm leading-relaxed text-text-secondary">{config.scenario.agency}</p></div>
+              <div className="rounded-2xl border border-border bg-surface p-5"><div className="mb-3 flex items-center gap-2 text-xs font-bold text-text"><BriefcaseBusiness className={`h-4 w-4 ${tone.text}`} />{locale === "tr" ? "Müşteri tarafı" : "Client view"}</div><p className="text-sm leading-relaxed text-text-secondary">{config.scenario.customer}</p></div>
             </div>
           </div>
         </div>
@@ -263,12 +280,14 @@ function ScenarioSection({ config }: { config: LandingPageConfig }) {
 }
 
 export function SeoLandingPage({ config }: { config: LandingPageConfig }) {
+  const { locale } = useLocale();
+  config = locale === "en" ? SEO_LANDING_PAGES_EN[config.slug] : config;
   const tone = toneClasses[config.tone];
   const sections = {
-    problem: <ProblemSection key="problem" config={config} />,
-    workflow: <WorkflowSection key="workflow" config={config} />,
-    features: <FeaturesSection key="features" config={config} />,
-    scenario: <ScenarioSection key="scenario" config={config} />,
+    problem: <ProblemSection key="problem" config={config} locale={locale} />,
+    workflow: <WorkflowSection key="workflow" config={config} locale={locale} />,
+    features: <FeaturesSection key="features" config={config} locale={locale} />,
+    scenario: <ScenarioSection key="scenario" config={config} locale={locale} />,
   };
 
   return (
@@ -285,28 +304,28 @@ export function SeoLandingPage({ config }: { config: LandingPageConfig }) {
               <h1 className="text-balance text-4xl font-black leading-[1.05] tracking-[-0.045em] text-text sm:text-5xl lg:text-6xl">{config.h1}</h1>
               <p className={`mt-6 text-lg leading-relaxed text-text-secondary ${config.hero === "centered" ? "mx-auto max-w-2xl" : "max-w-xl"}`}>{config.description}</p>
               <div className={`mt-8 flex flex-col gap-3 sm:flex-row ${config.hero === "centered" ? "sm:justify-center" : ""}`}>
-                <Link href="/demo" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-accent px-6 text-sm font-bold text-white shadow-accent transition-transform hover:scale-[1.02]">Demoyu İncele <ArrowRight className="h-4 w-4" /></Link>
-                <Link href="/auth/register" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-surface px-6 text-sm font-semibold text-text hover:border-border-hover">Hesap Oluştur</Link>
+                <Link href="/demo" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-accent px-6 text-sm font-bold text-white shadow-accent transition-transform hover:scale-[1.02]">{locale === "tr" ? "Demoyu İncele" : "Explore the demo"} <ArrowRight className="h-4 w-4" /></Link>
+                <Link href="/auth/register" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-surface px-6 text-sm font-semibold text-text hover:border-border-hover">{locale === "tr" ? "Hesap Oluştur" : "Create an account"}</Link>
               </div>
               <div className={`mt-7 flex flex-wrap gap-x-5 gap-y-2 ${config.hero === "centered" ? "justify-center" : ""}`}>
                 {config.proof.map((item) => <span key={item} className="inline-flex items-center gap-1.5 text-xs text-text-muted"><CheckCircle2 className="h-3.5 w-3.5 text-success" />{item}</span>)}
               </div>
             </div>
-            {config.hero === "split" && <div className="relative"><ProductVisual type={config.visual} /></div>}
+            {config.hero === "split" && <div className="relative"><ProductVisual type={config.visual} locale={locale} /></div>}
           </div>
-          {config.hero === "centered" && <div className="relative mx-auto mt-12 max-w-5xl px-6"><ProductVisual type={config.visual} /></div>}
+          {config.hero === "centered" && <div className="relative mx-auto mt-12 max-w-5xl px-6"><ProductVisual type={config.visual} locale={locale} /></div>}
         </section>
 
         {config.sectionOrder.map((key) => sections[key])}
 
         <section className="border-y border-border bg-surface py-16" aria-labelledby={`${config.slug}-related-title`}>
-          <div className="mx-auto max-w-7xl px-6"><h2 id={`${config.slug}-related-title`} className="text-xl font-bold text-text">İlgili çözümler</h2><div className="mt-5 flex flex-wrap gap-3">{config.related.map((slug) => <Link key={slug} href={`/${slug}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-text-secondary transition-colors hover:border-border-hover hover:text-text">{relatedLabels[slug]} <ArrowRight className="h-3.5 w-3.5" /></Link>)}</div></div>
+          <div className="mx-auto max-w-7xl px-6"><h2 id={`${config.slug}-related-title`} className="text-xl font-bold text-text">{locale === "tr" ? "İlgili çözümler" : "Related solutions"}</h2><div className="mt-5 flex flex-wrap gap-3">{config.related.map((slug) => <Link key={slug} href={`${locale === "tr" ? "/tr" : ""}/${slug}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-text-secondary transition-colors hover:border-border-hover hover:text-text">{locale === "tr" ? relatedLabels[slug] : relatedLabelsEn[slug]} <ArrowRight className="h-3.5 w-3.5" /></Link>)}</div></div>
         </section>
 
         <section className="relative overflow-hidden py-20 sm:py-24">
           <div className="hero-grid absolute inset-0 opacity-20" />
           <div className="relative mx-auto max-w-5xl px-6">
-            <div className="overflow-hidden rounded-3xl border border-border bg-surface p-8 text-center shadow-xl sm:p-12"><div className={`mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${tone.soft}`}><Send className={`h-5 w-5 ${tone.text}`} /></div><h2 className="text-3xl font-black tracking-tight text-text sm:text-4xl">Ajans–müşteri sürecinizi tek çalışma alanında görün</h2><p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-text-secondary">PostPiloter’ın gerçek brief, iş, yorum, revizyon ve onay akışını demo ortamında inceleyin.</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/demo" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-accent px-6 text-sm font-bold text-white shadow-accent">Demoyu İncele <ArrowRight className="h-4 w-4" /></Link><Link href="/pricing" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-background px-6 text-sm font-semibold text-text">Fiyatlandırmayı Gör</Link></div></div>
+            <div className="overflow-hidden rounded-3xl border border-border bg-surface p-8 text-center shadow-xl sm:p-12"><div className={`mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${tone.soft}`}><Send className={`h-5 w-5 ${tone.text}`} /></div><h2 className="text-3xl font-black tracking-tight text-text sm:text-4xl">{locale === "tr" ? "Ajans–müşteri sürecinizi tek çalışma alanında görün" : "See your agency–client workflow in one workspace"}</h2><p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-text-secondary">{locale === "tr" ? "PostPiloter’ın gerçek brief, iş, yorum, revizyon ve onay akışını demo ortamında inceleyin." : "Explore PostPiloter’s brief, feedback, revision, and approval workflow in a demo workspace."}</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/demo" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-accent px-6 text-sm font-bold text-white shadow-accent">{locale === "tr" ? "Demoyu İncele" : "Explore the demo"} <ArrowRight className="h-4 w-4" /></Link><Link href={locale === "tr" ? "/tr/pricing" : "/pricing"} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-border bg-background px-6 text-sm font-semibold text-text">{locale === "tr" ? "Fiyatlandırmayı Gör" : "View pricing"}</Link></div></div>
           </div>
         </section>
       </main>

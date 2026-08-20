@@ -10,6 +10,9 @@ import { BrandOnboardingWizard } from "@/components/onboarding/OnboardingWizard"
 import { useOnboardingPageSeen } from "@/hooks/useOnboardingPageSeen";
 import { ResponsiveAppShell } from "@/components/shell/ResponsiveAppShell";
 import type { BottomNavItem, NavDrawerGroup, NavIcon } from "@/components/shell/types";
+import { useLocale } from "@/context/locale-context";
+import { translateAppNavigationLabel } from "@/lib/i18n/app-navigation";
+import { LanguageSelector } from "@/components/i18n/language-selector";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -85,12 +88,12 @@ const ROLE_LABELS: Record<string, string> = {
   external_approver: "Onay Yetkilisi",
 };
 
-function toNavDrawerGroups(sections: NavSection[]): NavDrawerGroup[] {
+function toNavDrawerGroups(sections: NavSection[], t: ReturnType<typeof useLocale>["t"]): NavDrawerGroup[] {
   return sections.map((section) => ({
-    label: section.title,
+    label: translateAppNavigationLabel(t, section.title),
     items: section.items.map((item) => ({
       href: item.href,
-      label: item.label,
+      label: translateAppNavigationLabel(t, item.label) ?? item.label,
       icon: item.icon,
       exact: item.exact,
     })),
@@ -124,6 +127,7 @@ interface BrandSidebarProps {
 
 function BrandSidebar({ isManager, membershipRole, notificationSource, pathname, navSections }: BrandSidebarProps) {
   const { user, logout, accessToken } = useAuth();
+  const { locale, t } = useLocale();
   const [seatWarning, setSeatWarning] = useState<string | null>(null);
 
   useEffect(() => {
@@ -132,13 +136,13 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
       .getTeamUsage(accessToken)
       .then((usage) => {
         if (usage.users.limit !== null && usage.users.available !== null && usage.users.available <= 0) {
-          setSeatWarning(`Kullanıcı limitine ulaşıldı: ${usage.users.used}/${usage.users.limit}`);
+          setSeatWarning(locale === "tr" ? `Kullanıcı limitine ulaşıldı: ${usage.users.used}/${usage.users.limit}` : `User limit reached: ${usage.users.used}/${usage.users.limit}`);
         } else {
           setSeatWarning(null);
         }
       })
       .catch(() => {});
-  }, [accessToken, isManager]);
+  }, [accessToken, isManager, locale]);
 
   return (
     <aside
@@ -158,7 +162,7 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
         </div>
         <div className="flex-1 min-w-0">
           <span className="font-semibold text-text text-sm tracking-tight block leading-tight">Flobrief</span>
-          <span className="text-[10px] text-text-muted leading-tight">Marka Portalı</span>
+          <span className="text-[10px] text-text-muted leading-tight">{t("dashboard.navigation.portal")}</span>
         </div>
         <NotificationBell source={notificationSource} basePath="/brand/notifications" />
       </div>
@@ -174,7 +178,7 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
         {navSections.map((section) => (
           <div key={section.title}>
             <p className="px-2 mb-1.5 text-[10px] font-semibold text-text-muted/60 tracking-widest uppercase">
-              {section.title}
+              {translateAppNavigationLabel(t, section.title)}
             </p>
             <div className="space-y-0.5">
               {section.items.map((item) => {
@@ -195,7 +199,7 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
                     )}
                   >
                     <IconComp className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-accent" : "")} />
-                    <span className="flex-1 truncate">{item.label}</span>
+                    <span className="flex-1 truncate">{translateAppNavigationLabel(t, item.label)}</span>
                   </Link>
                 );
               })}
@@ -224,10 +228,11 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
           <button
             onClick={logout}
             className="p-1.5 rounded-lg text-text-muted hover:text-danger transition-colors flex-shrink-0"
-            title="Çıkış yap"
+            title={t("auth.actions.logout")}
           >
             <LogOut className="w-3.5 h-3.5" />
           </button>
+          <LanguageSelector compact />
         </div>
       </div>
     </aside>
@@ -237,6 +242,7 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function BrandLayout({ children }: { children: ReactNode }) {
+  const { t } = useLocale();
   const { user, logout, accessToken, isLoading, isInitialized } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -275,7 +281,11 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
     );
   }, [isManager]);
 
-  const navDrawerGroups = useMemo(() => toNavDrawerGroups(navSections), [navSections]);
+  const navDrawerGroups = useMemo(() => toNavDrawerGroups(navSections, t), [navSections, t]);
+  const localizedBottomNavItems = useMemo(
+    () => BOTTOM_NAV_ITEMS.map((item) => ({ ...item, label: translateAppNavigationLabel(t, item.label) ?? item.label })),
+    [t]
+  );
 
   useEffect(() => {
     if (!isInitialized || isLoading) return;
@@ -333,9 +343,9 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
           />
         }
         groups={navDrawerGroups}
-        bottomNavItems={BOTTOM_NAV_ITEMS}
+        bottomNavItems={localizedBottomNavItems}
         brandTitle="Flobrief"
-        brandSubtitle="Marka Portalı"
+        brandSubtitle={t("dashboard.navigation.portal")}
         fallbackPageTitle="Flobrief"
         user={{ name: user.full_name, email: user.email, initials: getInitials(user.full_name) }}
         profileHref="/brand/settings"

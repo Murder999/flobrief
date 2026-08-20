@@ -83,7 +83,11 @@ async def _to_reads(items: list[Notification], db: AsyncSession) -> list[Notific
             else None
         )
         base = NotificationRead.model_validate(n)
-        reads.append(base.model_copy(update={"action_url": action_url}))
+        reads.append(
+            base.model_copy(
+                update={"action_url": action_url, "payload": event.payload if event else {}}
+            )
+        )
     return reads
 
 

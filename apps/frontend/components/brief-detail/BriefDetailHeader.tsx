@@ -14,20 +14,22 @@ import {
   Send,
 } from "lucide-react";
 import { fmtDate, fmtRelative, STATUS_CFG, PRIORITY_CFG } from "./shared";
+import { useLocale } from "@/context/locale-context";
+import type { TranslationKey } from "@/messages";
 
 // ── Compact status banner config ─────────────────────────────────────────────
 // Replaces the ten near-identical full-width callout cards from the old page
 // with one config-driven, condensed banner.
 
-const BANNER_CFG: Partial<Record<BriefStatus, { icon: typeof Send; tone: string; title: string; subtitle: string }>> = {
-  submitted: { icon: Send, tone: "violet", title: "Brief ajansa gönderildi", subtitle: "Ajans talebinizi inceleyecek ve en kısa sürede geri dönecektir." },
-  accepted: { icon: CheckCircle, tone: "teal", title: "Ajans talebinizi kabul etti", subtitle: "Brief üretime alındı. Ajans çalışmaya başlayacak." },
-  in_production: { icon: Clock, tone: "indigo", title: "Üretim süreci devam ediyor", subtitle: "Ajans üzerinde çalışıyor. Hazır olduğunda incelemenize sunulacak." },
-  ready_for_review: { icon: CheckCircle, tone: "cyan", title: "İncelemeniz bekleniyor", subtitle: "Ajans çalışmayı teslim etti. Onaylayın veya revizyon isteyin." },
-  revision_requested: { icon: RotateCcw, tone: "orange", title: "Revizyon talebiniz iletildi", subtitle: "Ajans revize ettiğinde sizi bilgilendirecektir." },
-  approved: { icon: CheckCircle, tone: "emerald", title: "Brief onaylandı", subtitle: "Ajans çalışmaya devam edecek." },
-  completed: { icon: CheckCircle, tone: "green", title: "Brief tamamlandı", subtitle: "Bu iş teslim edildi ve tamamlandı." },
-  scheduled: { icon: CalendarDays, tone: "sky", title: "Takvime alındı", subtitle: "Bu brief onaylandı ve yayın takvimine alındı." },
+const BANNER_CFG: Partial<Record<BriefStatus, { icon: typeof Send; tone: string; titleKey: TranslationKey; subtitleKey: TranslationKey }>> = {
+  submitted: { icon: Send, tone: "violet", titleKey: "briefs.banner.submitted.title", subtitleKey: "briefs.banner.submitted.subtitle" },
+  accepted: { icon: CheckCircle, tone: "teal", titleKey: "briefs.banner.accepted.title", subtitleKey: "briefs.banner.accepted.subtitle" },
+  in_production: { icon: Clock, tone: "indigo", titleKey: "briefs.banner.inProduction.title", subtitleKey: "briefs.banner.inProduction.subtitle" },
+  ready_for_review: { icon: CheckCircle, tone: "cyan", titleKey: "briefs.banner.ready.title", subtitleKey: "briefs.banner.ready.subtitle" },
+  revision_requested: { icon: RotateCcw, tone: "orange", titleKey: "briefs.banner.revision.title", subtitleKey: "briefs.banner.revision.subtitle" },
+  approved: { icon: CheckCircle, tone: "emerald", titleKey: "briefs.banner.approved.title", subtitleKey: "briefs.banner.approved.subtitle" },
+  completed: { icon: CheckCircle, tone: "green", titleKey: "briefs.banner.completed.title", subtitleKey: "briefs.banner.completed.subtitle" },
+  scheduled: { icon: CalendarDays, tone: "sky", titleKey: "briefs.banner.scheduled.title", subtitleKey: "briefs.banner.scheduled.subtitle" },
 };
 
 const TONE_CLASSES: Record<string, { bg: string; text: string; iconBg: string }> = {
@@ -44,12 +46,13 @@ const TONE_CLASSES: Record<string, { bg: string; text: string; iconBg: string }>
 };
 
 function StatusBanner({ brief }: { brief: BriefRead }) {
+  const { t } = useLocale();
   let cfg = BANNER_CFG[brief.status as BriefStatus];
   // in_review has two distinct copies depending on origin — keep that nuance.
   if (brief.status === "in_review") {
     cfg = brief.source === "brand_portal"
-      ? { icon: Clock, tone: "blue", title: "Talebiniz ajans tarafından inceleniyor", subtitle: "Ajans talebi inceledikten sonra sizi bilgilendirecektir." }
-      : { icon: Clock, tone: "amber", title: "Bu brief onayınızı bekliyor", subtitle: "Sağdaki paneli kullanarak onay verebilir veya revizyon isteyebilirsiniz." };
+      ? { icon: Clock, tone: "blue", titleKey: "briefs.banner.brandReview.title", subtitleKey: "briefs.banner.brandReview.subtitle" }
+      : { icon: Clock, tone: "amber", titleKey: "briefs.banner.review.title", subtitleKey: "briefs.banner.review.subtitle" };
   }
   if (!cfg) return null;
   const tone = TONE_CLASSES[cfg.tone] ?? TONE_CLASSES.blue;
@@ -61,8 +64,8 @@ function StatusBanner({ brief }: { brief: BriefRead }) {
         <Icon className={cn("w-4 h-4", tone.text)} />
       </div>
       <div className="min-w-0">
-        <p className={cn("text-[13px] font-semibold leading-tight", tone.text)}>{cfg.title}</p>
-        <p className="text-[12px] text-text-muted leading-tight mt-0.5">{cfg.subtitle}</p>
+        <p className={cn("text-[13px] font-semibold leading-tight", tone.text)}>{t(cfg.titleKey)}</p>
+        <p className="text-[12px] text-text-muted leading-tight mt-0.5">{t(cfg.subtitleKey)}</p>
       </div>
     </div>
   );
@@ -101,6 +104,7 @@ function ActionPanel({
   icon: typeof CheckCircle;
   required?: boolean;
 }) {
+  const { t: translate } = useLocale();
   if (!state.open) return null;
   const toneClasses: Record<string, { border: string; bg: string; text: string; btn: string; ring: string }> = {
     emerald: { border: "border-emerald-500/25", bg: "bg-emerald-500/5", text: "text-emerald-500", btn: "bg-emerald-500 hover:bg-emerald-600", ring: "focus:ring-emerald-500/25 focus:border-emerald-500/40" },
@@ -137,7 +141,7 @@ function ActionPanel({
           onClick={state.onCancel}
           className="px-4 py-2 rounded-lg text-sm text-text-muted hover:text-text hover:bg-surface-2 transition-colors"
         >
-          İptal
+          {translate("briefs.actions.cancel")}
         </button>
       </div>
     </div>
@@ -169,6 +173,7 @@ export function BriefDetailHeader({
   onOpenRevise,
   onOpenReject,
 }: BriefDetailHeaderProps) {
+  const { t } = useLocale();
   const stCfg = STATUS_CFG[brief.status as BriefStatus] ?? STATUS_CFG.draft;
   const prCfg = PRIORITY_CFG[brief.priority] ?? PRIORITY_CFG.normal;
 
@@ -178,7 +183,7 @@ export function BriefDetailHeader({
         <div className="flex items-center gap-1.5 mb-3 text-xs text-text-muted">
           <Link href="/brand/briefs" className="hover:text-accent transition-colors flex items-center gap-1">
             <ArrowLeft className="w-3 h-3" />
-            Brieflerim
+            {t("briefs.header.myBriefs")}
           </Link>
           <span>/</span>
           <span className="text-text truncate max-w-xs">{brief.title}</span>
@@ -202,14 +207,16 @@ export function BriefDetailHeader({
               </p>
             )}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-text-muted">
-              <span className={cn("font-medium", prCfg.color)}>{prCfg.label} öncelik</span>
+              <span className={cn("font-medium", prCfg.color)}>{t("briefs.header.priority", { priority: prCfg.label })}</span>
               <span className="text-border">·</span>
               <span className={cn("inline-flex items-center gap-1", overdue ? "text-danger font-medium" : "")}>
                 <CalendarDays className="w-3 h-3" />
-                {brief.deadline ? `Son tarih: ${fmtDate(brief.deadline)}${overdue ? " · Gecikti" : ""}` : "Son tarih yok"}
+                {brief.deadline
+                  ? t("briefs.header.deadline", { date: fmtDate(brief.deadline), overdue: overdue ? t("briefs.header.overdueSuffix") : "" })
+                  : t("briefs.header.noDeadline")}
               </span>
               <span className="text-border">·</span>
-              <span>Son güncelleme: {fmtRelative(brief.updated_at)}</span>
+              <span>{t("briefs.header.lastUpdated", { time: fmtRelative(brief.updated_at) })}</span>
             </div>
           </div>
 
@@ -220,21 +227,21 @@ export function BriefDetailHeader({
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-danger/30 bg-danger/8 text-danger text-[13px] font-medium hover:bg-danger/15 transition-colors"
               >
                 <XCircle className="w-3.5 h-3.5" />
-                Reddet
+                {t("briefs.actions.reject")}
               </button>
               <button
                 onClick={onOpenRevise}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-orange-500/30 bg-orange-500/8 text-orange-500 text-[13px] font-medium hover:bg-orange-500/15 transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Revize İste
+                {t("briefs.actions.requestRevision")}
               </button>
               <button
                 onClick={onOpenApprove}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-gradient-accent text-white text-[13px] font-medium hover:opacity-90 transition-opacity shadow-sm"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
-                Onayla
+                {t("briefs.actions.approve")}
               </button>
             </div>
           )}
@@ -243,32 +250,32 @@ export function BriefDetailHeader({
         <ActionPanel
           state={approve}
           tone="emerald"
-          title="Brief'i Onayla"
-          helper="Onayınız ajansa iletilecektir."
-          placeholder="Onay notu ekleyin (isteğe bağlı)..."
-          submitLabel="Onayı Gönder"
-          submittingLabel="Gönderiliyor…"
+          title={t("briefs.header.approveTitle")}
+          helper={t("briefs.header.approveHelp")}
+          placeholder={t("briefs.header.approvePlaceholder")}
+          submitLabel={t("briefs.header.approveSubmit")}
+          submittingLabel={t("briefs.actions.sending")}
           icon={CheckCircle}
         />
         <ActionPanel
           state={revise}
           tone="orange"
-          title="Revizyon Talep Et"
-          helper="Neyi değiştirmek istediğinizi açıklayın."
-          placeholder="Neyi değiştirmek istiyorsunuz?..."
-          submitLabel="Revizyon Gönder"
-          submittingLabel="Gönderiliyor…"
+          title={t("briefs.header.revisionTitle")}
+          helper={t("briefs.header.revisionHelp")}
+          placeholder={t("briefs.header.revisionPlaceholder")}
+          submitLabel={t("briefs.header.revisionSubmit")}
+          submittingLabel={t("briefs.actions.sending")}
           icon={RotateCcw}
           required
         />
         <ActionPanel
           state={reject}
           tone="danger"
-          title="Brief'i Reddet"
-          helper="Red nedeni ajansa iletilecektir. Bu işlem geri alınamaz."
-          placeholder="Red nedenini açıklayın (zorunlu)..."
-          submitLabel="Reddi Gönder"
-          submittingLabel="Gönderiliyor…"
+          title={t("briefs.header.rejectTitle")}
+          helper={t("briefs.header.rejectHelp")}
+          placeholder={t("briefs.header.rejectPlaceholder")}
+          submitLabel={t("briefs.header.rejectSubmit")}
+          submittingLabel={t("briefs.actions.sending")}
           icon={XCircle}
           required
         />

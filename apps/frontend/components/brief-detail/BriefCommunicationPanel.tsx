@@ -6,10 +6,12 @@ import type { BrandCommentRead, BrandTimelineEntry } from "@/lib/api-client";
 import { Tabs } from "@/components/ui/tabs";
 import { MessageSquare, Clock, Send, Loader2 } from "lucide-react";
 import { fmtRelative, COMMENT_TYPE_CFG, TIMELINE_CFG } from "./shared";
+import { useLocale } from "@/context/locale-context";
 
 type CommentType = "general" | "revision_note" | "approval_note";
 
 function CommentItem({ comment, highlighted, itemRef }: { comment: BrandCommentRead; highlighted: boolean; itemRef?: RefObject<HTMLDivElement> }) {
+  const { t } = useLocale();
   const cfg = COMMENT_TYPE_CFG[comment.comment_type] ?? COMMENT_TYPE_CFG.general;
   const initials = (comment.author_name ?? "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
@@ -32,7 +34,7 @@ function CommentItem({ comment, highlighted, itemRef }: { comment: BrandCommentR
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-semibold text-text">{comment.author_name ?? "Kullanıcı"}</span>
+            <span className="text-xs font-semibold text-text">{comment.author_name ?? t("briefs.comments.user")}</span>
             <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
             <span className="text-[11px] text-text-muted">{cfg.label}</span>
             <span className="text-[11px] text-text-muted ml-auto flex-shrink-0">{fmtRelative(comment.created_at)}</span>
@@ -92,6 +94,7 @@ export function BriefCommunicationPanel({
   commentsEndRef,
   highlightCommentId,
 }: BriefCommunicationPanelProps) {
+  const { t } = useLocale();
   const [tab, setTab] = useState<"comments" | "activity">("comments");
   const highlightedRef = useRef<HTMLDivElement>(null);
 
@@ -105,8 +108,8 @@ export function BriefCommunicationPanel({
     <div className="bg-surface border border-border rounded-2xl overflow-hidden flex flex-col max-h-[calc(100vh-7rem)]">
       <Tabs
         items={[
-          { value: "comments", label: "Yorumlar", count: comments.length },
-          { value: "activity", label: "Aktivite" },
+          { value: "comments", label: t("briefs.comments.title"), count: comments.length },
+          { value: "activity", label: t("briefs.activity.title") },
         ]}
         value={tab}
         onChange={(v) => setTab(v as "comments" | "activity")}
@@ -119,7 +122,7 @@ export function BriefCommunicationPanel({
             {comments.length === 0 ? (
               <div className="py-10 text-center">
                 <MessageSquare className="w-6 h-6 text-text-muted/30 mx-auto mb-2" />
-                <p className="text-xs text-text-muted">Henüz yorum yok. İlk yorumu siz yapın.</p>
+                <p className="text-xs text-text-muted">{t("briefs.comments.emptyFirst")}</p>
               </div>
             ) : (
               <>
@@ -147,13 +150,13 @@ export function BriefCommunicationPanel({
                     commentType === t ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
                   )}
                 >
-                  {t === "general" ? "Yorum" : t === "revision_note" ? "Revizyon" : "Onay Notu"}
+                  {COMMENT_TYPE_CFG[t].label}
                 </button>
               ))}
             </div>
             <textarea
               rows={3}
-              placeholder="Yorumunuzu yazın..."
+              placeholder={t("briefs.comments.placeholder")}
               value={commentBody}
               onChange={(e) => setCommentBody(e.target.value)}
               className="w-full px-3 py-2 bg-surface-2 border border-border rounded-lg text-xs text-text placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent/60 resize-none transition-all"
@@ -165,7 +168,7 @@ export function BriefCommunicationPanel({
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gradient-accent text-white text-xs font-medium hover:opacity-90 disabled:opacity-40 transition-opacity"
             >
               {commentSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              Gönder
+              {t("briefs.actions.send")}
             </button>
           </div>
         </>
@@ -174,7 +177,7 @@ export function BriefCommunicationPanel({
           {timeline.length === 0 ? (
             <div className="py-10 text-center">
               <Clock className="w-6 h-6 text-text-muted/30 mx-auto mb-2" />
-              <p className="text-xs text-text-muted">Henüz aktivite yok.</p>
+              <p className="text-xs text-text-muted">{t("briefs.activity.empty")}</p>
             </div>
           ) : (
             timeline.map((entry, idx) => (

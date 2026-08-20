@@ -17,6 +17,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { authApi, ApiError } from "@/lib/api-client";
+import { useLocale } from "@/context/locale-context";
+import { EnglishLoginModal } from "./EnglishLoginModal";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const FOCUSABLE_SELECTOR =
@@ -59,7 +61,12 @@ interface LoginModalProps {
   returnTo?: string;
 }
 
-export function LoginModal({ open, onClose, returnTo }: LoginModalProps) {
+export function LoginModal(props: LoginModalProps) {
+  const { locale } = useLocale();
+  return locale === "en" ? <EnglishLoginModal {...props} /> : <TurkishLoginModal {...props} />;
+}
+
+function TurkishLoginModal({ open, onClose, returnTo }: LoginModalProps) {
   const shouldReduceMotion = useReducedMotion() ?? false;
   const [view, setView] = useState<ModalView>("role-selection");
   const [role, setRole] = useState<Role | null>(null);

@@ -1,6 +1,7 @@
 import re
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
@@ -42,6 +43,7 @@ class RegisterRequest(BaseModel):
     password: str
     phone_number: str | None = None
     whatsapp_opt_in: bool = False
+    locale: Literal["en", "tr"] = "en"
 
     @field_validator("email", mode="before")
     @classmethod
@@ -131,6 +133,7 @@ class MeResponse(BaseModel):
     mfa_enabled: bool
     phone_number: str | None = None
     whatsapp_opt_in: bool = False
+    locale: Literal["en", "tr"] | None = None
     last_login_at: datetime | None
     created_at: datetime
     updated_at: datetime
@@ -141,6 +144,7 @@ class UserProfileUpdate(BaseModel):
     job_title: str | None = None
     phone_number: str | None = None
     whatsapp_opt_in: bool | None = None
+    locale: Literal["en", "tr"] | None = None
 
     @field_validator("full_name", mode="before")
     @classmethod

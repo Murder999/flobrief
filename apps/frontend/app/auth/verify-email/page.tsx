@@ -6,10 +6,12 @@ import { authApi, ApiError } from "@/lib/api-client";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { useLocale } from "@/context/locale-context";
 
 type State = "loading" | "success" | "error" | "no-token";
 
 function VerifyEmailContent() {
+  const { t } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -32,8 +34,8 @@ function VerifyEmailContent() {
         if (!cancelled) {
           setErrorMessage(
             err instanceof ApiError && err.status === 400
-              ? "Bu doğrulama bağlantısı geçersiz veya süresi dolmuş"
-              : "Doğrulama sırasında bir hata oluştu"
+              ? t("auth.verify.expired")
+              : t("auth.verify.generic")
           );
           setState("error");
         }
@@ -42,7 +44,7 @@ function VerifyEmailContent() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [t, token]);
 
   if (state === "loading") {
     return (
@@ -57,8 +59,8 @@ function VerifyEmailContent() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-text mb-2">Doğrulanıyor…</h2>
-        <p className="text-sm text-text-muted">E-posta adresiniz doğrulanıyor, lütfen bekleyin.</p>
+        <h2 className="text-xl font-bold text-text mb-2">{t("auth.verify.loadingTitle")}</h2>
+        <p className="text-sm text-text-muted">{t("auth.verify.loadingBody")}</p>
       </div>
     );
   }
@@ -71,12 +73,12 @@ function VerifyEmailContent() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-text mb-2">E-posta Doğrulandı!</h2>
+        <h2 className="text-xl font-bold text-text mb-2">{t("auth.verify.successTitle")}</h2>
         <p className="text-sm text-text-muted mb-6">
-          E-posta adresiniz başarıyla doğrulandı. Artık Flobrief&apos;e giriş yapabilirsiniz.
+          {t("auth.verify.successBody")}
         </p>
         <Button className="w-full" onClick={() => router.push("/auth/login")}>
-          Giriş Yap
+          {t("auth.actions.login")}
         </Button>
       </div>
     );
@@ -90,10 +92,10 @@ function VerifyEmailContent() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-text mb-2">Doğrulama Başarısız</h2>
+        <h2 className="text-xl font-bold text-text mb-2">{t("auth.verify.failedTitle")}</h2>
         <p className="text-sm text-text-muted mb-6">{errorMessage}</p>
         <Link href="/auth/login">
-          <Button variant="secondary" className="w-full mb-3">Giriş sayfasına dön</Button>
+          <Button variant="secondary" className="w-full mb-3">{t("auth.backToLogin")}</Button>
         </Link>
       </div>
     );
@@ -111,13 +113,12 @@ function VerifyEmailContent() {
           />
         </svg>
       </div>
-      <h2 className="text-xl font-bold text-text mb-2">E-postanızı Kontrol Edin</h2>
+      <h2 className="text-xl font-bold text-text mb-2">{t("auth.verify.checkTitle")}</h2>
       <p className="text-sm text-text-muted mb-6">
-        Kayıt sırasında kullandığınız e-posta adresine bir doğrulama bağlantısı gönderdik.
-        Bağlantıya tıklayarak hesabınızı aktifleştirin.
+        {t("auth.verify.checkBody")}
       </p>
       <Link href="/auth/login">
-        <Button variant="secondary" className="w-full">Giriş sayfasına dön</Button>
+        <Button variant="secondary" className="w-full">{t("auth.backToLogin")}</Button>
       </Link>
     </div>
   );

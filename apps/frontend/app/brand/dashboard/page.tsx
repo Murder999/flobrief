@@ -17,8 +17,10 @@ import { RecentBriefsCard } from "@/components/brand-dashboard/RecentBriefsCard"
 import { RecentActivityCard } from "@/components/brand-dashboard/RecentActivityCard";
 import { OperationsPanel } from "@/components/brand-dashboard/OperationsPanel";
 import { greetingFor, startOfWeekISO, endOfWeekISO, countPendingApproval, countOverdue } from "@/components/brand-dashboard/shared";
+import { useLocale } from "@/context/locale-context";
 
 export default function BrandDashboardPage() {
+  const { t } = useLocale();
   const { user, accessToken } = useAuth();
   const [briefs, setBriefs] = useState<BriefRead[] | null>(null);
   const [kpis, setKpis] = useState<BrandKPIStats | null>(null);
@@ -85,19 +87,15 @@ export default function BrandDashboardPage() {
               onClick={scrollToActions}
               className="mt-1 text-[13px] text-text-secondary hover:text-accent transition-colors"
             >
-              Bugün{" "}
-              <span className="font-semibold text-text">
-                {pendingApprovalCount + overdueCount} aksiyonunuz
-              </span>{" "}
-              var
-              {pendingApprovalCount > 0 && <> · <span className="text-amber-500 font-medium">{pendingApprovalCount} onay</span></>}
-              {overdueCount > 0 && <> · <span className="text-danger font-medium">{overdueCount} gecikme</span></>}
+              <span className="font-semibold text-text">{t("dashboard.brand.todayActions", { count: pendingApprovalCount + overdueCount })}</span>
+              {pendingApprovalCount > 0 && <> · <span className="text-amber-500 font-medium">{t("dashboard.brand.approvalCount", { count: pendingApprovalCount })}</span></>}
+              {overdueCount > 0 && <> · <span className="text-danger font-medium">{t("dashboard.brand.overdueCount", { count: overdueCount })}</span></>}
             </button>
           ) : (
-            <p className="mt-1 text-[13px] text-text-secondary">Bekleyen aksiyonunuz yok, tüm süreçler güncel.</p>
+            <p className="mt-1 text-[13px] text-text-secondary">{t("dashboard.brand.noActions")}</p>
           )
         ) : (
-          <p className="mt-1 text-[13px] text-text-secondary">Brief durumlarınız ve bekleyen aksiyonlar aşağıda.</p>
+          <p className="mt-1 text-[13px] text-text-secondary">{t("dashboard.brand.summary")}</p>
         )}
       </div>
 

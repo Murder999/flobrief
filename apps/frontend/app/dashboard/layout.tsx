@@ -18,6 +18,9 @@ import { AgencyOnboardingWizard } from "@/components/onboarding/OnboardingWizard
 import { useOnboardingPageSeen } from "@/hooks/useOnboardingPageSeen";
 import { ResponsiveAppShell } from "@/components/shell/ResponsiveAppShell";
 import type { BottomNavItem, NavDrawerGroup, NavIcon } from "@/components/shell/types";
+import { useLocale } from "@/context/locale-context";
+import { translateAppNavigationLabel } from "@/lib/i18n/app-navigation";
+import { LanguageSelector } from "@/components/i18n/language-selector";
 import {
   LayoutDashboard, FileText, Calendar, Layers, Building2, BarChart3,
   Zap, Users, Mail, CreditCard, User, Bell, Settings2, LogOut,
@@ -115,15 +118,15 @@ const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   { href: "/dashboard/notifications", label: "Bildirimler", icon: Bell },
 ];
 
-function toNavDrawerGroups(groups: NavGroup[], isOwner: boolean, pendingInviteCount: number): NavDrawerGroup[] {
+function toNavDrawerGroups(groups: NavGroup[], isOwner: boolean, pendingInviteCount: number, t: ReturnType<typeof useLocale>["t"]): NavDrawerGroup[] {
   return groups
     .map((group) => ({
-      label: group.label,
+      label: translateAppNavigationLabel(t, group.label),
       items: group.items
         .filter((item) => !item.ownerOnly || isOwner)
         .map((item) => ({
           href: item.href,
-          label: item.label,
+          label: translateAppNavigationLabel(t, item.label) ?? item.label,
           icon: item.icon,
           exact: item.exact,
           badge: item.badge ? pendingInviteCount : undefined,
@@ -163,6 +166,7 @@ interface SidebarProps {
 
 function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: SidebarProps) {
   const { user, logout } = useAuth();
+  const { t } = useLocale();
 
   return (
     <aside
@@ -206,7 +210,7 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
             <div key={gi} className={gi > 0 ? "mt-4" : ""}>
               {group.label && (
                 <p className="px-2.5 mb-1 text-label-xs text-text-muted/55 tracking-widest">
-                  {group.label}
+                  {translateAppNavigationLabel(t, group.label)}
                 </p>
               )}
               <div className="space-y-0.5">
@@ -235,7 +239,7 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
                           isActive ? "text-accent" : ""
                         )}
                       />
-                      <span className="flex-1 truncate">{item.label}</span>
+                      <span className="flex-1 truncate">{translateAppNavigationLabel(t, item.label)}</span>
                       {showBadge && (
                         <span className="min-w-[18px] h-[18px] bg-accent-subtle text-accent text-[9px] font-bold rounded-full flex items-center justify-center px-1 flex-shrink-0">
                           {pendingInviteCount > 9 ? "9+" : pendingInviteCount}
@@ -272,6 +276,7 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
             <p className="text-[10px] text-text-muted truncate leading-tight">{user?.email}</p>
           </div>
           <div className="flex items-center gap-0.5 flex-shrink-0">
+            <LanguageSelector compact />
             <ThemeToggle menuPosition="up" />
             <button
               onClick={logout}
@@ -290,6 +295,7 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const { t } = useLocale();
   const { user, logout, accessToken, isLoading, isInitialized } = useAuth();
   const { activeAgency } = useWorkspace();
   const router = useRouter();
@@ -333,8 +339,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [fetchPendingInvites]);
 
   const navDrawerGroups = useMemo(
-    () => toNavDrawerGroups(NAV_GROUPS, isOwner, pendingInviteCount),
-    [isOwner, pendingInviteCount]
+    () => toNavDrawerGroups(NAV_GROUPS, isOwner, pendingInviteCount, t),
+    [isOwner, pendingInviteCount, t]
+  );
+
+  const localizedBottomNavItems = useMemo(
+    () => BOTTOM_NAV_ITEMS.map((item) => ({ ...item, label: translateAppNavigationLabel(t, item.label) ?? item.label })),
+    [t]
   );
 
   useEffect(() => {
@@ -393,7 +404,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           />
         }
         groups={navDrawerGroups}
-        bottomNavItems={BOTTOM_NAV_ITEMS}
+        bottomNavItems={localizedBottomNavItems}
         brandTitle="Flobrief"
         fallbackPageTitle="Flobrief"
         user={{ name: user.full_name, email: user.email, initials: getInitials(user.full_name) }}

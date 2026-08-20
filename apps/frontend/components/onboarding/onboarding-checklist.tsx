@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useLocale } from "@/context/locale-context";
+import type { TranslationKey } from "@/messages";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -15,47 +17,41 @@ export interface OnboardingData {
 
 interface ChecklistItem {
   key: keyof OnboardingData;
-  label: string;
-  description: string;
+  labelKey: TranslationKey;
   href: string;
-  cta: string;
+  ctaKey: TranslationKey;
 }
 
 const CHECKLIST_ITEMS: ChecklistItem[] = [
   {
     key: "hasAgencyName",
-    label: "Ajans bilgilerini tamamla",
-    description: "Ajans adınızı ve temel bilgilerinizi ekleyin.",
+    labelKey: "dashboard.onboarding.agency",
     href: "/dashboard/settings/agency",
-    cta: "Ajansı Düzenle",
+    ctaKey: "dashboard.onboarding.editAgency",
   },
   {
     key: "hasBrand",
-    label: "İlk markanı ekle",
-    description: "Yönettiğiniz markaları platforma ekleyin.",
+    labelKey: "dashboard.onboarding.brand",
     href: "/dashboard/brands",
-    cta: "Marka Ekle",
+    ctaKey: "dashboard.onboarding.addBrand",
   },
   {
     key: "hasMember",
-    label: "Ekip üyesi davet et",
-    description: "Takım arkadaşlarınızı ajansınıza davet edin.",
+    labelKey: "dashboard.onboarding.member",
     href: "/dashboard/settings/members",
-    cta: "Üye Davet Et",
+    ctaKey: "dashboard.onboarding.inviteMember",
   },
   {
     key: "hasTemplate",
-    label: "Brief şablonu oluştur",
-    description: "Brief süreçlerinizi hızlandıracak şablonlar oluşturun.",
+    labelKey: "dashboard.onboarding.template",
     href: "/dashboard/templates",
-    cta: "Şablon Oluştur",
+    ctaKey: "dashboard.onboarding.createTemplate",
   },
   {
     key: "hasBrief",
-    label: "İlk briefinizi oluştur",
-    description: "Platformu kullanmaya başlamak için bir brief oluşturun.",
+    labelKey: "dashboard.onboarding.brief",
     href: "/dashboard/briefs/new",
-    cta: "Brief Oluştur",
+    ctaKey: "dashboard.onboarding.createBrief",
   },
 ];
 
@@ -64,6 +60,7 @@ const STORAGE_KEY = "flobrief_onboarding_dismissed";
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function OnboardingChecklist({ data }: { data: OnboardingData }) {
+  const { t } = useLocale();
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(STORAGE_KEY) === "true";
@@ -93,9 +90,9 @@ export function OnboardingChecklist({ data }: { data: OnboardingData }) {
             </svg>
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-text">Kurulum Rehberi</h2>
+            <h2 className="text-sm font-semibold text-text">{t("dashboard.onboarding.title")}</h2>
             <p className="text-xs text-text-muted mt-0.5">
-              {completedCount}/{totalCount} adım tamamlandı
+              {t("dashboard.onboarding.progress", { completed: completedCount, total: totalCount })}
             </p>
           </div>
         </div>
@@ -103,7 +100,7 @@ export function OnboardingChecklist({ data }: { data: OnboardingData }) {
           onClick={handleDismiss}
           className="text-xs text-text-muted hover:text-text transition-colors px-3 py-1.5 rounded-lg hover:bg-surface-2"
         >
-          Atla
+          {t("dashboard.onboarding.skip")}
         </button>
       </div>
 
@@ -136,14 +133,14 @@ export function OnboardingChecklist({ data }: { data: OnboardingData }) {
                   )}
                 </div>
                 <p className={`flex-1 text-sm ${done ? "text-text-muted line-through" : "text-text"}`}>
-                  {item.label}
+                  {t(item.labelKey)}
                 </p>
                 {!done && (
                   <Link
                     href={item.href}
                     className="flex-shrink-0 text-xs text-accent hover:text-accent-hover font-medium"
                   >
-                    {item.cta} →
+                    {t(item.ctaKey)} →
                   </Link>
                 )}
               </div>
@@ -155,14 +152,14 @@ export function OnboardingChecklist({ data }: { data: OnboardingData }) {
         {nextIncomplete && (
           <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
             <p className="text-xs text-text-muted">
-              Sonraki adım:{" "}
-              <span className="text-text font-medium">{nextIncomplete.label}</span>
+              {t("dashboard.onboarding.next")}{" "}
+              <span className="text-text font-medium">{t(nextIncomplete.labelKey)}</span>
             </p>
             <Link
               href={nextIncomplete.href}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-xs font-medium rounded-lg hover:bg-accent-hover transition-colors"
             >
-              {nextIncomplete.cta}
+              {t(nextIncomplete.ctaKey)}
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

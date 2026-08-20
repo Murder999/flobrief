@@ -3,26 +3,15 @@
 import { publicReportApi, publicBrandingApi, type PublicReportView, type PublicBrandingView } from "@/lib/api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/context/locale-context";
+import { LanguageSelector } from "@/components/i18n/language-selector";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 function _assetUrl(url: string | null): string | null {
   if (!url) return null;
   return url.startsWith("http") ? url : `${API_BASE}${url}`;
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  monthly_brand: "Aylık Marka Raporu",
-  agency_overview: "Ajans Genel Özeti",
-  campaign_summary: "Kampanya Özeti",
-};
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 }
 
 function KpiCard({
@@ -62,6 +51,7 @@ function LoadingSkeleton() {
 }
 
 export default function PublicReportPage() {
+  const { locale, t } = useLocale();
   const params = useParams();
   const token = params.token as string;
   const [branding, setBranding] = useState<PublicBrandingView | null>(null);
@@ -87,14 +77,14 @@ export default function PublicReportPage() {
         setErrorCode(e?.status ?? 0);
         setErrorMsg(
           e?.status === 410
-            ? "Bu rapor bağlantısının süresi dolmuş veya iptal edilmiş."
+            ? t("portal.report.expired")
             : e?.status === 404
-            ? "Rapor bulunamadı."
-            : "Rapor yüklenemedi."
+            ? t("portal.report.notFound")
+            : t("portal.report.loadFailed")
         );
       })
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [t, token]);
 
   if (loading) return <LoadingSkeleton />;
 
@@ -106,7 +96,7 @@ export default function PublicReportPage() {
             <span className="text-3xl">{errorCode === 410 ? "⏱" : "◎"}</span>
           </div>
           <h1 className="text-xl font-semibold text-white mb-2">
-            {errorCode === 410 ? "Bağlantı Geçersiz" : "Rapor Bulunamadı"}
+            {errorCode === 410 ? t("portal.report.invalidTitle") : t("portal.report.notFoundTitle")}
           </h1>
           <p className="text-sm text-white/50">{errorMsg}</p>
         </div>
@@ -119,7 +109,12 @@ export default function PublicReportPage() {
   const m = report.metrics;
   const primaryColor = branding?.primary_color ?? "#6366F1";
   const logoUrl = _assetUrl(branding?.logo_url ?? null);
-  const brandDisplayName = branding?.brand_name ?? branding?.agency_name ?? "Flobrief";
+  const brandDisplayName = branding?.brand_name ?? branding?.agency_name ?? "PostPiloter";
+  const typeLabels: Record<string, string> = {
+    monthly_brand: t("portal.report.type.monthlyBrand"),
+    agency_overview: t("portal.report.type.agencyOverview"),
+    campaign_summary: t("portal.report.type.campaignSummary"),
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1a] via-[#111127] to-[#0a0a14]">
@@ -141,15 +136,18 @@ export default function PublicReportPage() {
             )}
             <span className="text-white font-semibold text-sm">{brandDisplayName}</span>
           </div>
+          <div className="flex items-center gap-2">
+            <LanguageSelector compact />
           {report.allow_pdf_download && (
             <a
               href={publicReportApi.pdfUrl(token)}
               download={`flobrief-report.pdf`}
               className="px-3 py-1.5 text-xs font-medium text-white bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
             >
-              PDF İndir
+              {t("portal.report.downloadPdf")}
             </a>
           )}
+          </div>
         </div>
       </div>
 
@@ -157,33 +155,33 @@ export default function PublicReportPage() {
         {/* Title block */}
         <div className="mb-8">
           <p className="text-xs font-medium text-indigo-400 uppercase tracking-wider mb-2">
-            {TYPE_LABELS[report.report_type] ?? report.report_type}
+            {typeLabels[report.report_type] ?? report.report_type}
           </p>
           <h1 className="text-3xl font-bold text-white mb-2">{report.title}</h1>
           <p className="text-sm text-white/50">
-            {fmtDate(report.period_start)} – {fmtDate(report.period_end)}
+            {formatLocalizedDate(report.period_start, locale)} – {formatLocalizedDate(report.period_end, locale)}
           </p>
         </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <KpiCard
-            label="Oluşturulan Brief"
+            label={t("portal.report.createdBriefs")}
             value={m.created_briefs_count as number}
             accent="border-l-indigo-500"
           />
           <KpiCard
-            label="Onaylanan Brief"
+            label={t("portal.report.approvedBriefs")}
             value={m.approved_briefs_count as number}
             accent="border-l-emerald-500"
           />
           <KpiCard
-            label="Revizyon İstendi"
+            label={t("portal.report.revisions")}
             value={m.revision_requested_count as number}
             accent="border-l-amber-500"
           />
           <KpiCard
-            label="Yayınlanan İçerik"
+            label={t("portal.report.published")}
             value={m.published_calendar_items_count as number}
             accent="border-l-cyan-500"
           />
@@ -193,15 +191,15 @@ export default function PublicReportPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Brief performance */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-white mb-4">Brief Performansı</h2>
+            <h2 className="text-sm font-semibold text-white mb-4">{t("portal.report.performance")}</h2>
             <div className="space-y-3">
               {(
                 [
-                  ["Bekleyen Onay", m.pending_approvals_count],
+                  [t("portal.report.pending"), m.pending_approvals_count],
                   [
-                    "Ort. Onay Süresi",
+                    t("portal.report.averageApproval"),
                     m.average_approval_time_hours != null
-                      ? `${(m.average_approval_time_hours as number).toFixed(1)} saat`
+                      ? t("portal.report.hours", { value: (m.average_approval_time_hours as number).toLocaleString(locale === "tr" ? "tr-TR" : "en-US", { maximumFractionDigits: 1 }) })
                       : "–",
                   ],
                 ] as [string, unknown][]
@@ -218,9 +216,9 @@ export default function PublicReportPage() {
 
           {/* Platform distribution */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-white mb-4">Platform Dağılımı</h2>
+            <h2 className="text-sm font-semibold text-white mb-4">{t("portal.report.distribution")}</h2>
             {Object.keys(m.platform_distribution as Record<string, number> ?? {}).length === 0 ? (
-              <p className="text-sm text-white/40">Veri yok</p>
+              <p className="text-sm text-white/40">{t("portal.report.noData")}</p>
             ) : (
               <div className="space-y-2">
                 {Object.entries(m.platform_distribution as Record<string, number>)
@@ -255,7 +253,7 @@ export default function PublicReportPage() {
         <p className="text-xs text-white/30 mt-10 text-center">
           {branding?.custom_footer_text
             ? branding.custom_footer_text
-            : `Bu rapor ${brandDisplayName} tarafından ${fmtDate(report.generated_at)} tarihinde oluşturuldu.`}
+            : t("portal.report.generated", { brand: brandDisplayName, date: formatLocalizedDate(report.generated_at, locale) })}
         </p>
       </div>
     </div>

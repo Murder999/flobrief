@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type { AssetRead } from "@/lib/api-client";
 import { showGlobalToast } from "@/components/ui/toast";
+import { useLocale } from "@/context/locale-context";
+import { translateCurrent } from "@/lib/i18n/current";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -87,11 +89,11 @@ export async function downloadWithAuth(
     });
     if (!resp.ok) {
       if (resp.status === 401 || resp.status === 403) {
-        showGlobalToast("Dosya indirilemedi. Yetkiniz veya indirme bağlantısının süresi dolmuş olabilir.", "error");
+        showGlobalToast(translateCurrent("briefs.error.downloadForbidden"), "error");
       } else if (resp.status === 404) {
-        showGlobalToast("Dosya bulunamadı. Kaldırılmış olabilir.", "error");
+        showGlobalToast(translateCurrent("briefs.error.fileMissing"), "error");
       } else {
-        showGlobalToast("Dosya indirilemedi. Lütfen tekrar deneyin.", "error");
+        showGlobalToast(translateCurrent("briefs.error.download"), "error");
       }
       return false;
     }
@@ -106,7 +108,7 @@ export async function downloadWithAuth(
     URL.revokeObjectURL(href);
     return true;
   } catch {
-    showGlobalToast("Dosya indirilemedi. Ağ bağlantınızı kontrol edip tekrar deneyin.", "error");
+    showGlobalToast(translateCurrent("briefs.error.downloadNetwork"), "error");
     return false;
   } finally {
     pendingDownloads.delete(assetId);
@@ -152,6 +154,7 @@ interface MediaPreviewProps {
 }
 
 export default function MediaPreview({ asset, accessToken, onClick, compact = false }: MediaPreviewProps) {
+  const { t } = useLocale();
   const type = mediaType(asset.mime_type);
   const { blobUrl, loading, failed } = useAuthBlob(asset.id, accessToken, type === "image" || type === "video");
 
@@ -233,7 +236,7 @@ export default function MediaPreview({ asset, accessToken, onClick, compact = fa
         type="button"
         onClick={() => downloadWithAuth(asset.id, asset.filename, accessToken)}
         className="p-1.5 rounded-lg text-text-muted hover:text-accent hover:bg-accent/10 transition-colors flex-shrink-0"
-        title="İndir"
+        title={t("briefs.actions.download")}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -255,6 +258,7 @@ const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function Lightbox({ asset, accessToken, onClose }: LightboxProps) {
+  const { t } = useLocale();
   const type = mediaType(asset.mime_type);
   const { blobUrl, loading } = useAuthBlob(asset.id, accessToken);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -316,7 +320,7 @@ export function Lightbox({ asset, accessToken, onClose }: LightboxProps) {
             type="button"
             onClick={() => downloadWithAuth(asset.id, asset.filename, accessToken)}
             className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-            title="İndir"
+            title={t("briefs.actions.download")}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -326,7 +330,7 @@ export function Lightbox({ asset, accessToken, onClose }: LightboxProps) {
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            title="Kapat"
+            title={t("briefs.annotation.close")}
             className="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,7 +347,7 @@ export function Lightbox({ asset, accessToken, onClose }: LightboxProps) {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
-            <span className="text-xs">Yükleniyor…</span>
+            <span className="text-xs">{t("briefs.media.loadingGeneric")}</span>
           </div>
         )}
         {!loading && blobUrl && type === "image" && (
@@ -361,7 +365,7 @@ export function Lightbox({ asset, accessToken, onClose }: LightboxProps) {
               onClick={() => downloadWithAuth(asset.id, asset.filename, accessToken)}
               className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors"
             >
-              İndir
+              {t("briefs.actions.download")}
             </button>
           </div>
         )}

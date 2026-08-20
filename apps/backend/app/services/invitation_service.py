@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import contextlib
 import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.invitation import Invitation
 from app.models.user import User
 from app.repositories.agency import AgencyRepository
@@ -17,8 +17,8 @@ from app.repositories.invitation import InvitationRepository
 from app.repositories.user import UserRepository
 from app.schemas.invitation import AgencyInviteRequest, BrandInviteRequest
 from app.services import email_service
+from app.services.email_i18n import email_text, normalize_email_locale
 from app.services.entitlement_service import EntitlementService
-from app.services.resend_email_provider import EmailProviderFactory
 from app.services.token_service import generate_token, hash_token
 from app.services.url_builder import url_builder
 
@@ -122,6 +122,7 @@ class InvitationService:
             role=data.role,
             token=plaintext,
             message=data.message,
+            locale=existing_user.locale if existing_user else None,
         )
 
         return invitation, plaintext
@@ -220,6 +221,7 @@ class InvitationService:
             role=data.role,
             token=plaintext,
             message=data.message,
+            locale=existing_user.locale if existing_user else brand.default_language,
         )
 
         return invitation, plaintext
@@ -546,21 +548,27 @@ class InvitationService:
         role: str,
         token: str,
         message: str | None,
+        locale: str | None = None,
     ) -> None:
         """Send through Resend when configured; skip safely when disabled."""
+        lang = normalize_email_locale(locale)
         accept_url = url_builder.invite_link(token)
-        subject = f"Flobrief — {agency_name} Daveti"
+        subject = f"{settings.EMAIL_FROM_NAME} — {agency_name} {email_text(lang, 'invite_title')}"
         html = email_service.build_agency_invite_html(
             inviter_name=inviter_name,
             agency_name=agency_name,
             role=role,
             accept_url=accept_url,
             message=message,
+            locale=lang,
         )
-        with contextlib.suppress(Exception):
-            provider = await EmailProviderFactory.get_provider(self.db)
-            if provider.is_active():
-                await provider.send(to_email=to_email, subject=subject, html=html)
+        await email_service.deliver_transactional_email(
+            self.db,
+            to_email=to_email,
+            subject=subject,
+            html_body=html,
+            message_type="agency_invitation",
+        )
 
     async def _send_brand_invite_email(
         self,
@@ -571,10 +579,15 @@ class InvitationService:
         role: str,
         token: str,
         message: str | None,
+        locale: str | None = None,
     ) -> None:
         """Send through Resend when configured; skip safely when disabled."""
+        lang = normalize_email_locale(locale)
         accept_url = url_builder.invite_link(token)
-        subject = f"Flobrief — {brand_name} Marka Daveti"
+        subject = (
+            f"{settings.EMAIL_FROM_NAME} — {brand_name} "
+            f"{email_text(lang, 'brand_invite_title')}"
+        )
         html = email_service.build_brand_invite_html(
             inviter_name=inviter_name,
             agency_name=agency_name,
@@ -582,11 +595,15 @@ class InvitationService:
             role=role,
             accept_url=accept_url,
             message=message,
+            locale=lang,
         )
-        with contextlib.suppress(Exception):
-            provider = await EmailProviderFactory.get_provider(self.db)
-            if provider.is_active():
-                await provider.send(to_email=to_email, subject=subject, html=html)
+        await email_service.deliver_transactional_email(
+            self.db,
+            to_email=to_email,
+            subject=subject,
+            html_body=html,
+            message_type="brand_invitation",
+        )
 
     async def resend_invitation(self, token: str, actor: User) -> tuple[Invitation, str]:
         from datetime import UTC, datetime, timedelta

@@ -182,6 +182,8 @@ async def update_me(
         current_user.job_title = data.job_title or None
     if data.phone_number is not None:
         current_user.phone_number = data.phone_number or None
+    if data.locale is not None:
+        current_user.locale = data.locale
     if data.whatsapp_opt_in is not None:
         now = datetime.now(UTC)
         if data.whatsapp_opt_in and not current_user.whatsapp_opt_in:

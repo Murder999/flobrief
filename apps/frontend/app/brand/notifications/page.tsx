@@ -8,6 +8,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Bell, CheckCheck, Archive, ChevronRight } from "lucide-react";
 import { isSafeInternalPath } from "@/lib/utils";
+import { useLocale } from "@/context/locale-context";
+import { localizeNotification } from "@/lib/i18n/notification-presentation";
+import { translate } from "@/lib/i18n/translate";
+import type { Locale } from "@/lib/i18n/config";
 
 type Category =
   | "all"
@@ -46,14 +50,14 @@ function routeFor(category: Category): string {
   }
 }
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, locale: Locale): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "şimdi";
-  if (mins < 60) return `${mins}dk önce`;
+  if (mins < 1) return translate(locale, "briefs.time.justNow");
+  if (mins < 60) return translate(locale, "briefs.time.minutesAgo", { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}s önce`;
-  return `${Math.floor(hrs / 24)}g önce`;
+  if (hrs < 24) return translate(locale, "briefs.time.hoursAgo", { count: hrs });
+  return translate(locale, "briefs.time.daysAgo", { count: Math.floor(hrs / 24) });
 }
 
 const TAB_LABELS: TabItem[] = [
@@ -69,6 +73,7 @@ const TAB_LABELS: TabItem[] = [
 ];
 
 export default function BrandNotificationsPage() {
+  const { locale, t } = useLocale();
   const { accessToken } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -108,8 +113,12 @@ export default function BrandNotificationsPage() {
   }, [items, tab]);
 
   const tabsWithCounts = useMemo(
-    () => TAB_LABELS.map((t) => (t.value === "unread" ? { ...t, count: unreadCount } : t)),
-    [unreadCount]
+    () => TAB_LABELS.map((tabItem) => ({
+      ...tabItem,
+      label: t(`notifications.category.${tabItem.value}` as Parameters<typeof t>[0]),
+      ...(tabItem.value === "unread" ? { count: unreadCount } : {}),
+    })),
+    [t, unreadCount]
   );
 
   const handleOpen = async (n: NotificationRead) => {
@@ -154,9 +163,9 @@ export default function BrandNotificationsPage() {
     <div className="p-8 max-w-3xl mx-auto">
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-text">Bildirimler</h1>
+          <h1 className="text-2xl font-semibold text-text">{t("notifications.title")}</h1>
           {unreadCount > 0 && (
-            <p className="text-sm text-text-muted mt-1">{unreadCount} okunmamış bildirim</p>
+            <p className="text-sm text-text-muted mt-1">{t("notifications.unreadCount", { count: unreadCount })}</p>
           )}
         </div>
         {unreadCount > 0 && (
@@ -165,7 +174,7 @@ export default function BrandNotificationsPage() {
             className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-2 transition-colors"
           >
             <CheckCheck className="w-4 h-4" />
-            Tümünü okundu yap
+            {t("notifications.markAllRead")}
           </button>
         )}
       </div>
@@ -196,11 +205,13 @@ export default function BrandNotificationsPage() {
             <div className="w-14 h-14 bg-surface-2 rounded-2xl flex items-center justify-center mb-4">
               <Bell className="w-6 h-6 text-text-muted" />
             </div>
-            <p className="text-base font-medium text-text">Bildirim yok</p>
-            <p className="text-sm text-text-muted mt-1">Bu kategoride henüz bildirim yok.</p>
+            <p className="text-base font-medium text-text">{t("notifications.emptyTitle")}</p>
+            <p className="text-sm text-text-muted mt-1">{t("notifications.emptyCategory")}</p>
           </div>
         ) : (
-          filtered.map((n) => (
+          filtered.map((n) => {
+            const localized = localizeNotification(n, locale);
+            return (
             <div
               key={n.id}
               className={`group relative flex items-start gap-3 border-b border-border last:border-b-0 transition-colors ${
@@ -214,21 +225,22 @@ export default function BrandNotificationsPage() {
               >
                 {!n.is_read && <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold ${!n.is_read ? "text-text" : "text-text/80"}`}>{n.title}</p>
-                  <p className="text-sm text-text-muted mt-0.5 leading-relaxed">{n.body}</p>
-                  <p className="text-xs text-text-muted/70 mt-1.5">{timeAgo(n.created_at)}</p>
+                  <p className={`text-sm font-semibold ${!n.is_read ? "text-text" : "text-text/80"}`}>{localized.title}</p>
+                  <p className="text-sm text-text-muted mt-0.5 leading-relaxed">{localized.body}</p>
+                  <p className="text-xs text-text-muted/70 mt-1.5">{timeAgo(n.created_at, locale)}</p>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-text-muted/50 flex-shrink-0 mt-0.5" aria-hidden="true" />
               </button>
               <button
                 onClick={(e) => handleArchive(e, n.id)}
                 className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-hover transition-all flex-shrink-0"
-                title="Arşivle"
+                title={t("notifications.archive")}
               >
                 <Archive className="w-3.5 h-3.5" />
               </button>
             </div>
-          ))
+            );
+          })
         )}
       </div>
       )}

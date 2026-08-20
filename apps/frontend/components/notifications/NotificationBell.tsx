@@ -7,6 +7,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn, isSafeInternalPath } from "@/lib/utils";
 import { useNotificationFeed, type NotificationFeedSource } from "./useNotificationFeed";
+import { useLocale } from "@/context/locale-context";
+import { localizeNotification } from "@/lib/i18n/notification-presentation";
 
 const PANEL_WIDTH = 320;
 const VIEWPORT_MARGIN = 8;
@@ -21,18 +23,19 @@ interface NotificationBellProps {
   onUnreadCountChange?: (count: number) => void;
 }
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, locale: "en" | "tr"): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return "az önce";
-  if (minutes < 60) return `${minutes}dk`;
+  if (minutes < 1) return locale === "tr" ? "az önce" : "just now";
+  if (minutes < 60) return locale === "tr" ? `${minutes}dk` : `${minutes}m`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}sa`;
+  if (hours < 24) return locale === "tr" ? `${hours}sa` : `${hours}h`;
   const days = Math.floor(hours / 24);
-  return `${days}g`;
+  return locale === "tr" ? `${days}g` : `${days}d`;
 }
 
 export function NotificationBell({ source, basePath, onUnreadCountChange }: NotificationBellProps) {
+  const { locale, t } = useLocale();
   const { unreadCount, recent, markRead, markAllRead } = useNotificationFeed(source);
 
   useEffect(() => {
@@ -137,7 +140,7 @@ export function NotificationBell({ source, basePath, onUnreadCountChange }: Noti
         ref={buttonRef}
         onClick={toggleOpen}
         className="relative p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-hover transition-all"
-        title="Bildirimler"
+        title={t("notifications.title")}
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-controls={isOpen ? panelId : undefined}
@@ -156,19 +159,19 @@ export function NotificationBell({ source, basePath, onUnreadCountChange }: Noti
             ref={panelRef}
             id={panelId}
             role="dialog"
-            aria-label="Bildirimler"
+            aria-label={t("notifications.title")}
             style={{ position: "fixed", top: panelPos.top, left: panelPos.left, width: PANEL_WIDTH }}
             className="max-w-[90vw] bg-surface border border-border rounded-xl shadow-modal z-[9999] overflow-hidden"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <span className="text-xs font-semibold text-text">Bildirimler</span>
+              <span className="text-xs font-semibold text-text">{t("notifications.title")}</span>
               {unreadCount > 0 && (
                 <button
                   onClick={() => markAllRead()}
                   className="flex items-center gap-1 text-[11px] text-accent hover:text-accent-2 transition-colors"
                 >
                   <CheckCheck className="w-3 h-3" />
-                  Tümünü okundu yap
+                  {t("notifications.markAllRead")}
                 </button>
               )}
             </div>
@@ -176,10 +179,12 @@ export function NotificationBell({ source, basePath, onUnreadCountChange }: Noti
             <div className="max-h-80 overflow-y-auto">
               {recent.length === 0 ? (
                 <div className="px-4 py-8 text-center text-xs text-text-muted">
-                  Henüz bildirim yok
+                  {t("notifications.empty")}
                 </div>
               ) : (
-                recent.map((n) => (
+                recent.map((n) => {
+                  const copy = localizeNotification(n, locale);
+                  return (
                   <button
                     key={n.id}
                     type="button"
@@ -194,16 +199,17 @@ export function NotificationBell({ source, basePath, onUnreadCountChange }: Noti
                         <span className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 flex-shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12.5px] font-medium text-text truncate">{n.title}</p>
-                        <p className="text-[11.5px] text-text-muted line-clamp-2 mt-0.5">{n.body}</p>
-                        <p className="text-[10px] text-text-muted/70 mt-1">{timeAgo(n.created_at)}</p>
+                        <p className="text-[12.5px] font-medium text-text truncate">{copy.title}</p>
+                        <p className="text-[11.5px] text-text-muted line-clamp-2 mt-0.5">{copy.body}</p>
+                        <p className="text-[10px] text-text-muted/70 mt-1">{timeAgo(n.created_at, locale)}</p>
                       </div>
                       {isSafeInternalPath(n.action_url) && (
                         <ChevronRight className="w-3.5 h-3.5 text-text-muted/50 flex-shrink-0 mt-0.5" aria-hidden="true" />
                       )}
                     </div>
                   </button>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -212,7 +218,7 @@ export function NotificationBell({ source, basePath, onUnreadCountChange }: Noti
               onClick={() => setIsOpen(false)}
               className="block px-4 py-2.5 text-center text-[12px] font-medium text-accent hover:bg-hover border-t border-border transition-colors"
             >
-              Tüm bildirimleri gör
+              {locale === "tr" ? "Tüm bildirimleri gör" : "View all notifications"}
             </Link>
           </div>,
           document.body

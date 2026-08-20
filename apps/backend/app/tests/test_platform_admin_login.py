@@ -119,6 +119,7 @@ class TestPlatformLoginEndpointContracts:
         mock_user.user_type = UserType.AGENCY_USER.value
         mock_user.is_active = True
         mock_user.is_verified = False
+        mock_user.locale = "en"
         mock_user.created_at = MagicMock()
 
         fastapi_app.dependency_overrides[get_db] = mock_get_db

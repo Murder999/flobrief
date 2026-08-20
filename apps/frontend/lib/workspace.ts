@@ -1,3 +1,5 @@
+import { translateCurrent } from "@/lib/i18n/current";
+
 const ACTIVE_AGENCY_KEY = "flobrief_active_agency_id";
 
 export function getStoredAgencyId(): string | null {
@@ -76,16 +78,16 @@ export interface PermissionResponse {
 }
 
 export const ROLE_LABELS: Record<string, string> = {
-  owner: "Sahip",
-  admin: "Yönetici",
-  brand_manager: "Marka Yöneticisi",
-  designer: "Tasarımcı",
-  developer: "Geliştirici",
-  social_media_manager: "Sosyal Medya",
-  viewer: "Görüntüleyici",
-  brand_owner: "Marka Sahibi",
-  brand_viewer: "Görüntüleyici",
-  external_approver: "Dış Onaylayıcı",
+  get owner() { return translateCurrent("settings.role.owner"); },
+  get admin() { return translateCurrent("settings.role.admin"); },
+  get brand_manager() { return translateCurrent("settings.role.brandManager"); },
+  get designer() { return translateCurrent("settings.role.designer"); },
+  get developer() { return translateCurrent("settings.role.developer"); },
+  get social_media_manager() { return translateCurrent("settings.role.socialMedia"); },
+  get viewer() { return translateCurrent("settings.role.viewer"); },
+  get brand_owner() { return translateCurrent("settings.role.brandOwner"); },
+  get brand_viewer() { return translateCurrent("settings.role.viewer"); },
+  get external_approver() { return translateCurrent("settings.role.externalApprover"); },
 };
 
 export const ROLE_COLORS: Record<string, string> = {

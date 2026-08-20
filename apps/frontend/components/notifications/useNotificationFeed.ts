@@ -9,6 +9,7 @@ export interface NotificationFeedItem {
   is_read: boolean;
   created_at: string;
   event_type: string;
+  payload?: Record<string, unknown>;
   action_url: string | null;
 }
 

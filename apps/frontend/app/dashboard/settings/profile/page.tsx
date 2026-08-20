@@ -6,10 +6,13 @@ import { authApi } from "@/lib/api-client";
 import { PhoneNumberInput } from "@/components/forms/PhoneNumberInput";
 import { PasswordChangeForm } from "@/components/settings/password-change-form";
 import { applyTheme, getTheme, type Theme } from "@/lib/theme";
+import { LanguageSelector } from "@/components/i18n/language-selector";
+import { useLocale } from "@/context/locale-context";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
-function formatDate(iso: string | null): string {
+function formatDate(iso: string | null, locale: "en" | "tr"): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("tr-TR", {
+  return formatLocalizedDate(iso, locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -17,6 +20,7 @@ function formatDate(iso: string | null): string {
 }
 
 export default function ProfilePage() {
+  const { locale, t } = useLocale();
   const { user, accessToken, refreshUser, logout } = useAuth();
   const [currentTheme, setCurrentTheme] = useState<Theme>("system");
 
@@ -49,7 +53,7 @@ export default function ProfilePage() {
       if (refreshUser) await refreshUser();
     } catch (err: unknown) {
       const error = err as { message?: string };
-      setAvatarError(error?.message ?? "Profil resmi yüklenemedi.");
+      setAvatarError(error?.message ?? t("settings.profile.avatarUploadError"));
     } finally {
       setAvatarUploading(false);
     }
@@ -64,7 +68,7 @@ export default function ProfilePage() {
       if (refreshUser) await refreshUser();
     } catch (err: unknown) {
       const error = err as { message?: string };
-      setAvatarError(error?.message ?? "Profil resmi kaldırılamadı.");
+      setAvatarError(error?.message ?? t("settings.profile.avatarRemoveError"));
     } finally {
       setAvatarUploading(false);
     }
@@ -102,7 +106,7 @@ export default function ProfilePage() {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (e: unknown) {
       const err = e as { message?: string };
-      setSaveError(err?.message ?? "Kaydedilemedi.");
+      setSaveError(err?.message ?? t("settings.profile.saveError"));
     } finally {
       setSaving(false);
     }
@@ -111,20 +115,20 @@ export default function ProfilePage() {
   const THEME_OPTIONS: { value: Theme; label: string; description: string; iconPath: string }[] = [
     {
       value: "dark",
-      label: "Koyu",
-      description: "Koyu tema",
+      label: t("settings.theme.dark"),
+      description: t("settings.theme.darkDescription"),
       iconPath: "M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z",
     },
     {
       value: "light",
-      label: "Açık",
-      description: "Açık tema",
+      label: t("settings.theme.light"),
+      description: t("settings.theme.lightDescription"),
       iconPath: "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z",
     },
     {
       value: "system",
-      label: "Sistem",
-      description: "Sistem ayarını kullan",
+      label: t("settings.theme.system"),
+      description: t("settings.theme.systemDescription"),
       iconPath: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
     },
   ];
@@ -144,7 +148,7 @@ export default function ProfilePage() {
       setTimeout(() => setWhatsAppSaveSuccess(false), 3000);
     } catch (e: unknown) {
       const err = e as { message?: string };
-      setWhatsAppSaveError(err?.message ?? "Kaydedilemedi.");
+      setWhatsAppSaveError(err?.message ?? t("settings.profile.saveError"));
     } finally {
       setSavingWhatsApp(false);
     }
@@ -156,9 +160,19 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-text">Profilim</h1>
-        <p className="mt-1 text-sm text-text-muted">Hesap bilgilerinizi ve tercihlerinizi yönetin.</p>
+        <h1 className="text-2xl font-bold text-text">{t("settings.profile.title")}</h1>
+        <p className="mt-1 text-sm text-text-muted">{t("settings.profile.description")}</p>
       </div>
+
+      <section className="mb-4 rounded-2xl border border-border bg-surface p-6" aria-labelledby="profile-language-title">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 id="profile-language-title" className="text-sm font-semibold text-text">{t("settings.profile.language")}</h2>
+            <p className="mt-1 max-w-lg text-xs leading-relaxed text-text-muted">{t("settings.profile.languageHelp")}</p>
+          </div>
+          <LanguageSelector className="self-start sm:self-auto" />
+        </div>
+      </section>
 
       {/* Editable Profile */}
       <div className="bg-surface border border-border rounded-2xl p-6 mb-4">
@@ -185,9 +199,9 @@ export default function ProfilePage() {
             )}
             <label
               className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer text-white text-[10px] font-medium"
-              title="Profil resmini değiştir"
+              title={t("settings.profile.changeAvatar")}
             >
-              {avatarUploading ? "…" : "Değiştir"}
+              {avatarUploading ? "…" : t("settings.profile.change")}
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
@@ -210,7 +224,7 @@ export default function ProfilePage() {
                 disabled={avatarUploading}
                 className="text-xs text-text-muted hover:text-red-600 transition-colors mt-1 disabled:opacity-50"
               >
-                Profil resmini kaldır
+                {t("settings.profile.removeAvatar")}
               </button>
             )}
           </div>
@@ -223,30 +237,30 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-text mb-1.5">
-              Ad Soyad <span className="text-red-500">*</span>
+              {t("settings.profile.fullName")} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
-              placeholder="Ad ve soyadınız"
+              placeholder={t("settings.profile.fullNamePlaceholder")}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-text mb-1.5">
-              Meslek / Unvan
+              {t("settings.profile.jobTitle")}
             </label>
             <input
               type="text"
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
-              placeholder="örn. Kreatif Direktör, Sosyal Medya Uzmanı"
+              placeholder={t("settings.profile.jobTitlePlaceholder")}
             />
             <p className="text-xs text-text-muted mt-1.5">
-              Yorumlarda isminizin altında görünür. @etiketlemede kullanıcılar sizi bulabilir.
+              {t("settings.profile.jobTitleHelp")}
             </p>
           </div>
 
@@ -259,7 +273,7 @@ export default function ProfilePage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Profil güncellendi
+              {t("settings.profile.saved")}
             </div>
           )}
 
@@ -274,30 +288,30 @@ export default function ProfilePage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Kaydediliyor…
+                {t("settings.profile.saving")}
               </>
-            ) : "Kaydet"}
+            ) : t("common.actions.save")}
           </button>
         </div>
 
         <div className="mt-6 pt-6 border-t border-border divide-y divide-border">
           <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-text-muted">E-posta</span>
+            <span className="text-sm text-text-muted">{t("settings.profile.email")}</span>
             <span className="text-sm font-medium text-text">{user?.email ?? "—"}</span>
           </div>
           <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-text-muted">E-posta Doğrulama</span>
+            <span className="text-sm text-text-muted">{t("settings.profile.emailVerification")}</span>
             <span className={`text-sm font-medium ${user?.is_verified ? "text-emerald-500" : "text-amber-500"}`}>
-              {user?.is_verified ? "Doğrulandı" : "Doğrulanmadı"}
+              {t(user?.is_verified ? "settings.profile.verified" : "settings.profile.unverified")}
             </span>
           </div>
           <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-text-muted">Üyelik Tarihi</span>
-            <span className="text-sm font-medium text-text">{formatDate(user?.created_at ?? null)}</span>
+            <span className="text-sm text-text-muted">{t("settings.profile.memberSince")}</span>
+            <span className="text-sm font-medium text-text">{formatDate(user?.created_at ?? null, locale)}</span>
           </div>
           <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-text-muted">Son Giriş</span>
-            <span className="text-sm font-medium text-text">{formatDate(user?.last_login_at ?? null)}</span>
+            <span className="text-sm text-text-muted">{t("settings.profile.lastLogin")}</span>
+            <span className="text-sm font-medium text-text">{formatDate(user?.last_login_at ?? null, locale)}</span>
           </div>
         </div>
       </div>
@@ -310,11 +324,11 @@ export default function ProfilePage() {
       <div className="bg-surface border border-border rounded-2xl p-6 mb-4">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-text mb-1">İki Faktörlü Kimlik Doğrulama (MFA)</h3>
+            <h3 className="text-sm font-semibold text-text mb-1">{t("settings.security.mfaTitle")}</h3>
             <p className="text-xs text-text-muted">
               {user?.mfa_enabled
-                ? "MFA aktif — hesabınız koruma altında."
-                : "MFA devre dışı — hesap güvenliğinizi artırmak için etkinleştirin."}
+                ? t("settings.security.mfaEnabledDescription")
+                : t("settings.security.mfaDisabledDescription")}
             </p>
           </div>
           <span
@@ -325,7 +339,7 @@ export default function ProfilePage() {
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
-            {user?.mfa_enabled ? "Aktif" : "Devre Dışı"}
+            {t(user?.mfa_enabled ? "settings.security.enabled" : "settings.security.disabled")}
           </span>
         </div>
       </div>
@@ -333,31 +347,30 @@ export default function ProfilePage() {
       {/* WhatsApp Opt-In */}
       <div className="bg-surface border border-border rounded-2xl p-6 mb-4">
         <div className="mb-5">
-          <h3 className="text-sm font-semibold text-text mb-1">WhatsApp Bildirimleri</h3>
+          <h3 className="text-sm font-semibold text-text mb-1">{t("settings.whatsapp.title")}</h3>
           <p className="text-xs text-text-muted">
-            Telefon numaranızı girerek WhatsApp üzerinden Flobrief bildirimleri alabilirsiniz.
+            {t("settings.whatsapp.description")}
           </p>
         </div>
         <div className="space-y-4">
           <PhoneNumberInput
             id="profile-phone"
-            label="Telefon Numarası"
+            label={t("settings.whatsapp.phone")}
             value={phoneNumber}
             onChange={(e164) => setPhoneNumber(e164)}
             defaultCountry="TR"
-            helperText="WhatsApp bildirimleri için kullanılır. Ülke kodlu biçimde saklanır."
+            helperText={t("settings.whatsapp.phoneHelp")}
           />
 
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3">
             <p className="text-xs text-text-muted leading-relaxed">
-              WhatsApp bildirimlerini açmak, kapatmak ve bildirim türlerini seçmek için
-              Bildirim Ayarları sayfasındaki WhatsApp bölümünü kullanın.
+              {t("settings.whatsapp.preferencesHelp")}
             </p>
             <a
               href="/dashboard/settings/notifications"
               className="text-xs font-medium text-accent hover:underline whitespace-nowrap flex-shrink-0"
             >
-              Bildirim ayarlarına git →
+              {t("settings.whatsapp.openPreferences")} →
             </a>
           </div>
 
@@ -371,7 +384,7 @@ export default function ProfilePage() {
               <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Telefon numaranız güncellendi.
+              {t("settings.whatsapp.saved")}
             </div>
           )}
 
@@ -386,9 +399,9 @@ export default function ProfilePage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Kaydediliyor…
+                {t("settings.profile.saving")}
               </>
-            ) : "Telefon & WhatsApp Kaydet"}
+            ) : t("settings.whatsapp.save")}
           </button>
         </div>
       </div>
@@ -396,8 +409,8 @@ export default function ProfilePage() {
       {/* Theme Preference */}
       <div className="bg-surface border border-border rounded-2xl p-6">
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-text mb-1">Tema Tercihi</h3>
-          <p className="text-xs text-text-muted">Uygulama görünümünü özelleştirin.</p>
+          <h3 className="text-sm font-semibold text-text mb-1">{t("settings.theme.title")}</h3>
+          <p className="text-xs text-text-muted">{t("settings.theme.description")}</p>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {THEME_OPTIONS.map((opt) => (

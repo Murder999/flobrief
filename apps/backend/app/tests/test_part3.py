@@ -214,6 +214,19 @@ def test_email_generic_default_action_label() -> None:
         body="Test body",
         action_url="https://example.com",
     )
+    assert "View" in html
+
+
+def test_email_generic_turkish_action_label() -> None:
+    from app.services.email_service import build_generic_notification_html
+
+    html = build_generic_notification_html(
+        recipient_name="Test",
+        title="Test",
+        body="Test body",
+        action_url="https://example.com",
+        locale="tr",
+    )
     assert "Görüntüle" in html
 
 

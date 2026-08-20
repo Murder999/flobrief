@@ -1,12 +1,94 @@
+import { localizeApiErrorMessage } from "@/lib/i18n/error";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+const API_ERROR_MESSAGE_KEYS = [
+  "message",
+  "msg",
+  "detail",
+  "error",
+  "reason",
+  "description",
+  "title",
+] as const;
+
+function extractApiErrorMessage(
+  value: unknown,
+  depth = 0,
+  seen = new Set<object>()
+): string {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  if (value === null || value === undefined || depth > 4) {
+    return "";
+  }
+
+  if (Array.isArray(value)) {
+    const messages = value
+      .map((item) => {
+        if (item && typeof item === "object" && !Array.isArray(item)) {
+          const validationItem = item as Record<string, unknown>;
+          const message = extractApiErrorMessage(
+            validationItem.msg ?? validationItem.message ?? validationItem.detail,
+            depth + 1,
+            seen
+          );
+          const location = Array.isArray(validationItem.loc)
+            ? validationItem.loc
+                .filter((part) => part !== "body" && part !== "query")
+                .map(String)
+                .join(".")
+            : "";
+
+          if (message) {
+            return location ? `${location}: ${message}` : message;
+          }
+        }
+
+        return extractApiErrorMessage(item, depth + 1, seen);
+      })
+      .filter(Boolean);
+
+    return [...new Set(messages)].join("; ");
+  }
+
+  if (typeof value === "object") {
+    if (seen.has(value)) {
+      return "";
+    }
+    seen.add(value);
+
+    const record = value as Record<string, unknown>;
+    for (const key of API_ERROR_MESSAGE_KEYS) {
+      if (key in record) {
+        const message = extractApiErrorMessage(record[key], depth + 1, seen);
+        if (message) {
+          return message;
+        }
+      }
+    }
+
+    if ("errors" in record) {
+      return extractApiErrorMessage(record.errors, depth + 1, seen);
+    }
+  }
+
+  return "";
+}
+
+export function formatApiErrorMessage(detail: unknown, status: number): string {
+  return extractApiErrorMessage(detail) || `HTTP ${status}`;
+}
 
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
-    message: string,
+    message: unknown,
     public readonly detail?: unknown
   ) {
-    super(message);
+    super(localizeApiErrorMessage(formatApiErrorMessage(message, status), status));
     this.name = "ApiError";
   }
 }
@@ -77,6 +159,7 @@ export interface RegisterRequest {
   password: string;
   phone_number?: string | null;
   whatsapp_opt_in?: boolean;
+  locale?: "en" | "tr";
 }
 
 export interface LoginRequest {
@@ -132,6 +215,7 @@ export interface AuthUser {
   mfa_enabled: boolean;
   phone_number: string | null;
   whatsapp_opt_in: boolean;
+  locale: "en" | "tr" | null;
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
@@ -171,6 +255,7 @@ export const authApi = {
       job_title?: string | null;
       phone_number?: string | null;
       whatsapp_opt_in?: boolean;
+      locale?: "en" | "tr";
     },
     accessToken: string
   ) =>
@@ -4276,6 +4361,7 @@ export interface WhatsAppTestSendResult {
 
 export interface ResendProviderStatusRead {
   provider: string;
+  configuration_source: "database" | "environment" | "none";
   is_enabled: boolean;
   is_configured: boolean;
   api_key_set: boolean;

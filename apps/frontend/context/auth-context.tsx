@@ -2,6 +2,7 @@
 
 import { authApi, type AuthUser, type LoginRequest, type RegisterRequest, ApiError } from "@/lib/api-client";
 import { getRedirectAfterLogin, isSafeReturnTo } from "@/lib/auth";
+import { useLocale } from "@/context/locale-context";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -32,6 +33,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { applyUserLocale, locale } = useLocale();
   const [state, setState] = useState<AuthState>({
     user: null,
     accessToken: null,
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const data = await authApi.refresh();
       const user = await authApi.me(data.access_token);
+      applyUserLocale(user.locale);
       setState((s) => ({
         ...s,
         user,
@@ -65,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       refreshing.current = false;
     }
-  }, []);
+  }, [applyUserLocale]);
 
   useEffect(() => {
     // Platform admin sessions are a fully separate auth model (bearer token
@@ -87,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const tokens = await authApi.login(data);
         const user = await authApi.me(tokens.access_token);
+        applyUserLocale(user.locale);
         setState((s) => ({
           ...s,
           user,
@@ -103,31 +107,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
-    [router]
+    [applyUserLocale, router]
   );
 
   const register = useCallback(async (data: RegisterRequest): Promise<AuthUser> => {
     setState((s) => ({ ...s, isLoading: true }));
     try {
-      const user = await authApi.register(data);
+      const user = await authApi.register({ ...data, locale: data.locale ?? locale });
       setState((s) => ({ ...s, isLoading: false }));
       return user;
     } catch (err) {
       setState((s) => ({ ...s, isLoading: false }));
       throw err;
     }
-  }, []);
+  }, [locale]);
 
   const refreshUser = useCallback(async (): Promise<void> => {
     const token = state.accessToken;
     if (!token) return;
     try {
       const user = await authApi.me(token);
+      applyUserLocale(user.locale);
       setState((s) => ({ ...s, user }));
     } catch {
       // silent — token might be expired
     }
-  }, [state.accessToken]);
+  }, [applyUserLocale, state.accessToken]);
 
   const logout = useCallback(async (): Promise<void> => {
     try {

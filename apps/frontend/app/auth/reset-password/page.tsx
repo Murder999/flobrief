@@ -7,8 +7,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useState } from "react";
 import { AlertCircle, CheckCircle2, XCircle, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { useLocale } from "@/context/locale-context";
 
 function ResetPasswordForm() {
+  const { t } = useLocale();
   const router       = useRouter();
   const searchParams = useSearchParams();
   const token        = searchParams.get("token") || "";
@@ -27,13 +29,12 @@ function ResetPasswordForm() {
         <div className="w-12 h-12 bg-danger/10 border border-danger/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
           <XCircle className="w-6 h-6 text-danger" />
         </div>
-        <h2 className="text-xl font-bold text-text mb-2 tracking-tight">Geçersiz Bağlantı</h2>
+        <h2 className="text-xl font-bold text-text mb-2 tracking-tight">{t("auth.reset.invalidTitle")}</h2>
         <p className="text-sm text-text-muted mb-6 leading-relaxed">
-          Bu şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.
-          Lütfen yeni bir bağlantı isteyin.
+          {t("auth.reset.invalidBody")}
         </p>
         <Link href="/auth/forgot-password">
-          <Button className="w-full">Yeni bağlantı iste</Button>
+          <Button className="w-full">{t("auth.reset.requestNew")}</Button>
         </Link>
       </div>
     );
@@ -45,12 +46,12 @@ function ResetPasswordForm() {
         <div className="w-12 h-12 bg-success/10 border border-success/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
           <CheckCircle2 className="w-6 h-6 text-success" />
         </div>
-        <h2 className="text-xl font-bold text-text mb-2 tracking-tight">Şifre Güncellendi</h2>
+        <h2 className="text-xl font-bold text-text mb-2 tracking-tight">{t("auth.reset.successTitle")}</h2>
         <p className="text-sm text-text-muted mb-6 leading-relaxed">
-          Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.
+          {t("auth.reset.successBody")}
         </p>
         <Button className="w-full" onClick={() => router.push("/auth/login")}>
-          Giriş Yap
+          {t("auth.actions.login")}
         </Button>
       </div>
     );
@@ -61,11 +62,11 @@ function ResetPasswordForm() {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Şifreler eşleşmiyor. Lütfen tekrar kontrol edin.");
+      setError(t("auth.password.mismatch"));
       return;
     }
     if (password.length < 8) {
-      setError("Şifre en az 8 karakter olmalıdır.");
+      setError(t("auth.error.passwordMinEight"));
       return;
     }
 
@@ -76,12 +77,12 @@ function ResetPasswordForm() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 400) {
-          setError("Bu bağlantı geçersiz veya süresi dolmuş. Lütfen yeni bağlantı isteyin.");
+          setError(t("auth.error.resetExpired"));
         } else {
-          setError(err.message || "Bir hata oluştu.");
+          setError(err.message || t("auth.error.generic"));
         }
       } else {
-        setError("Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.");
+        setError(t("auth.error.unexpected"));
       }
     } finally {
       setIsLoading(false);
@@ -96,11 +97,11 @@ function ResetPasswordForm() {
           className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-accent transition-colors mb-4"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Giriş sayfasına dön
+          {t("auth.backToLogin")}
         </Link>
-        <h1 className="text-2xl font-bold text-text tracking-tight mb-1.5">Yeni Şifre Belirle</h1>
+        <h1 className="text-2xl font-bold text-text tracking-tight mb-1.5">{t("auth.reset.title")}</h1>
         <p className="text-sm text-text-muted leading-relaxed">
-          Güçlü ve benzersiz bir şifre seçin.
+          {t("auth.reset.subtitle")}
         </p>
       </div>
 
@@ -108,7 +109,7 @@ function ResetPasswordForm() {
         {/* New password */}
         <div className="space-y-1.5">
           <label className="block text-xs font-medium text-text-muted" htmlFor="new-pw">
-            Yeni şifre
+            {t("auth.reset.newPassword")}
           </label>
           <div className="relative">
             <input
@@ -126,7 +127,7 @@ function ResetPasswordForm() {
               tabIndex={-1}
               onClick={() => setShowPw((p) => !p)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors"
-              aria-label={showPw ? "Şifreyi gizle" : "Şifreyi göster"}
+              aria-label={showPw ? t("auth.password.hide") : t("auth.password.show")}
             >
               {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -136,7 +137,7 @@ function ResetPasswordForm() {
         {/* Confirm password */}
         <div className="space-y-1.5">
           <label className="block text-xs font-medium text-text-muted" htmlFor="confirm-pw">
-            Yeni şifre tekrar
+            {t("auth.reset.confirmPassword")}
           </label>
           <div className="relative">
             <input
@@ -154,13 +155,13 @@ function ResetPasswordForm() {
               tabIndex={-1}
               onClick={() => setShowConfirm((p) => !p)}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors"
-              aria-label={showConfirm ? "Şifreyi gizle" : "Şifreyi göster"}
+              aria-label={showConfirm ? t("auth.password.hide") : t("auth.password.show")}
             >
               {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
           {confirmPassword && password !== confirmPassword && (
-            <p className="text-xs text-danger mt-1">Şifreler eşleşmiyor</p>
+            <p className="text-xs text-danger mt-1">{t("auth.password.mismatch")}</p>
           )}
         </div>
 
@@ -175,7 +176,7 @@ function ResetPasswordForm() {
         )}
 
         <Button type="submit" className="w-full" isLoading={isLoading}>
-          Şifremi Güncelle
+          {t("auth.reset.submit")}
         </Button>
       </form>
     </>

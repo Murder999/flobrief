@@ -13,6 +13,8 @@ import type {
   MarginMissingReasonValue,
   PaymentMethodValue,
 } from "./api-client";
+import { formatLocalizedCurrency, formatLocalizedDate } from "./i18n/format";
+import type { Locale } from "./i18n/config";
 
 export const FINANCE_CURRENCIES = [
   "TRY", "USD", "EUR", "GBP", "CHF", "JPY", "CAD", "AUD", "SEK", "NOK",
@@ -56,18 +58,9 @@ export const BILLING_MODEL_FIELDS: Record<
  * "₺1.500,00". Same approach as the local `formatCents` helper in
  * app/dashboard/settings/billing/page.tsx, centralized here since multiple
  * finance components need it. */
-export function formatMoneyCents(cents: number | null | undefined, currency: string): string {
+export function formatMoneyCents(cents: number | null | undefined, currency: string, locale?: Locale): string {
   if (cents === null || cents === undefined) return "—";
-  const locale = currency === "TRY" ? "tr-TR" : "en-US";
-  try {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency,
-      minimumFractionDigits: 2,
-    }).format(cents / 100);
-  } catch {
-    return `${(cents / 100).toFixed(2)} ${currency}`;
-  }
+  return formatLocalizedCurrency(cents / 100, currency, locale, { minimumFractionDigits: 2 });
 }
 
 /** Whole-currency-unit form input (e.g. "1500.00") → integer cents for the
@@ -108,9 +101,9 @@ export function bpsToPct(bps: number | null | undefined): string {
   return String(bps / 100);
 }
 
-export function formatDate(iso: string | null): string {
+export function formatDate(iso: string | null, locale?: Locale): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("tr-TR");
+  return formatLocalizedDate(iso, locale, { year: "numeric", month: "numeric", day: "numeric" });
 }
 
 // ── RBAC hints (frontend UX only) ───────────────────────────────────────────

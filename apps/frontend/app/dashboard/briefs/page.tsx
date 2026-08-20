@@ -17,15 +17,18 @@ import {
   Clock, ChevronRight, CheckCircle2, Inbox, Zap, Eye, ExternalLink,
   TrendingUp, ArrowRight, Layers,
 } from "lucide-react";
+import { useLocale } from "@/context/locale-context";
+import { formatLocalizedDate, formatLocalizedDateTime } from "@/lib/i18n/format";
+import type { TranslationKey } from "@/messages";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const ATTENTION_TABS = [
-  { value: "",                   label: "Tümü"               },
-  { value: "urgent",             label: "Acil"               },
-  { value: "overdue",            label: "Geciken"            },
-  { value: "revision_requested", label: "Revizyon Bekleyen"  },
-  { value: "new_request",        label: "Yeni Talepler"      },
+  { value: "",                   labelKey: "briefs.filter.all" as TranslationKey },
+  { value: "urgent",             labelKey: "briefs.priority.urgent" as TranslationKey },
+  { value: "overdue",            labelKey: "briefs.stats.overdue" as TranslationKey },
+  { value: "revision_requested", labelKey: "briefs.center.filter.revision" as TranslationKey },
+  { value: "new_request",        labelKey: "briefs.center.filter.new" as TranslationKey },
 ];
 
 // ── Skeleton components ───────────────────────────────────────────────────────
@@ -131,19 +134,21 @@ function KPICard({ label, value, icon, variant = "default", subtitle }: KPICardP
 // ── Attention Reason badge ────────────────────────────────────────────────────
 
 function AttentionReasonBadge({ reason }: { reason: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    overdue:            { label: "Gecikti",          cls: "status-danger" },
-    revision_requested: { label: "Revizyon İstendi", cls: "status-warning" },
-    urgent:             { label: "Acil",             cls: "status-danger" },
-    new_request:        { label: "Yeni Talep",       cls: "status-info"   },
+  const { t } = useLocale();
+  const map: Record<string, { labelKey: TranslationKey; cls: string }> = {
+    overdue:            { labelKey: "briefs.center.reason.overdue", cls: "status-danger" },
+    revision_requested: { labelKey: "briefs.status.revisionRequested", cls: "status-warning" },
+    urgent:             { labelKey: "briefs.priority.urgent", cls: "status-danger" },
+    new_request:        { labelKey: "briefs.center.reason.new", cls: "status-info" },
   };
-  const cfg = map[reason] ?? { label: reason, cls: "status-default" };
-  return <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium", cfg.cls)}>{cfg.label}</span>;
+  const cfg = map[reason];
+  return <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium", cfg?.cls ?? "status-default")}>{cfg ? t(cfg.labelKey) : reason}</span>;
 }
 
 // ── Attention Item Row ────────────────────────────────────────────────────────
 
 function AttentionItemRow({ item }: { item: AttentionItem }) {
+  const { locale, t } = useLocale();
   const leftBorderCls = {
     overdue:            "bg-danger",
     revision_requested: "bg-warning",
@@ -180,15 +185,15 @@ function AttentionItemRow({ item }: { item: AttentionItem }) {
             )}>
               <Clock className="w-3 h-3" />
               {item.days_overdue
-                ? `${item.days_overdue} gün gecikti`
-                : new Date(item.deadline).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+                ? t("briefs.center.daysOverdue", { count: item.days_overdue })
+                : formatLocalizedDate(item.deadline, locale, { day: "numeric", month: "short" })}
             </span>
           )}
         </div>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 bg-surface-2 border border-border text-xs font-medium text-text-secondary rounded-lg group-hover:bg-accent group-hover:text-white group-hover:border-accent transition-all">
-          İşi Aç
+          {t("briefs.center.openWork")}
           <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
         </span>
         <ExternalLink className="w-4 h-4 text-text-muted sm:hidden" />
@@ -222,6 +227,7 @@ function BrandLogo({ brand }: { brand: BrandCardItem }) {
 // ── Brand Card ────────────────────────────────────────────────────────────────
 
 function BrandCard({ brand }: { brand: BrandCardItem }) {
+  const { locale, t } = useLocale();
   const router = useRouter();
   const hasIssues = brand.overdue_count > 0 || brand.revision_requested_count > 0;
 
@@ -245,24 +251,24 @@ function BrandCard({ brand }: { brand: BrandCardItem }) {
                 ? "bg-success-subtle text-success-text"
                 : "bg-surface-2 text-text-muted"
             )}>
-              {brand.status === "active" ? "Aktif" : brand.status}
+              {brand.status === "active" ? t("briefs.center.active") : brand.status}
             </span>
           </div>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             {brand.has_brand_dna ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success-text bg-success-subtle px-1.5 py-0.5 rounded-full">
                 <CheckCircle2 className="w-2.5 h-2.5" />
-                DNA Onaylı
+                {t("briefs.center.dnaReady")}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-text-muted bg-surface-2 px-1.5 py-0.5 rounded-full">
-                DNA Eksik
+                {t("briefs.center.dnaMissing")}
               </span>
             )}
             {hasIssues && (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-warning-text bg-warning-subtle px-1.5 py-0.5 rounded-full">
                 <AlertTriangle className="w-2.5 h-2.5" />
-                Dikkat
+                {t("briefs.center.attention")}
               </span>
             )}
           </div>
@@ -273,7 +279,7 @@ function BrandCard({ brand }: { brand: BrandCardItem }) {
       <div className="grid grid-cols-2 gap-2 mb-5">
         <div className="bg-surface-2 rounded-xl p-3 border border-border">
           <div className="text-lg font-bold text-text tabular-nums">{brand.active_brief_count}</div>
-          <div className="text-[10px] text-text-muted mt-0.5">Aktif Brief</div>
+          <div className="text-[10px] text-text-muted mt-0.5">{t("briefs.center.activeBriefs")}</div>
         </div>
         <div className={cn(
           "rounded-xl p-3 border",
@@ -285,7 +291,7 @@ function BrandCard({ brand }: { brand: BrandCardItem }) {
             "text-lg font-bold tabular-nums",
             brand.overdue_count > 0 ? "text-danger-text" : "text-text"
           )}>{brand.overdue_count}</div>
-          <div className="text-[10px] text-text-muted mt-0.5">Geciken</div>
+          <div className="text-[10px] text-text-muted mt-0.5">{t("briefs.stats.overdue")}</div>
         </div>
         <div className={cn(
           "rounded-xl p-3 border",
@@ -297,18 +303,18 @@ function BrandCard({ brand }: { brand: BrandCardItem }) {
             "text-lg font-bold tabular-nums",
             brand.revision_requested_count > 0 ? "text-warning-text" : "text-text"
           )}>{brand.revision_requested_count}</div>
-          <div className="text-[10px] text-text-muted mt-0.5">Revizyon</div>
+          <div className="text-[10px] text-text-muted mt-0.5">{t("briefs.stats.revision")}</div>
         </div>
         <div className="bg-surface-2 rounded-xl p-3 border border-border">
           <div className="text-lg font-bold text-text tabular-nums">{brand.this_week_calendar_count}</div>
-          <div className="text-[10px] text-text-muted mt-0.5">Bu Hafta</div>
+          <div className="text-[10px] text-text-muted mt-0.5">{t("briefs.center.thisWeek")}</div>
         </div>
       </div>
 
       {/* Last activity */}
       {brand.last_activity_at && (
         <p className="text-xs text-text-muted mb-4">
-          Son aktivite: {new Date(brand.last_activity_at).toLocaleDateString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+          {t("briefs.center.lastActivity", { date: formatLocalizedDateTime(brand.last_activity_at, locale) })}
         </p>
       )}
 
@@ -319,19 +325,19 @@ function BrandCard({ brand }: { brand: BrandCardItem }) {
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-accent text-white rounded-xl text-xs font-semibold hover:opacity-90 transition-all hover:shadow-glow-sm"
         >
           <Layers className="w-3.5 h-3.5" />
-          İş Akışı
+          {t("briefs.center.workflow")}
         </button>
         <Link
           href={`/dashboard/briefs/new?brand_id=${brand.id}`}
           className="flex items-center justify-center gap-1 px-3 py-2 bg-surface-2 border border-border rounded-xl text-xs font-medium text-text-secondary hover:bg-surface hover:border-border-hover transition-all"
-          title="Yeni Brief"
+          title={t("briefs.center.newBrief")}
         >
           <Plus className="w-3.5 h-3.5" />
         </Link>
         <Link
           href={`/dashboard/calendar?brand_id=${brand.id}`}
           className="flex items-center justify-center gap-1 px-3 py-2 bg-surface-2 border border-border rounded-xl text-xs font-medium text-text-secondary hover:bg-surface hover:border-border-hover transition-all"
-          title="Takvimi Gör"
+          title={t("briefs.center.viewCalendar")}
         >
           <Calendar className="w-3.5 h-3.5" />
         </Link>
@@ -343,21 +349,22 @@ function BrandCard({ brand }: { brand: BrandCardItem }) {
 // ── Empty state ───────────────────────────────────────────────────────────────
 
 function EmptyBrands() {
+  const { t } = useLocale();
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="w-16 h-16 bg-surface-2 border border-border rounded-2xl flex items-center justify-center mb-5 shadow-xs">
         <Building2 className="w-7 h-7 text-text-muted" />
       </div>
-      <h3 className="text-sm font-semibold text-text mb-2">Henüz marka yok</h3>
+      <h3 className="text-sm font-semibold text-text mb-2">{t("briefs.center.noBrands")}</h3>
       <p className="text-sm text-text-secondary mb-6 max-w-xs leading-relaxed">
-        Ajansınıza ilk markayı ekleyerek brief ve üretim süreçlerini takip etmeye başlayın.
+        {t("briefs.center.noBrandsHelp")}
       </p>
       <Link
         href="/dashboard/brands/new"
         className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-accent text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
       >
         <Plus className="w-4 h-4" />
-        Marka Ekle
+        {t("briefs.center.addBrand")}
       </Link>
     </div>
   );
@@ -366,6 +373,7 @@ function EmptyBrands() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BriefCenterPage() {
+  const { t } = useLocale();
   const { accessToken } = useAuth();
   const { activeAgency, isLoading: workspaceLoading, isInitialized: workspaceReady } = useWorkspace();
   const currentAgencyId = activeAgency?.id ?? null;
@@ -383,11 +391,11 @@ export default function BriefCenterPage() {
       const result = await dashboardApi.briefCenter(currentAgencyId, accessToken);
       setData(result);
     } catch {
-      setError("Brief Merkezi yüklenemedi.");
+      setError(t("briefs.center.loadError"));
     } finally {
       setLoading(false);
     }
-  }, [accessToken, currentAgencyId]);
+  }, [accessToken, currentAgencyId, t]);
 
   useEffect(() => {
     if (workspaceReady && !workspaceLoading && !currentAgencyId) setLoading(false);
@@ -406,15 +414,15 @@ export default function BriefCenterPage() {
         <div className="w-16 h-16 bg-surface-2 border border-border rounded-2xl flex items-center justify-center mb-5 shadow-xs">
           <FileText className="w-7 h-7 text-text-muted" />
         </div>
-        <h3 className="text-sm font-semibold text-text mb-2">Ajans seçilmedi</h3>
+        <h3 className="text-sm font-semibold text-text mb-2">{t("briefs.center.noAgency")}</h3>
         <p className="text-sm text-text-secondary mb-6 max-w-xs leading-relaxed">
-          Brief Merkezi&apos;ni görüntülemek için bir ajans seçin veya oluşturun.
+          {t("briefs.center.noAgencyHelp")}
         </p>
         <Link
           href="/onboarding/create-agency"
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-accent text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
         >
-          Ajans Oluştur
+          {t("briefs.center.createAgency")}
         </Link>
       </div>
     );
@@ -430,10 +438,10 @@ export default function BriefCenterPage() {
               <div className="w-7 h-7 bg-gradient-accent rounded-lg flex items-center justify-center shadow-sm">
                 <Layers className="w-4 h-4 text-white" />
               </div>
-              <h1 className="text-heading-lg text-text">Brief Merkezi</h1>
+              <h1 className="text-heading-lg text-text">{t("briefs.center.title")}</h1>
             </div>
             <p className="text-sm text-text-muted max-w-xl">
-              Tüm markalarınızın brief, üretim, revizyon, onay ve takvim süreçlerini tek yerden takip edin.
+              {t("briefs.center.description")}
             </p>
           </div>
           <Link
@@ -441,7 +449,7 @@ export default function BriefCenterPage() {
             className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-accent text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-sm hover:shadow-glow-sm hover:scale-[1.01] active:scale-[0.99]"
           >
             <Plus className="w-4 h-4" />
-            Yeni Brief
+            {t("briefs.center.newBrief")}
           </Link>
         </div>
       </div>
@@ -458,7 +466,7 @@ export default function BriefCenterPage() {
               className="underline text-danger-text/70 hover:text-danger-text transition-colors ml-auto flex items-center gap-1"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Tekrar dene
+              {t("common.actions.retry")}
             </button>
           </div>
         )}
@@ -477,36 +485,36 @@ export default function BriefCenterPage() {
               className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4"
             >
               <KPICard
-                label="Aktif Brief"
+                label={t("briefs.center.activeBriefs")}
                 value={data.kpis.total_active_briefs}
                 icon={<FileText className="w-4 h-4" />}
               />
               <KPICard
-                label="Geciken"
+                label={t("briefs.stats.overdue")}
                 value={data.kpis.overdue_briefs}
                 icon={<AlertTriangle className="w-4 h-4" />}
                 variant={data.kpis.overdue_briefs > 0 ? "danger" : "default"}
               />
               <KPICard
-                label="Revizyon"
+                label={t("briefs.stats.revision")}
                 value={data.kpis.revision_requested}
                 icon={<RefreshCw className="w-4 h-4" />}
                 variant={data.kpis.revision_requested > 0 ? "warning" : "default"}
               />
               <KPICard
-                label="Onay Bekleyen"
+                label={t("briefs.stats.pending")}
                 value={data.kpis.pending_approvals}
                 icon={<CheckCircle2 className="w-4 h-4" />}
                 variant={data.kpis.pending_approvals > 0 ? "info" : "default"}
               />
               <KPICard
-                label="Yeni Talep"
+                label={t("briefs.center.newRequests")}
                 value={data.kpis.new_brand_requests}
                 icon={<Inbox className="w-4 h-4" />}
                 variant={data.kpis.new_brand_requests > 0 ? "info" : "default"}
               />
               <KPICard
-                label="Bugün Son Gün"
+                label={t("briefs.center.dueToday")}
                 value={data.kpis.due_today}
                 icon={<Zap className="w-4 h-4" />}
                 variant={data.kpis.due_today > 0 ? "warning" : "default"}
@@ -519,9 +527,9 @@ export default function BriefCenterPage() {
         <section>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-1.5 h-5 bg-warning rounded-full" />
-            <h2 className="text-sm font-semibold text-text">Dikkat Gerektirenler</h2>
+            <h2 className="text-sm font-semibold text-text">{t("briefs.center.needsAttention")}</h2>
             {data && data.attention_items.length > 0 && (
-              <span className="ml-auto text-xs text-text-muted">{data.attention_items.length} iş</span>
+              <span className="ml-auto text-xs text-text-muted">{t("briefs.center.workCount", { count: data.attention_items.length })}</span>
             )}
           </div>
 
@@ -538,7 +546,7 @@ export default function BriefCenterPage() {
                     : "bg-surface-2 border border-border text-text-secondary hover:text-text hover:bg-surface hover:border-border-hover"
                 )}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             ))}
           </div>
@@ -550,9 +558,9 @@ export default function BriefCenterPage() {
           ) : filteredAttention.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center bg-surface border border-border rounded-2xl">
               <CheckCircle2 className="w-8 h-8 text-success mb-3" />
-              <p className="text-sm font-medium text-text mb-0.5">Her şey yolunda!</p>
+              <p className="text-sm font-medium text-text mb-0.5">{t("briefs.center.allGood")}</p>
               <p className="text-xs text-text-muted">
-                {attentionFilter ? "Bu filtrede işiniz yok." : "Dikkat gerektiren iş bulunamadı."}
+                {t(attentionFilter ? "briefs.center.noFilteredWork" : "briefs.center.noAttentionWork")}
               </p>
             </div>
           ) : (
@@ -585,16 +593,16 @@ export default function BriefCenterPage() {
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-5 bg-accent rounded-full" />
-              <h2 className="text-sm font-semibold text-text">Markalar</h2>
+              <h2 className="text-sm font-semibold text-text">{t("briefs.center.brands")}</h2>
               {data && (
-                <span className="text-xs text-text-muted">{data.brand_cards.length} marka</span>
+                <span className="text-xs text-text-muted">{t("briefs.center.brandCount", { count: data.brand_cards.length })}</span>
               )}
             </div>
             <Link
               href="/dashboard/brands"
               className="text-xs text-text-muted hover:text-text flex items-center gap-1 transition-colors"
             >
-              Tümünü Gör
+              {t("briefs.center.viewAll")}
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>

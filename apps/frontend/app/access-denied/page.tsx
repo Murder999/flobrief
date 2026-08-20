@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/context/locale-context";
 
 export default function AccessDeniedPage() {
   const router = useRouter();
+  const { t } = useLocale();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -19,17 +21,16 @@ export default function AccessDeniedPage() {
             />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-text mb-2">Erişim Reddedildi</h1>
+        <h1 className="text-2xl font-bold text-text mb-2">{t("common.accessDenied.title")}</h1>
         <p className="text-sm text-text-muted mb-8">
-          Bu sayfayı görüntülemek için gerekli yetkiye sahip değilsiniz.
-          Ajans yöneticinizle iletişime geçin.
+          {t("common.accessDenied.description")}
         </p>
         <div className="flex flex-col gap-2">
           <Button onClick={() => router.replace("/dashboard")} className="w-full">
-            Dashboard&apos;a Dön
+            {t("common.navigation.dashboard")}
           </Button>
           <Button onClick={() => router.back()} variant="secondary" className="w-full">
-            Geri Git
+            {t("common.actions.goBack")}
           </Button>
         </div>
       </div>

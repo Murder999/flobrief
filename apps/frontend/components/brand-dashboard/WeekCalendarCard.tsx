@@ -5,6 +5,8 @@ import { CalendarClock } from "lucide-react";
 import type { BrandCalendarEntry } from "@/lib/api-client";
 import { EVENT_TYPE_CFG, STATUS_CFG } from "@/components/brand-calendar/labels";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/context/locale-context";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
 function RowSkeleton() {
   return (
@@ -25,6 +27,7 @@ function isPast(dateStr: string): boolean {
 }
 
 export function WeekCalendarCard({ entries }: { entries: BrandCalendarEntry[] | null }) {
+  const { locale, t } = useLocale();
   const visible = (entries ?? []).slice(0, 4);
 
   return (
@@ -32,10 +35,10 @@ export function WeekCalendarCard({ entries }: { entries: BrandCalendarEntry[] | 
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <CalendarClock className="h-4 w-4 text-accent" />
-          <h2 className="text-sm font-semibold text-text">Bu Hafta</h2>
+          <h2 className="text-sm font-semibold text-text">{t("dashboard.brand.thisWeek")}</h2>
         </div>
         <Link href="/brand/calendar" className="text-xs text-accent hover:underline">
-          Tümünü gör
+          {t("dashboard.brand.viewAll")}
         </Link>
       </div>
 
@@ -46,8 +49,8 @@ export function WeekCalendarCard({ entries }: { entries: BrandCalendarEntry[] | 
         </>
       ) : visible.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-6 text-center">
-          <p className="text-[13px] font-medium text-text">Bu hafta planlanmış olay yok</p>
-          <p className="text-[11.5px] text-text-muted">Takvim boş görünüyor.</p>
+          <p className="text-[13px] font-medium text-text">{t("dashboard.brand.noEvents")}</p>
+          <p className="text-[11.5px] text-text-muted">{t("dashboard.brand.calendarEmpty")}</p>
         </div>
       ) : (
         <div>
@@ -67,7 +70,7 @@ export function WeekCalendarCard({ entries }: { entries: BrandCalendarEntry[] | 
                 )}
               >
                 <span className={cn("w-11 flex-shrink-0 text-[11px] font-medium", overdue ? "text-danger" : today ? "text-accent" : "text-text-muted")}>
-                  {new Date(`${entry.entry_date}T00:00:00`).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+                  {formatLocalizedDate(`${entry.entry_date}T00:00:00`, locale, { day: "numeric", month: "short" })}
                 </span>
                 <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", evCfg.dot)} />
                 <p className="min-w-0 flex-1 truncate text-[13px] text-text">{entry.title}</p>

@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useLocale } from "@/context/locale-context";
 
 export function AuthCard({ children }: { children: ReactNode }) {
+  const { locale } = useLocale();
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       {/* Ambient glows */}
@@ -37,7 +41,7 @@ export function AuthCard({ children }: { children: ReactNode }) {
         </div>
 
         <p className="mt-6 text-center text-xs text-text-muted">
-          © {new Date().getFullYear()} Flobrief. Tüm hakları saklıdır.
+          © {new Date().getFullYear()} PostPiloter. {locale === "tr" ? "Tüm hakları saklıdır." : "All rights reserved."}
         </p>
       </div>
     </div>

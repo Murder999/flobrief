@@ -9,6 +9,9 @@ import {
   type PublicBrandingView,
   type ApprovalCommentRead,
 } from "@/lib/api-client";
+import { useLocale } from "@/context/locale-context";
+import { LanguageSelector } from "@/components/i18n/language-selector";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -20,28 +23,28 @@ function _assetUrl(url: string | null): string | null {
 // ── Status helpers ─────────────────────────────────────────────────────────────
 
 function statusLabel(
-  status: PublicApprovalView["status"]
+  status: PublicApprovalView["status"], locale: "en" | "tr"
 ): { text: string; color: string; bg: string } {
   switch (status) {
     case "approved":
-      return { text: "Onaylandı", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" };
+      return { text: locale === "tr" ? "Onaylandı" : "Approved", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" };
     case "revision_requested":
-      return { text: "Revizyon İstendi", color: "text-amber-700", bg: "bg-amber-50 border-amber-200" };
+      return { text: locale === "tr" ? "Revizyon İstendi" : "Revision requested", color: "text-amber-700", bg: "bg-amber-50 border-amber-200" };
     case "pending":
-      return { text: "Onay Bekliyor", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" };
+      return { text: locale === "tr" ? "Onay Bekliyor" : "Awaiting approval", color: "text-blue-700", bg: "bg-blue-50 border-blue-200" };
     case "cancelled":
-      return { text: "İptal Edildi", color: "text-zinc-600", bg: "bg-zinc-50 border-zinc-200" };
+      return { text: locale === "tr" ? "İptal Edildi" : "Cancelled", color: "text-zinc-600", bg: "bg-zinc-50 border-zinc-200" };
     case "expired":
-      return { text: "Süresi Doldu", color: "text-red-700", bg: "bg-red-50 border-red-200" };
+      return { text: locale === "tr" ? "Süresi Doldu" : "Expired", color: "text-red-700", bg: "bg-red-50 border-red-200" };
   }
 }
 
-function priorityLabel(p: string) {
+function priorityLabel(p: string, locale: "en" | "tr") {
   switch (p) {
-    case "urgent": return "Acil";
-    case "high": return "Yüksek";
-    case "medium": return "Orta";
-    case "low": return "Düşük";
+    case "urgent": return locale === "tr" ? "Acil" : "Urgent";
+    case "high": return locale === "tr" ? "Yüksek" : "High";
+    case "medium": return locale === "tr" ? "Orta" : "Medium";
+    case "low": return locale === "tr" ? "Düşük" : "Low";
     default: return p;
   }
 }
@@ -55,14 +58,14 @@ function priorityColor(p: string) {
   }
 }
 
-function formatDate(iso: string) {
-  return new Intl.DateTimeFormat("tr-TR", {
+function formatDate(iso: string, locale: "en" | "tr") {
+  return formatLocalizedDate(iso, locale, {
     year: "numeric",
     month: "long",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(iso));
+  });
 }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -114,8 +117,8 @@ function GoneScreen({ title, body }: { title: string; body: string }) {
   );
 }
 
-function DecidedScreen({ approval }: { approval: PublicApprovalView }) {
-  const st = statusLabel(approval.status);
+function DecidedScreen({ approval, locale }: { approval: PublicApprovalView; locale: "en" | "tr" }) {
+  const st = statusLabel(approval.status, locale);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center px-4">
       <div className="text-center max-w-sm space-y-4">
@@ -123,10 +126,10 @@ function DecidedScreen({ approval }: { approval: PublicApprovalView }) {
           {st.text}
         </div>
         <h1 className="text-xl font-semibold text-zinc-800">
-          &ldquo;{approval.brief_title}&rdquo; briefiniz için karar verildi.
+          {locale === "tr" ? <>&ldquo;{approval.brief_title}&rdquo; briefiniz için karar verildi.</> : <>A decision was recorded for &ldquo;{approval.brief_title}&rdquo;.</>}
         </h1>
         {approval.decided_at && (
-          <p className="text-sm text-zinc-500">{formatDate(approval.decided_at)}</p>
+          <p className="text-sm text-zinc-500">{formatDate(approval.decided_at, locale)}</p>
         )}
       </div>
     </div>
@@ -135,9 +138,9 @@ function DecidedScreen({ approval }: { approval: PublicApprovalView }) {
 
 // ── Field renderer ─────────────────────────────────────────────────────────────
 
-function FieldValue({ value, type }: { value: unknown; type: string }) {
+function FieldValue({ value, type, locale }: { value: unknown; type: string; locale: "en" | "tr" }) {
   if (value === null || value === undefined || value === "") {
-    return <span className="text-zinc-400 italic text-sm">Boş bırakıldı</span>;
+    return <span className="text-zinc-400 italic text-sm">{locale === "tr" ? "Boş bırakıldı" : "Not provided"}</span>;
   }
   if (type === "textarea" || type === "rich_text") {
     return (
@@ -157,7 +160,7 @@ function FieldValue({ value, type }: { value: unknown; type: string }) {
   }
   if (type === "date") {
     try {
-      return <span className="text-sm text-zinc-700">{new Date(String(value)).toLocaleDateString("tr-TR")}</span>;
+      return <span className="text-sm text-zinc-700">{formatLocalizedDate(String(value), locale, { year: "numeric", month: "numeric", day: "numeric" })}</span>;
     } catch {
       return <span className="text-sm text-zinc-700">{String(value)}</span>;
     }
@@ -175,7 +178,7 @@ function FieldValue({ value, type }: { value: unknown; type: string }) {
 
 // ── Comment ───────────────────────────────────────────────────────────────────
 
-function Comment({ c }: { c: ApprovalCommentRead }) {
+function Comment({ c, locale }: { c: ApprovalCommentRead; locale: "en" | "tr" }) {
   const initials = c.author_name
     ? c.author_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
@@ -186,8 +189,10 @@ function Comment({ c }: { c: ApprovalCommentRead }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-sm font-medium text-zinc-800">{c.author_name ?? "Anonim"}</span>
-          <span className="text-xs text-zinc-400">{formatDate(c.created_at)}</span>
+          <span className="text-sm font-medium text-zinc-800">
+            {c.author_name ?? (locale === "tr" ? "Anonim" : "Anonymous")}
+          </span>
+          <span className="text-xs text-zinc-400">{formatDate(c.created_at, locale)}</span>
         </div>
         <p className="mt-0.5 text-sm text-zinc-600 leading-relaxed">{c.comment}</p>
       </div>
@@ -200,6 +205,7 @@ function Comment({ c }: { c: ApprovalCommentRead }) {
 type PageState = "loading" | "error_gone" | "error_revoked" | "error_expired" | "decided" | "pending";
 
 export default function ApprovalPortalPage() {
+  const { locale } = useLocale();
   const params = useParams<{ token: string }>();
   const token = params.token;
 
@@ -250,11 +256,11 @@ export default function ApprovalPortalPage() {
         if (msg.toLowerCase().includes("revok")) setState("error_revoked");
         else setState("error_expired");
       } else {
-        setErrorMsg(err?.message ?? "Bir hata oluştu.");
+        setErrorMsg(err?.message ?? (locale === "tr" ? "Bir hata oluştu." : "Something went wrong."));
         setState("error_gone");
       }
     });
-  }, [token]);
+  }, [locale, token]);
 
   async function handleApprove() {
     if (!token) return;
@@ -270,7 +276,7 @@ export default function ApprovalPortalPage() {
       setState("decided");
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setSubmitError(e?.message ?? "İşlem başarısız oldu.");
+      setSubmitError(e?.message ?? (locale === "tr" ? "İşlem başarısız oldu." : "The action could not be completed."));
     } finally {
       setSubmitting(false);
     }
@@ -278,7 +284,7 @@ export default function ApprovalPortalPage() {
 
   async function handleRevision() {
     if (!token || !revisionComment.trim()) {
-      setSubmitError("Revizyon notu zorunludur.");
+      setSubmitError(locale === "tr" ? "Revizyon notu zorunludur." : "A revision note is required.");
       return;
     }
     setSubmitting(true);
@@ -294,7 +300,7 @@ export default function ApprovalPortalPage() {
       setState("decided");
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setSubmitError(e?.message ?? "İşlem başarısız oldu.");
+      setSubmitError(e?.message ?? (locale === "tr" ? "İşlem başarısız oldu." : "The action could not be completed."));
     } finally {
       setSubmitting(false);
     }
@@ -316,7 +322,7 @@ export default function ApprovalPortalPage() {
       setCommentEmail("");
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setSubmitError(e?.message ?? "Yorum gönderilemedi.");
+      setSubmitError(e?.message ?? (locale === "tr" ? "Yorum gönderilemedi." : "The comment could not be submitted."));
     } finally {
       setSubmitting(false);
     }
@@ -327,19 +333,19 @@ export default function ApprovalPortalPage() {
   if (state === "loading") return <LoadingSkeleton />;
 
   if (state === "error_gone")
-    return <GoneScreen title="Onay linki bulunamadı" body={errorMsg || "Bu link geçersiz veya silinmiş olabilir."} />;
+    return <GoneScreen title={locale === "tr" ? "Onay linki bulunamadı" : "Approval link not found"} body={errorMsg || (locale === "tr" ? "Bu link geçersiz veya silinmiş olabilir." : "This link may be invalid or deleted.")} />;
 
   if (state === "error_revoked")
-    return <GoneScreen title="Bu onay linki iptal edildi" body="Ajansınızla iletişime geçin." />;
+    return <GoneScreen title={locale === "tr" ? "Bu onay linki iptal edildi" : "This approval link was cancelled"} body={locale === "tr" ? "Ajansınızla iletişime geçin." : "Contact your agency for a new link."} />;
 
   if (state === "error_expired")
-    return <GoneScreen title="Bu onay linkinin süresi doldu" body="Ajansınızdan yeni bir link isteyin." />;
+    return <GoneScreen title={locale === "tr" ? "Bu onay linkinin süresi doldu" : "This approval link has expired"} body={locale === "tr" ? "Ajansınızdan yeni bir link isteyin." : "Ask your agency for a new link."} />;
 
   if (!approval) return null;
 
-  if (state === "decided") return <DecidedScreen approval={approval} />;
+  if (state === "decided") return <DecidedScreen approval={approval} locale={locale} />;
 
-  const st = statusLabel(approval.status);
+  const st = statusLabel(approval.status, locale);
   const primaryColor = branding?.primary_color ?? "#6D28D9";
   const logoUrl = _assetUrl(branding?.logo_url ?? null);
   const brandDisplayName = branding?.brand_name ?? branding?.agency_name ?? "Flobrief";
@@ -368,6 +374,7 @@ export default function ApprovalPortalPage() {
           <span className={`inline-flex items-center px-3 py-1 rounded-full border text-xs font-medium ${st.bg} ${st.color}`}>
             {st.text}
           </span>
+          <LanguageSelector compact />
         </div>
       </header>
 
@@ -384,7 +391,7 @@ export default function ApprovalPortalPage() {
               </h1>
             </div>
             <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${priorityColor(approval.brief_priority)}`}>
-              {priorityLabel(approval.brief_priority)}
+              {priorityLabel(approval.brief_priority, locale)}
             </span>
           </div>
 
@@ -406,7 +413,7 @@ export default function ApprovalPortalPage() {
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                {new Date(approval.brief_deadline).toLocaleDateString("tr-TR")}
+                {formatLocalizedDate(approval.brief_deadline, locale, { year: "numeric", month: "numeric", day: "numeric" })}
               </span>
             )}
             <span className="flex items-center gap-1">
@@ -436,7 +443,7 @@ export default function ApprovalPortalPage() {
                       <span className="text-xs text-red-400">*</span>
                     )}
                   </div>
-                  <FieldValue value={field.value} type={field.field_type} />
+                  <FieldValue value={field.value} type={field.field_type} locale={locale} />
                 </div>
               ))}
             </div>
@@ -446,10 +453,10 @@ export default function ApprovalPortalPage() {
         {/* Comments */}
         {comments.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-zinc-800">Yorumlar</h2>
+            <h2 className="text-sm font-semibold text-zinc-800">{locale === "tr" ? "Yorumlar" : "Comments"}</h2>
             <div className="space-y-4">
               {comments.map((c) => (
-                <Comment key={c.id} c={c} />
+                <Comment key={c.id} c={c} locale={locale} />
               ))}
             </div>
           </div>
@@ -457,18 +464,18 @@ export default function ApprovalPortalPage() {
 
         {/* Add comment */}
         <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-zinc-800">Yorum Ekle</h2>
+          <h2 className="text-sm font-semibold text-zinc-800">{locale === "tr" ? "Yorum Ekle" : "Add comment"}</h2>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="text"
-              placeholder="Adınız"
+              placeholder={locale === "tr" ? "Adınız" : "Your name"}
               value={commentName}
               onChange={(e) => setCommentName(e.target.value)}
               className="col-span-1 text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400"
             />
             <input
               type="email"
-              placeholder="E-posta (isteğe bağlı)"
+              placeholder={locale === "tr" ? "E-posta (isteğe bağlı)" : "Email (optional)"}
               value={commentEmail}
               onChange={(e) => setCommentEmail(e.target.value)}
               className="col-span-1 text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400"
@@ -476,7 +483,7 @@ export default function ApprovalPortalPage() {
           </div>
           <textarea
             rows={3}
-            placeholder="Yorumunuzu yazın..."
+            placeholder={locale === "tr" ? "Yorumunuzu yazın..." : "Write your comment…"}
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400"
@@ -486,25 +493,25 @@ export default function ApprovalPortalPage() {
             disabled={submitting || !commentText.trim()}
             className="text-sm font-medium text-violet-700 hover:text-violet-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Yorum Gönder
+            {locale === "tr" ? "Yorum Gönder" : "Send comment"}
           </button>
         </div>
 
         {/* Action panel */}
         {!showRevision ? (
           <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-zinc-800">Kararınız</h2>
+            <h2 className="text-sm font-semibold text-zinc-800">{locale === "tr" ? "Kararınız" : "Your decision"}</h2>
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="text"
-                placeholder="Adınız (isteğe bağlı)"
+                placeholder={locale === "tr" ? "Adınız (isteğe bağlı)" : "Your name (optional)"}
                 value={approverName}
                 onChange={(e) => setApproverName(e.target.value)}
                 className="col-span-1 text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400"
               />
               <input
                 type="email"
-                placeholder="E-posta (isteğe bağlı)"
+                placeholder={locale === "tr" ? "E-posta (isteğe bağlı)" : "Email (optional)"}
                 value={approverEmail}
                 onChange={(e) => setApproverEmail(e.target.value)}
                 className="col-span-1 text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400"
@@ -523,7 +530,7 @@ export default function ApprovalPortalPage() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
-                Onayla
+                {locale === "tr" ? "Onayla" : "Approve"}
               </button>
               <button
                 onClick={() => { setShowRevision(true); setSubmitError(""); }}
@@ -533,32 +540,32 @@ export default function ApprovalPortalPage() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                Revizyon İste
+                {locale === "tr" ? "Revizyon İste" : "Request revision"}
               </button>
             </div>
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-amber-200 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-zinc-800">Revizyon Talebi</h2>
+              <h2 className="text-sm font-semibold text-zinc-800">{locale === "tr" ? "Revizyon Talebi" : "Revision request"}</h2>
               <button
                 onClick={() => { setShowRevision(false); setSubmitError(""); }}
                 className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
               >
-                İptal
+                {locale === "tr" ? "İptal" : "Cancel"}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="text"
-                placeholder="Adınız (isteğe bağlı)"
+                placeholder={locale === "tr" ? "Adınız (isteğe bağlı)" : "Your name (optional)"}
                 value={revisionName}
                 onChange={(e) => setRevisionName(e.target.value)}
                 className="col-span-1 text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400"
               />
               <input
                 type="email"
-                placeholder="E-posta (isteğe bağlı)"
+                placeholder={locale === "tr" ? "E-posta (isteğe bağlı)" : "Email (optional)"}
                 value={revisionEmail}
                 onChange={(e) => setRevisionEmail(e.target.value)}
                 className="col-span-1 text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400"
@@ -566,7 +573,7 @@ export default function ApprovalPortalPage() {
             </div>
             <textarea
               rows={4}
-              placeholder="Revizyon notunuzu yazın... (zorunlu)"
+              placeholder={locale === "tr" ? "Revizyon notunuzu yazın... (zorunlu)" : "Describe the requested changes… (required)"}
               value={revisionComment}
               onChange={(e) => setRevisionComment(e.target.value)}
               className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400"
@@ -579,14 +586,14 @@ export default function ApprovalPortalPage() {
               disabled={submitting || !revisionComment.trim()}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
             >
-              {submitting ? "Gönderiliyor..." : "Revizyon Talebini Gönder"}
+              {submitting ? (locale === "tr" ? "Gönderiliyor..." : "Submitting…") : (locale === "tr" ? "Revizyon Talebini Gönder" : "Submit revision request")}
             </button>
           </div>
         )}
 
         {/* Expiry note */}
         <p className="text-center text-xs text-zinc-400 pb-8">
-          Bu link {formatDate(approval.expires_at)} tarihine kadar geçerlidir.
+          {locale === "tr" ? `Bu link ${formatDate(approval.expires_at, locale)} tarihine kadar geçerlidir.` : `This link is valid until ${formatDate(approval.expires_at, locale)}.`}
         </p>
       </main>
     </div>

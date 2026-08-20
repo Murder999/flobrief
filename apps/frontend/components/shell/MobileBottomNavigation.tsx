@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SafeAreaContainer } from "@/components/ui/safe-area-container";
 import type { BottomNavItem } from "./types";
+import { useLocale } from "@/context/locale-context";
 
 interface MobileBottomNavigationProps {
   items: BottomNavItem[];
@@ -23,6 +24,7 @@ function isActive(pathname: string, href: string, exact?: boolean): boolean {
  * same MobileNavigationDrawer instead of duplicating its list.
  */
 export function MobileBottomNavigation({ items, onMoreClick, moreActive }: MobileBottomNavigationProps) {
+  const { t } = useLocale();
   const pathname = usePathname();
 
   return (
@@ -31,7 +33,7 @@ export function MobileBottomNavigation({ items, onMoreClick, moreActive }: Mobil
       minBottom="0px"
       className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur-md border-t border-border"
     >
-      <nav className="flex items-stretch h-14" aria-label="Alt gezinme">
+      <nav className="flex items-stretch h-14" aria-label={t("dashboard.shell.bottomNavigation")}>
         {items.map((item) => {
           const active = isActive(pathname, item.href, item.exact);
           const IconComp = item.icon;
@@ -69,7 +71,7 @@ export function MobileBottomNavigation({ items, onMoreClick, moreActive }: Mobil
           )}
         >
           <Menu className="w-5 h-5" />
-          <span className="text-[10px] font-medium leading-none">Daha Fazla</span>
+          <span className="text-[10px] font-medium leading-none">{t("dashboard.navigation.more")}</span>
           {moreActive && <span className="absolute top-0 inset-x-1/4 h-0.5 rounded-full bg-accent" />}
         </button>
       </nav>

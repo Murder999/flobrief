@@ -7,32 +7,19 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { isSafeInternalPath } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
+import { useLocale } from "@/context/locale-context";
+import { localizeNotification } from "@/lib/i18n/notification-presentation";
+import { translate } from "@/lib/i18n/translate";
+import type { Locale } from "@/lib/i18n/config";
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, locale: Locale): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "şimdi";
-  if (mins < 60) return `${mins}dk önce`;
+  if (mins < 1) return translate(locale, "briefs.time.justNow");
+  if (mins < 60) return translate(locale, "briefs.time.minutesAgo", { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}s önce`;
-  return `${Math.floor(hrs / 24)}g önce`;
-}
-
-function eventLabel(eventType: string): string {
-  const map: Record<string, string> = {
-    "brief.created": "Brief oluşturuldu",
-    "brief.updated": "Brief güncellendi",
-    "brief.submitted_for_approval": "Onay bekliyor",
-    "brief.revision_requested": "Revizyon istendi",
-    "brief.approved": "Onaylandı",
-    "calendar.item_created": "Takvim öğesi eklendi",
-    "calendar.item_due": "Takvim öğesi tarihi geldi",
-    "calendar.item_published": "İçerik yayınlandı",
-    "user.invited": "Davet edildiniz",
-    "subscription.payment_failed": "Ödeme başarısız",
-    "subscription.changed": "Abonelik değişti",
-  };
-  return map[eventType] ?? eventType;
+  if (hrs < 24) return translate(locale, "briefs.time.hoursAgo", { count: hrs });
+  return translate(locale, "briefs.time.daysAgo", { count: Math.floor(hrs / 24) });
 }
 
 function eventColor(eventType: string): string {
@@ -111,6 +98,7 @@ function NotificationSkeleton() {
 }
 
 export default function NotificationsPage() {
+  const { locale, t } = useLocale();
   const { accessToken } = useAuth();
   const { activeAgency } = useWorkspace();
   const agencyId = activeAgency?.id ?? null;
@@ -191,10 +179,10 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-text">Bildirimler</h1>
+          <h1 className="text-2xl font-semibold text-text">{t("notifications.title")}</h1>
           {unreadCount > 0 && (
             <p className="text-sm text-text-muted mt-1">
-              {unreadCount} okunmamış bildirim
+              {t("notifications.unreadCount", { count: unreadCount })}
             </p>
           )}
         </div>
@@ -210,7 +198,7 @@ export default function NotificationsPage() {
                     : "text-text-muted hover:text-text"
                 }`}
               >
-                {f === "all" ? "Tümü" : "Okunmamış"}
+                {t(f === "all" ? "notifications.filter.all" : "notifications.filter.unread")}
               </button>
             ))}
           </div>
@@ -220,7 +208,7 @@ export default function NotificationsPage() {
               disabled={markingAll}
               className="text-sm text-accent hover:text-accent/80 transition-colors disabled:opacity-50"
             >
-              {markingAll ? "İşleniyor…" : "Tümünü okundu işaretle"}
+              {markingAll ? t("notifications.processing") : t("notifications.markAllRead")}
             </button>
           )}
         </div>
@@ -238,13 +226,15 @@ export default function NotificationsPage() {
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </div>
-            <p className="text-base font-medium text-text">Bildirim yok</p>
+            <p className="text-base font-medium text-text">{t("notifications.emptyTitle")}</p>
             <p className="text-sm text-text-muted mt-1">
-              {filter === "unread" ? "Tüm bildirimler okundu." : "Henüz bildirim gelmedi."}
+              {t(filter === "unread" ? "notifications.emptyUnread" : "notifications.empty")}
             </p>
           </div>
         ) : (
-          items.map((n) => (
+          items.map((n) => {
+            const localized = localizeNotification(n, locale);
+            return (
             <button
               key={n.id}
               type="button"
@@ -277,12 +267,12 @@ export default function NotificationsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className={`text-sm font-semibold ${!n.is_read ? "text-text" : "text-text/80"}`}>
-                      {eventLabel(n.event_type)}
+                      {localized.title}
                     </p>
-                    <p className={`text-sm mt-0.5 leading-relaxed ${!n.is_read ? "text-text-muted" : "text-text-muted/70"}`}>{n.body}</p>
+                    <p className={`text-sm mt-0.5 leading-relaxed ${!n.is_read ? "text-text-muted" : "text-text-muted/70"}`}>{localized.body}</p>
                   </div>
                   <span className="text-xs text-text-muted whitespace-nowrap flex-shrink-0 mt-0.5">
-                    {timeAgo(n.created_at)}
+                    {timeAgo(n.created_at, locale)}
                   </span>
                 </div>
               </div>
@@ -290,7 +280,8 @@ export default function NotificationsPage() {
                 <ChevronRight className="w-3.5 h-3.5 text-text-muted/50 flex-shrink-0 self-center" aria-hidden="true" />
               )}
             </button>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -302,7 +293,7 @@ export default function NotificationsPage() {
             disabled={offset === 0}
             className="text-sm text-text-muted hover:text-text disabled:opacity-40 transition-colors"
           >
-            ← Önceki
+            ← {t("notifications.previous")}
           </button>
           <span className="text-sm text-text-muted">
             {offset + 1}–{Math.min(offset + LIMIT, total)} / {total}
@@ -312,7 +303,7 @@ export default function NotificationsPage() {
             disabled={offset + LIMIT >= total}
             className="text-sm text-text-muted hover:text-text disabled:opacity-40 transition-colors"
           >
-            Sonraki →
+            {t("notifications.next")} →
           </button>
         </div>
       )}

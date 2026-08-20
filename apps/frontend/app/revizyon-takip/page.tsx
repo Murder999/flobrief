@@ -1,11 +1,10 @@
-import type { Metadata } from "next";
+import { SeoLandingPage } from "@/components/marketing/SeoLandingPage";
+import { SEO_LANDING_PAGES } from "@/components/marketing/seo-landing-data";
+import { buildRequestLandingMetadata } from "@/components/marketing/seo-metadata";
 
-import { SeoLandingPage, getLandingPageConfig } from "@/components/marketing/SeoLandingPage";
-import { buildLandingMetadata } from "@/components/marketing/seo-metadata";
+const config = SEO_LANDING_PAGES["revizyon-takip"];
 
-const config = getLandingPageConfig("revizyon-takip");
-
-export const metadata: Metadata = buildLandingMetadata(config);
+export const generateMetadata = () => buildRequestLandingMetadata(config);
 
 export default function RevisionTrackingLandingPage() {
   return <SeoLandingPage config={config} />;

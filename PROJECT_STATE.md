@@ -5,7 +5,7 @@
 **Product**: Premium multi-tenant B2B SaaS for agency/brand brief operations
 **Current phase**: Production hardening and go-live verification
 **Release posture**: Not approved for production until `docs/LAUNCH_CHECKLIST.md` is completed
-**Last updated**: 2026-08-20
+**Last updated**: 2026-08-21
 
 ## Stack
 
@@ -20,7 +20,7 @@
 ## Current Scale
 
 - 84 database tables.
-- 49 Alembic migration files; one head required before release.
+- 50 Alembic migration files; one head required before release.
 - 415 API route decorators after duplicate asset routes were removed.
 - 100 frontend pages, 112 components, 25 Playwright specs.
 
@@ -36,6 +36,13 @@
 - Provider credentials are encrypted with `FLOBRIEF_SECRET_ENCRYPTION_KEY`.
 
 ## Recent Hardening — 2026-07-27
+
+### PostPiloter Turkish/English internationalization
+
+- English is the global default; Turkish is directly available under `/tr`, with cookie, manual choice, browser language, and country fallback precedence.
+- Public, authentication, agency, brand, notification, brief, pricing, profile, password, MFA, email, and shared API-error surfaces use one typed 771-key EN/TR catalog.
+- SEO pages publish localized canonical and hreflang metadata; users keep the equivalent public route when switching language.
+- User locale is stored through an additive Alembic migration and drives transactional emails and notifications.
 
 ### Local development performance
 
@@ -71,6 +78,13 @@
 - Resend documentation no longer claims SMTP fallback.
 - Standalone Next output is enabled only for Docker/CI; ordinary local builds use native Next output.
 - Node 20.x is declared in `package.json` and `.nvmrc`.
+
+### PostPiloter production email and realtime hardening
+
+- Resend remains HTTPS REST-only; production environment credentials are authoritative when present, while DB config remains available outside production and as a no-env fallback.
+- Registration verification, verification resend, password reset, agency/team/brand invitations, invitation resend, and notification emails share one provider-resolution and safe delivery-log path.
+- Production startup rejects non-PostPiloter public origins, the wrong sender, or Resend test mode; action links use `https://postpiloter.com` and invitation links use `/auth/accept-invite?token=`.
+- Nginx and Compose default to `postpiloter.com` / `wss://postpiloter.com`; the existing single-use Redis ticket, post-commit signal, client reconnect, canonical refresh, and polling fallback chain remains intact.
 
 ### Public self-service demo
 
@@ -167,6 +181,8 @@
 - Resend, Twilio, and iyzico are not production-ready until real credentials and signed delivery flows are verified.
 - `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL` are frontend build-time values.
 - Production readiness is governed by `docs/LAUNCH_CHECKLIST.md`, not by completion of the historical 15-part plan.
+- A green push to `main` can deploy the exact verified commit to Hetzner through the guarded `deploy_hetzner` CI job. The job is intentionally inert until the protected GitHub production environment, SSH host identity, server checkout, TLS, and `HETZNER_DEPLOY_ENABLED=true` are configured.
+- Hetzner promotion creates on-host PostgreSQL/media backups, applies the one-head migration graph, uses commit-tagged images, waits for health, and attempts application rollback on failure. Database downgrades and restores remain manual, reviewed operations.
 
 ## Authoritative Documents
 

@@ -1,5 +1,6 @@
 import type { BrandKPIStats, BriefRead, NotificationRead } from "@/lib/api-client";
 import { isOverdue as isBriefOverdue, fmtRelative, fmtShortDate } from "@/components/brief-detail/shared";
+import { translateCurrent } from "@/lib/i18n/current";
 
 export { fmtRelative, fmtShortDate };
 export const isOverdue = isBriefOverdue;
@@ -8,9 +9,9 @@ export const isOverdue = isBriefOverdue;
 
 export function greetingFor(date: Date): string {
   const hour = date.getHours();
-  if (hour < 12) return "Günaydın";
-  if (hour < 18) return "İyi günler";
-  return "İyi akşamlar";
+  if (hour < 12) return translateCurrent("dashboard.greeting.morning");
+  if (hour < 18) return translateCurrent("dashboard.greeting.day");
+  return translateCurrent("dashboard.greeting.evening");
 }
 
 export function startOfWeekISO(): string {
@@ -74,8 +75,8 @@ export function deriveActionItems(briefs: BriefRead[]): ActionItem[] {
     if (!actionable && !overdue) continue;
     items.push({
       brief,
-      ctaLabel: actionable ? (brief.status === "ready_for_review" ? "Onayla" : "İncele") : "İncele",
-      reasonLabel: overdue ? "Gecikti" : "Onay Bekliyor",
+      ctaLabel: actionable ? (brief.status === "ready_for_review" ? translateCurrent("dashboard.brand.approve") : translateCurrent("dashboard.brand.review")) : translateCurrent("dashboard.brand.review"),
+      reasonLabel: overdue ? translateCurrent("dashboard.brand.overdueLabel") : translateCurrent("dashboard.brand.awaitingApproval"),
       reasonCls: overdue ? "text-danger" : "text-amber-400",
       overdue,
       urgency: overdue ? 0 : 1,
@@ -92,9 +93,9 @@ export function deriveActionItems(briefs: BriefRead[]): ActionItem[] {
 
 export function waitingSinceLabel(brief: BriefRead): string {
   const d = daysAgo(brief.updated_at);
-  if (d <= 0) return "bugün güncellendi";
-  if (d === 1) return "1 gündür bekliyor";
-  return `${d} gündür bekliyor`;
+  if (d <= 0) return translateCurrent("dashboard.brand.updatedToday");
+  if (d === 1) return translateCurrent("dashboard.brand.waitingOneDay");
+  return translateCurrent("dashboard.brand.waitingDays", { count: d });
 }
 
 // ── KPI sub-metrics derived client-side from the already-loaded brief list ──

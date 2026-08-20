@@ -7,7 +7,7 @@ The historical 15-part implementation plan is complete. Production release remai
 1. Confirm Alembic has one head and upgrade a clean staging database.
 2. Complete every applicable item in `docs/LAUNCH_CHECKLIST.md`.
 
-Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, five public SEO landing pages with shared responsive navigation/footer and sitemap integration, public login-modal and platform-route disclosure hardening, Ruff check/format, 1777 backend tests, TypeScript, lint, production build (90/90 static pages), 9/9 SEO/login/security Chromium checks, the Resend/realtime regression suite, commercial-metric exclusion checks, and the prior 42-test critical Playwright release matrix against the current API and live WebSocket.
+Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, five bilingual public SEO landing pages, complete typed EN/TR catalogs and persisted user locale, public login-modal and platform-route disclosure hardening, Ruff check/format, backend regression coverage, TypeScript, production build (90/90 static pages), SEO/login/security Chromium checks, the Resend/realtime regression suite, commercial-metric exclusion checks, and the prior critical Playwright release matrix against the current API and live WebSocket.
 
 ## Platform access hardening
 
@@ -16,7 +16,8 @@ Completed locally in the latest hardening pass: isolated self-service demo imple
 
 ## Provider verification
 
-- Configure a fresh Resend API key and verified sender domain; pass test mode before real recipients.
+- Install the real `RESEND_API_KEY` only in the untracked production backend environment, keep `RESEND_TEST_MODE=False`, and send controlled verification, invitation, reset, notification, and reconnect smoke tests from `https://postpiloter.com`.
+- Confirm `/platform/notifications` reports `configuration_source=environment`. A legacy `email_resend` row may remain for audit history; production environment config is authoritative while its API key is present.
 - WhatsApp/Twilio (Part 6A plumbing + Part 6B-1 event routing complete — see PROJECT_STATE.md):
   local Twilio sandbox credentials are already configured and verified live-connected, and all 16
   domain events (brief.created, comment.added, deliverable.*, invoice.*, etc.) now route through the
@@ -39,6 +40,7 @@ Completed locally in the latest hardening pass: isolated self-service demo imple
 
 ## Infrastructure and operations
 
+- Complete the one-time Hetzner/GitHub production-environment setup in `docs/DEPLOYMENT.md`: server deploy user and read-only repository key, populated host-local env files, verified SSH host key, production URL, TLS renewal, and GitHub secrets/variables. Set `HETZNER_DEPLOY_ENABLED=true` only after the first manual release and public health checks pass.
 - Configure production DNS, TLS renewal, CORS, `NEXT_PUBLIC_API_URL`, and `NEXT_PUBLIC_WS_URL`.
 - Establish off-host PostgreSQL and `media_data` backups; perform a restore drill.
 - Add Sentry or equivalent error monitoring and centralized log retention.

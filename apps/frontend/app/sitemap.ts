@@ -41,10 +41,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pageMap = new Map<string, PublicSitemapPage>();
   [...pages, ...STATIC_SEO_PAGES].forEach((page) => pageMap.set(page.path, page));
 
-  return Array.from(pageMap.values()).map((page) => ({
-    url: `${publicUrl}${page.path === "/" ? "" : page.path}`,
-    lastModified: page.updated_at ? new Date(page.updated_at) : new Date(),
-    changeFrequency: page.path === "/" ? "weekly" : "monthly",
-    priority: page.path === "/" ? 1.0 : 0.7,
-  }));
+  return Array.from(pageMap.values()).flatMap((page) => {
+    const suffix = page.path === "/" ? "" : page.path;
+    const englishUrl = `${publicUrl}${suffix}`;
+    const turkishUrl = `${publicUrl}/tr${suffix}`;
+    const shared = {
+      lastModified: page.updated_at ? new Date(page.updated_at) : new Date(),
+      changeFrequency: (page.path === "/" ? "weekly" : "monthly") as "weekly" | "monthly",
+      priority: page.path === "/" ? 1.0 : 0.7,
+      alternates: {
+        languages: { en: englishUrl, tr: turkishUrl, "x-default": englishUrl },
+      },
+    };
+    return [{ url: englishUrl, ...shared }, { url: turkishUrl, ...shared }];
+  });
 }

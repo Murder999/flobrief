@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
@@ -33,6 +34,7 @@ class UserRead(BaseModel):
     is_active: bool
     is_verified: bool
     mfa_enabled: bool
+    locale: Literal["en", "tr"] | None = None
     last_login_at: datetime | None
     created_at: datetime
     updated_at: datetime

@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NotificationRead(BaseModel):
@@ -17,6 +17,7 @@ class NotificationRead(BaseModel):
     title: str
     body: str
     event_type: str
+    payload: dict = Field(default_factory=dict)
     is_read: bool
     read_at: datetime | None
     archived_at: datetime | None

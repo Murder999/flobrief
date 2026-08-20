@@ -1,10 +1,147 @@
+import logging
+from html import escape
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.config import settings
-from app.services.resend_email_provider import ResendEmailProvider
+from app.models.enums import NotificationDeliveryStatus
+from app.services.email_i18n import email_text, normalize_email_locale, render_email
+from app.services.resend_email_provider import (
+    EmailDeliveryResult,
+    EmailProviderFactory,
+)
+from app.services.url_builder import url_builder
+
+logger = logging.getLogger(__name__)
+
+
+def build_agency_invite_html(
+    inviter_name: str,
+    agency_name: str,
+    role: str,
+    accept_url: str,
+    message: str | None = None,
+    locale: str | None = None,
+) -> str:
+    lang = normalize_email_locale(locale)
+    extra = f'<p style="color:#8888A8;margin:12px 0">{escape(message)}</p>' if message else ""
+    return render_email(
+        title=email_text(lang, "invite_title"),
+        recipient_name=None,
+        body=email_text(lang, "invite_body", inviter=inviter_name, agency=agency_name, role=role),
+        action_url=accept_url,
+        action_label=email_text(lang, "accept_invite"),
+        locale=lang,
+        extra_html=extra,
+    )
+
+
+def build_brand_invite_html(
+    inviter_name: str,
+    agency_name: str,
+    brand_name: str,
+    role: str,
+    accept_url: str,
+    message: str | None = None,
+    locale: str | None = None,
+) -> str:
+    lang = normalize_email_locale(locale)
+    extra = f'<p style="color:#8888A8;margin:12px 0">{escape(message)}</p>' if message else ""
+    return render_email(
+        title=email_text(lang, "brand_invite_title"),
+        recipient_name=None,
+        body=email_text(
+            lang,
+            "brand_invite_body",
+            inviter=inviter_name,
+            agency=agency_name,
+            brand=brand_name,
+            role=role,
+        ),
+        action_url=accept_url,
+        action_label=email_text(lang, "accept_invite"),
+        locale=lang,
+        extra_html=extra,
+    )
+
+
+def build_brief_approval_request_html(
+    recipient_name: str,
+    agency_name: str,
+    brief_title: str,
+    approval_url: str,
+    locale: str | None = None,
+) -> str:
+    lang = normalize_email_locale(locale)
+    return render_email(
+        title=email_text(lang, "approval_title"),
+        recipient_name=recipient_name,
+        body=email_text(lang, "approval_body", agency=agency_name, brief=brief_title),
+        action_url=approval_url,
+        action_label=email_text(lang, "open_brief"),
+        locale=lang,
+    )
+
+
+def build_brief_revision_requested_html(
+    recipient_name: str,
+    brief_title: str,
+    revision_note: str,
+    brief_url: str,
+    locale: str | None = None,
+) -> str:
+    lang = normalize_email_locale(locale)
+    note = f'<blockquote style="border-left:3px solid #F59E0B;margin:0 0 20px;padding:10px 14px">{escape(revision_note)}</blockquote>'
+    return render_email(
+        title=email_text(lang, "revision_title"),
+        recipient_name=recipient_name,
+        body=email_text(lang, "revision_body", brief=brief_title),
+        action_url=brief_url,
+        action_label=email_text(lang, "open_brief"),
+        locale=lang,
+        accent="#F59E0B",
+        extra_html=note,
+    )
+
+
+def build_brief_approved_html(
+    recipient_name: str, brief_title: str, brief_url: str, locale: str | None = None
+) -> str:
+    lang = normalize_email_locale(locale)
+    return render_email(
+        title=email_text(lang, "approved_title"),
+        recipient_name=recipient_name,
+        body=email_text(lang, "approved_body", brief=brief_title),
+        action_url=brief_url,
+        action_label=email_text(lang, "open_brief"),
+        locale=lang,
+        accent="#10B981",
+    )
+
+
+def build_generic_notification_html(
+    recipient_name: str,
+    title: str,
+    body: str,
+    action_url: str,
+    action_label: str | None = None,
+    locale: str | None = None,
+) -> str:
+    lang = normalize_email_locale(locale)
+    return render_email(
+        title=title,
+        recipient_name=recipient_name,
+        body=escape(body),
+        action_url=action_url,
+        action_label=action_label or email_text(lang, "view"),
+        locale=lang,
+    )
+
 
 # ── HTML builder functions (module-level for reuse in Resend provider) ─────────
 
 
-def build_agency_invite_html(
+def _legacy_build_agency_invite_html(
     inviter_name: str,
     agency_name: str,
     role: str,
@@ -30,7 +167,7 @@ def build_agency_invite_html(
 </html>"""
 
 
-def build_brand_invite_html(
+def _legacy_build_brand_invite_html(
     inviter_name: str,
     agency_name: str,
     brand_name: str,
@@ -57,7 +194,7 @@ def build_brand_invite_html(
 </html>"""
 
 
-def build_brief_approval_request_html(
+def _legacy_build_brief_approval_request_html(
     recipient_name: str,
     agency_name: str,
     brief_title: str,
@@ -78,7 +215,7 @@ def build_brief_approval_request_html(
 </html>"""
 
 
-def build_brief_revision_requested_html(
+def _legacy_build_brief_revision_requested_html(
     recipient_name: str,
     brief_title: str,
     revision_note: str,
@@ -100,7 +237,7 @@ def build_brief_revision_requested_html(
 </html>"""
 
 
-def build_brief_approved_html(
+def _legacy_build_brief_approved_html(
     recipient_name: str,
     brief_title: str,
     brief_url: str,
@@ -120,7 +257,7 @@ def build_brief_approved_html(
 </html>"""
 
 
-def build_generic_notification_html(
+def _legacy_build_generic_notification_html(
     recipient_name: str,
     title: str,
     body: str,
@@ -145,7 +282,21 @@ def build_generic_notification_html(
 # ── Internal helpers ────────────────────────────────────────────────────────────
 
 
-def _build_verification_html(full_name: str, verification_url: str) -> str:
+def _build_verification_html(
+    full_name: str, verification_url: str, locale: str | None = None
+) -> str:
+    lang = normalize_email_locale(locale)
+    return render_email(
+        title=email_text(lang, "verify_title"),
+        recipient_name=None,
+        body=email_text(lang, "verify_body", name=full_name),
+        action_url=verification_url,
+        action_label=email_text(lang, "verify_action"),
+        locale=lang,
+    )
+
+
+def _legacy_build_verification_html(full_name: str, verification_url: str) -> str:
     return f"""
 <!DOCTYPE html>
 <html>
@@ -169,7 +320,19 @@ def _build_verification_html(full_name: str, verification_url: str) -> str:
 </html>"""
 
 
-def _build_reset_html(full_name: str, reset_url: str) -> str:
+def _build_reset_html(full_name: str, reset_url: str, locale: str | None = None) -> str:
+    lang = normalize_email_locale(locale)
+    return render_email(
+        title=email_text(lang, "reset_title"),
+        recipient_name=None,
+        body=email_text(lang, "reset_body", name=full_name),
+        action_url=reset_url,
+        action_label=email_text(lang, "reset_action"),
+        locale=lang,
+    )
+
+
+def _legacy_build_reset_html(full_name: str, reset_url: str) -> str:
     return f"""
 <!DOCTYPE html>
 <html>
@@ -193,33 +356,113 @@ def _build_reset_html(full_name: str, reset_url: str) -> str:
 </html>"""
 
 
-async def _send_transactional(to_email: str, subject: str, html_body: str) -> None:
-    provider = ResendEmailProvider(
-        api_key=settings.RESEND_API_KEY,
-        from_name=settings.EMAIL_FROM_NAME,
-        from_email=settings.EMAIL_FROM,
-        reply_to=settings.EMAIL_REPLY_TO or None,
-        test_mode=settings.RESEND_TEST_MODE,
-        test_recipient=settings.RESEND_TEST_RECIPIENT,
-        test_from_email=settings.RESEND_TEST_FROM_EMAIL,
+def _safe_error_category(result: EmailDeliveryResult) -> str:
+    if result.status == NotificationDeliveryStatus.NOT_CONFIGURED.value:
+        return "not_configured"
+    message = (result.error_message or "").lower()
+    if "network" in message:
+        return "network"
+    for code in ("401", "403", "422", "429"):
+        if code in message:
+            return f"http_{code}"
+    return "provider_error" if result.error_message else "none"
+
+
+def log_email_delivery(result: EmailDeliveryResult, *, message_type: str) -> None:
+    """Log delivery metadata without recipient, token, content, or credentials."""
+    if result.status == NotificationDeliveryStatus.SENT.value:
+        logger.info(
+            "Email delivery completed provider=%s message_type=%s status=%s",
+            result.provider,
+            message_type,
+            result.status,
+        )
+        return
+    logger.warning(
+        "Email delivery incomplete provider=%s message_type=%s status=%s error_category=%s",
+        result.provider,
+        message_type,
+        result.status,
+        _safe_error_category(result),
     )
-    if provider.is_active():
-        await provider.send(to_email=to_email, subject=subject, html=html_body)
 
 
-async def send_verification_email(to_email: str, full_name: str, token: str) -> None:
-    url = f"{settings.FRONTEND_URL}/auth/verify-email?token={token}"
-    html = _build_verification_html(full_name, url)
-    await _send_transactional(to_email, "Flobrief — E-posta Doğrulama", html)
+async def deliver_transactional_email(
+    db: AsyncSession,
+    *,
+    to_email: str,
+    subject: str,
+    html_body: str,
+    message_type: str,
+) -> EmailDeliveryResult:
+    """Deliver through the effective DB/env provider and fail non-destructively."""
+    try:
+        provider = await EmailProviderFactory.get_provider(db)
+    except Exception as exc:
+        logger.error(
+            "Email provider resolution failed provider=resend message_type=%s error_type=%s",
+            message_type,
+            type(exc).__name__,
+        )
+        return EmailDeliveryResult(
+            status=NotificationDeliveryStatus.FAILED.value,
+            provider="resend",
+            provider_message_id=None,
+            error_message="Provider resolution failed",
+        )
+
+    try:
+        result = await provider.send(to_email=to_email, subject=subject, html=html_body)
+    except Exception as exc:
+        logger.error(
+            "Email provider raised unexpectedly provider=%s message_type=%s error_type=%s",
+            provider.get_provider_name(),
+            message_type,
+            type(exc).__name__,
+        )
+        result = EmailDeliveryResult(
+            status=NotificationDeliveryStatus.FAILED.value,
+            provider=provider.get_provider_name(),
+            provider_message_id=None,
+            error_message="Unexpected provider failure",
+        )
+
+    log_email_delivery(result, message_type=message_type)
+    return result
 
 
-async def send_password_reset_email(to_email: str, full_name: str, token: str) -> None:
-    url = f"{settings.FRONTEND_URL}/auth/reset-password?token={token}"
-    html = _build_reset_html(full_name, url)
-    await _send_transactional(to_email, "Flobrief — Şifre Sıfırlama", html)
+async def send_verification_email(
+    db: AsyncSession, to_email: str, full_name: str, token: str, locale: str | None = None
+) -> EmailDeliveryResult:
+    lang = normalize_email_locale(locale)
+    url = url_builder.verification_link(token)
+    html = _build_verification_html(full_name, url, lang)
+    return await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — {email_text(lang, 'verify_title')}",
+        html_body=html,
+        message_type="email_verification",
+    )
+
+
+async def send_password_reset_email(
+    db: AsyncSession, to_email: str, full_name: str, token: str, locale: str | None = None
+) -> EmailDeliveryResult:
+    lang = normalize_email_locale(locale)
+    url = url_builder.password_reset_link(token)
+    html = _build_reset_html(full_name, url, lang)
+    return await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — {email_text(lang, 'reset_title')}",
+        html_body=html,
+        message_type="password_reset",
+    )
 
 
 async def send_agency_invite_email(
+    db: AsyncSession,
     to_email: str,
     agency_name: str,
     inviter_name: str,
@@ -227,7 +470,7 @@ async def send_agency_invite_email(
     token: str,
     message: str | None = None,
 ) -> None:
-    url = f"{settings.FRONTEND_URL}/auth/accept-invite?token={token}"
+    url = url_builder.invite_link(token)
     msg_block = f"<p style='color:#8888A8;margin-top:12px;'>{message}</p>" if message else ""
     html = f"""
 <!DOCTYPE html>
@@ -252,10 +495,17 @@ async def send_agency_invite_email(
   </div>
 </body>
 </html>"""
-    await _send_transactional(to_email, f"Flobrief — {agency_name} Daveti", html)
+    await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — {agency_name} Daveti",
+        html_body=html,
+        message_type="agency_invitation",
+    )
 
 
 async def send_brief_approval_request_email(
+    db: AsyncSession,
     to_email: str,
     recipient_name: str,
     agency_name: str,
@@ -285,10 +535,17 @@ async def send_brief_approval_request_email(
   </div>
 </body>
 </html>"""
-    await _send_transactional(to_email, f"Flobrief — Onay Bekleniyor: {brief_title}", html)
+    await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — Onay Bekleniyor: {brief_title}",
+        html_body=html,
+        message_type="brief_approval_request",
+    )
 
 
 async def send_brief_revision_requested_email(
+    db: AsyncSession,
     to_email: str,
     recipient_name: str,
     brief_title: str,
@@ -321,10 +578,17 @@ async def send_brief_revision_requested_email(
   </div>
 </body>
 </html>"""
-    await _send_transactional(to_email, f"Flobrief — Revizyon İstendi: {brief_title}", html)
+    await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — Revizyon İstendi: {brief_title}",
+        html_body=html,
+        message_type="brief_revision_requested",
+    )
 
 
 async def send_brief_approved_email(
+    db: AsyncSession,
     to_email: str,
     recipient_name: str,
     brief_title: str,
@@ -352,10 +616,17 @@ async def send_brief_approved_email(
   </div>
 </body>
 </html>"""
-    await _send_transactional(to_email, f"Flobrief — Onaylandı: {brief_title}", html)
+    await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — Onaylandı: {brief_title}",
+        html_body=html,
+        message_type="brief_approved",
+    )
 
 
 async def send_generic_notification_email(
+    db: AsyncSession,
     to_email: str,
     recipient_name: str,
     title: str,
@@ -382,10 +653,17 @@ async def send_generic_notification_email(
   </div>
 </body>
 </html>"""
-    await _send_transactional(to_email, f"Flobrief — {title}", html)
+    await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — {title}",
+        html_body=html,
+        message_type="generic_notification",
+    )
 
 
 async def send_payment_failed_email(
+    db: AsyncSession,
     to_email: str,
     recipient_name: str,
     agency_name: str,
@@ -414,10 +692,17 @@ async def send_payment_failed_email(
   </div>
 </body>
 </html>"""
-    await _send_transactional(to_email, "Flobrief — Ödeme Başarısız", html)
+    await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — Ödeme Başarısız",
+        html_body=html,
+        message_type="payment_failed",
+    )
 
 
 async def send_brand_invite_email(
+    db: AsyncSession,
     to_email: str,
     agency_name: str,
     brand_name: str,
@@ -426,7 +711,7 @@ async def send_brand_invite_email(
     token: str,
     message: str | None = None,
 ) -> None:
-    url = f"{settings.FRONTEND_URL}/auth/accept-invite?token={token}"
+    url = url_builder.invite_link(token)
     msg_block = f"<p style='color:#8888A8;margin-top:12px;'>{message}</p>" if message else ""
     html = f"""
 <!DOCTYPE html>
@@ -451,4 +736,10 @@ async def send_brand_invite_email(
   </div>
 </body>
 </html>"""
-    await _send_transactional(to_email, f"Flobrief — {brand_name} Marka Daveti", html)
+    await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — {brand_name} Marka Daveti",
+        html_body=html,
+        message_type="brand_invitation",
+    )

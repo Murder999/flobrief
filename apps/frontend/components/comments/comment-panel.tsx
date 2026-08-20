@@ -14,16 +14,14 @@ import {
 import { useAuthBlob, mediaType } from "@/components/media/MediaPreview";
 import PremiumCommentComposer from "@/components/comments/PremiumCommentComposer";
 import { MentionAwareBody } from "@/components/mentions/MentionAwareBody";
+import { useLocale } from "@/context/locale-context";
+import { formatLocalizedDateTime } from "@/lib/i18n/format";
+import { translateCurrent } from "@/lib/i18n/current";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("tr-TR", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatLocalizedDateTime(iso);
 }
 
 function VisibilityBadge({ v }: { v: CommentVisibility }) {
@@ -33,7 +31,7 @@ function VisibilityBadge({ v }: { v: CommentVisibility }) {
         <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
         </svg>
-        Dahili
+        {translateCurrent("briefs.comments.internal")}
       </span>
     );
   }
@@ -43,7 +41,7 @@ function VisibilityBadge({ v }: { v: CommentVisibility }) {
         <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
         <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
       </svg>
-      Müşteri
+      {translateCurrent("briefs.comments.customer")}
     </span>
   );
 }
@@ -130,7 +128,7 @@ function ImageLightbox({ url, onClose }: { url: string; onClose: () => void }) {
       </button>
       <img
         src={url}
-        alt="Önizleme"
+        alt={translateCurrent("briefs.media.preview")}
         className="max-w-full max-h-full rounded-xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       />
@@ -151,10 +149,11 @@ function CommentBubble({
   onDelete: (id: string) => void;
   currentUserId?: string | null;
 }) {
+  const { t } = useLocale();
   const isOwn = comment.author_user_id === currentUserId;
   const authorLabel =
     comment.author_name ??
-    (comment.author_user_id ? `Kullanıcı ${comment.author_user_id.slice(0, 6)}` : "Anonim");
+    (comment.author_user_id ? `${t("briefs.comments.user")} ${comment.author_user_id.slice(0, 6)}` : t("briefs.comments.anonymous"));
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const images = (comment.attachments ?? []).filter((a) => mediaType(a.mime_type) === "image");
@@ -209,7 +208,7 @@ function CommentBubble({
         <button
           onClick={() => onDelete(comment.id)}
           className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-text-muted hover:text-red-500"
-          title="Yorumu sil"
+          title={t("briefs.comments.delete")}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -233,6 +232,7 @@ interface ThreadCardProps {
 }
 
 function ThreadCard({ thread, agencyId, accessToken, currentUserId, onRefresh, onUploadAttachment }: ThreadCardProps) {
+  const { t } = useLocale();
   const [expanded, setExpanded] = useState(true);
   const [showReply, setShowReply] = useState(false);
 
@@ -296,7 +296,7 @@ function ThreadCard({ thread, agencyId, accessToken, currentUserId, onRefresh, o
         >
           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isResolved ? "bg-emerald-400" : "bg-blue-400"}`} />
           <span className="text-xs font-medium text-text truncate">
-            {thread.comments[0]?.body.replace(/<[^>]*>/g, "").slice(0, 60) ?? "Yorum yok"}
+            {thread.comments[0]?.body.replace(/<[^>]*>/g, "").slice(0, 60) ?? t("briefs.comments.noComment")}
             {(thread.comments[0]?.body.replace(/<[^>]*>/g, "").length ?? 0) > 60 && "…"}
           </span>
           <span className="text-[10px] text-text-muted flex-shrink-0">
@@ -317,7 +317,7 @@ function ThreadCard({ thread, agencyId, accessToken, currentUserId, onRefresh, o
               : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
           }`}
         >
-          {isResolved ? "Yeniden Aç" : "Çözüldü"}
+          {isResolved ? t("briefs.actions.reopen") : t("briefs.actions.resolve")}
         </button>
       </div>
 
@@ -344,7 +344,7 @@ function ThreadCard({ thread, agencyId, accessToken, currentUserId, onRefresh, o
                   }}
                   onUploadAttachment={onUploadAttachment}
                   accessToken={accessToken}
-                  placeholder="Yanıt yaz…"
+                  placeholder={t("briefs.comments.replyPlaceholder")}
                   showTypeSelector={false}
                   defaultVisibility="internal"
                   mentionCandidatesFetcher={fetchMentionCandidates}
@@ -356,7 +356,7 @@ function ThreadCard({ thread, agencyId, accessToken, currentUserId, onRefresh, o
                   className="text-xs text-text-muted hover:text-accent transition-colors flex items-center gap-1.5 py-1"
                 >
                   <MessageSquare className="w-3 h-3" />
-                  Cevapla
+                  {t("briefs.actions.reply")}
                 </button>
               )}
             </div>
@@ -379,6 +379,7 @@ interface CommentPanelProps {
 }
 
 export function CommentPanel({ briefId, agencyId, accessToken, currentUserId, onUploadAttachment, onThreadsLoaded }: CommentPanelProps) {
+  const { t } = useLocale();
   const [threads, setThreads] = useState<ThreadRead[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -432,7 +433,7 @@ export function CommentPanel({ briefId, agencyId, accessToken, currentUserId, on
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-text">
-          Yorumlar
+          {t("briefs.comments.title")}
           {threads.length > 0 && (
             <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-accent/10 text-accent text-[10px] font-bold">
               {threads.length}
@@ -446,7 +447,7 @@ export function CommentPanel({ briefId, agencyId, accessToken, currentUserId, on
         onSubmit={handleCreateThread}
         onUploadAttachment={onUploadAttachment}
         accessToken={accessToken}
-        placeholder="Yeni yorum, revize notu veya not ekle…"
+        placeholder={t("briefs.comments.newPlaceholder")}
         showTypeSelector
         defaultVisibility="internal"
         mentionCandidatesFetcher={fetchMentionCandidates}
@@ -464,8 +465,8 @@ export function CommentPanel({ briefId, agencyId, accessToken, currentUserId, on
       {/* Empty */}
       {!loading && threads.length === 0 && (
         <div className="rounded-xl border border-dashed border-border bg-surface/50 py-8 text-center">
-          <p className="text-sm text-text-muted">Henüz yorum yok.</p>
-          <p className="text-xs text-text-muted mt-1">İlk yorumu eklemek için yukarıdaki kutuyu kullanın.</p>
+          <p className="text-sm text-text-muted">{t("briefs.comments.empty")}</p>
+          <p className="text-xs text-text-muted mt-1">{t("briefs.comments.emptyHelp")}</p>
         </div>
       )}
 
@@ -493,7 +494,7 @@ export function CommentPanel({ briefId, agencyId, accessToken, currentUserId, on
             <svg className="w-3.5 h-3.5 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            Çözülmüş ({resolvedThreads.length})
+            {t("briefs.comments.resolved", { count: resolvedThreads.length })}
           </summary>
           <div className="space-y-2 mt-2">
             {resolvedThreads.map((t) => (

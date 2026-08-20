@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ApiError, mfaApi } from "@/lib/api-client";
+import { useLocale } from "@/context/locale-context";
 
 interface MfaSetupCardProps {
   accessToken: string | null;
@@ -12,6 +13,7 @@ interface MfaSetupCardProps {
 type Stage = "idle" | "qr" | "confirm" | "recovery_shown" | "disable";
 
 export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCardProps) {
+  const { t } = useLocale();
   const [stage, setStage] = useState<Stage>("idle");
   const [secret, setSecret] = useState<string | null>(null);
   const [otpauthUrl, setOtpauthUrl] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
       setOtpauthUrl(res.otpauth_url);
       setStage("qr");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "MFA kurulumu başlatılamadı.");
+      setError(e instanceof ApiError ? e.message : t("settings.mfa.setupError"));
     } finally {
       setLoading(false);
     }
@@ -47,7 +49,7 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
       setCode("");
       onChanged();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Kod doğrulanamadı.");
+      setError(e instanceof ApiError ? e.message : t("settings.mfa.codeError"));
     } finally {
       setLoading(false);
     }
@@ -63,7 +65,7 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
       setCode("");
       onChanged();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "MFA devre dışı bırakılamadı.");
+      setError(e instanceof ApiError ? e.message : t("settings.mfa.disableError"));
     } finally {
       setLoading(false);
     }
@@ -74,18 +76,18 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
       <div className="bg-surface border border-border rounded-2xl p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-sm font-semibold text-text mb-1">İki Faktörlü Kimlik Doğrulama (MFA)</h3>
-            <p className="text-xs text-text-muted">MFA aktif — hesabınız ek koruma altında.</p>
+            <h3 className="text-sm font-semibold text-text mb-1">{t("settings.security.mfaTitle")}</h3>
+            <p className="text-xs text-text-muted">{t("settings.security.mfaEnabledDescription")}</p>
           </div>
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success flex-shrink-0">
-            Aktif
+            {t("settings.security.enabled")}
           </span>
         </div>
         <button
           onClick={() => setStage("disable")}
           className="mt-4 text-xs text-danger hover:underline"
         >
-          MFA&apos;yı devre dışı bırak
+          {t("settings.mfa.disable")}
         </button>
       </div>
     );
@@ -95,16 +97,16 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
     <div className="bg-surface border border-border rounded-2xl p-6">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-text mb-1">İki Faktörlü Kimlik Doğrulama (MFA)</h3>
+          <h3 className="text-sm font-semibold text-text mb-1">{t("settings.security.mfaTitle")}</h3>
           <p className="text-xs text-text-muted">
             {stage === "disable"
-              ? "Devre dışı bırakmak için authenticator uygulamanızdaki güncel kodu girin."
-              : "Hesap güvenliğinizi artırmak için etkinleştirin."}
+              ? t("settings.mfa.disableHelp")
+              : t("settings.mfa.enableHelp")}
           </p>
         </div>
         {stage === "idle" && (
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning flex-shrink-0">
-            Devre Dışı
+            {t("settings.security.disabled")}
           </span>
         )}
       </div>
@@ -119,17 +121,17 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
           disabled={loading}
           className="px-4 py-2 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 disabled:opacity-50 transition-colors"
         >
-          {loading ? "Başlatılıyor…" : "MFA'yı Etkinleştir"}
+          {t(loading ? "settings.mfa.starting" : "settings.mfa.enable")}
         </button>
       )}
 
       {stage === "qr" && secret && (
         <div className="space-y-4">
           <p className="text-xs text-text-muted">
-            Authenticator uygulamanıza (Google Authenticator, 1Password vb.) bu anahtarı manuel ekleyin, ardından 6 haneli kodu girin.
+            {t("settings.mfa.setupHelp")}
           </p>
           <div className="bg-surface-2 border border-border rounded-lg px-4 py-3">
-            <p className="text-xs text-text-muted mb-1">Gizli anahtar</p>
+            <p className="text-xs text-text-muted mb-1">{t("settings.mfa.secret")}</p>
             <code className="text-sm font-mono text-accent break-all">{secret}</code>
           </div>
           {otpauthUrl && (
@@ -139,7 +141,7 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
             <input
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              placeholder="6 haneli kod"
+              placeholder={t("settings.mfa.codePlaceholder")}
               inputMode="numeric"
               className="w-40 bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm font-mono text-center text-text focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
@@ -148,7 +150,7 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
               disabled={loading || code.length !== 6}
               className="px-4 py-2 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 disabled:opacity-50 transition-colors"
             >
-              {loading ? "Doğrulanıyor…" : "Doğrula ve Etkinleştir"}
+              {t(loading ? "settings.mfa.verifying" : "settings.mfa.verifyEnable")}
             </button>
           </div>
         </div>
@@ -157,7 +159,7 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
       {stage === "recovery_shown" && (
         <div className="space-y-3">
           <div className="p-3 rounded-lg bg-success/10 border border-success/20 text-sm text-success">
-            MFA etkinleştirildi. Aşağıdaki kurtarma kodlarını güvenli bir yerde saklayın — bir daha gösterilmeyecek.
+            {t("settings.mfa.recoveryHelp")}
           </div>
           <div className="grid grid-cols-2 gap-2">
             {recoveryCodes.map((c) => (
@@ -168,7 +170,7 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
             onClick={() => setStage("idle")}
             className="text-xs text-accent hover:underline"
           >
-            Tamamlandı
+            {t("settings.mfa.done")}
           </button>
         </div>
       )}
@@ -178,7 +180,7 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
           <input
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            placeholder="6 haneli kod"
+            placeholder={t("settings.mfa.codePlaceholder")}
             inputMode="numeric"
             className="w-40 bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm font-mono text-center text-text focus:outline-none focus:ring-2 focus:ring-accent/30"
           />
@@ -187,10 +189,10 @@ export function MfaSetupCard({ accessToken, mfaEnabled, onChanged }: MfaSetupCar
             disabled={loading || code.length !== 6}
             className="px-4 py-2 bg-danger text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
           >
-            {loading ? "İşleniyor…" : "Devre Dışı Bırak"}
+            {t(loading ? "settings.mfa.processing" : "settings.mfa.disableAction")}
           </button>
           <button onClick={() => { setStage("idle"); setCode(""); setError(null); }} className="text-xs text-text-muted hover:text-text">
-            Vazgeç
+            {t("common.actions.cancel")}
           </button>
         </div>
       )}

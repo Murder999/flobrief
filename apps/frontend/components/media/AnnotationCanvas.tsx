@@ -4,6 +4,7 @@ import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react
 import { cn } from "@/lib/utils";
 import type { AnnotationRead } from "@/lib/api-client";
 import { useAuthBlob } from "./MediaPreview";
+import { useLocale } from "@/context/locale-context";
 
 interface AnnotationCanvasProps {
   assetId: string;
@@ -175,6 +176,7 @@ export default function AnnotationCanvas({
   onCloseAnnotationPopover,
   pulseAnnotationId,
 }: AnnotationCanvasProps) {
+  const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const markerButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -330,7 +332,7 @@ export default function AnnotationCanvas({
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
           </svg>
-          <span className="text-xs">Görsel yükleniyor…</span>
+          <span className="text-xs">{t("briefs.media.loading")}</span>
         </div>
       </div>
     );
@@ -339,7 +341,7 @@ export default function AnnotationCanvas({
   if (!blobUrl) {
     return (
       <div className={cn("flex items-center justify-center bg-surface-2 rounded-xl", className)}>
-        <p className="text-sm text-text-muted">Görsel yüklenemedi</p>
+        <p className="text-sm text-text-muted">{t("briefs.media.loadFailed")}</p>
       </div>
     );
   }
@@ -356,7 +358,7 @@ export default function AnnotationCanvas({
       )}
       onClick={handleClick}
       role={annotationMode ? "application" : undefined}
-      aria-label={annotationMode ? "Revizyon noktası eklemek için görsele tıklayın" : undefined}
+      aria-label={annotationMode ? t("briefs.annotation.canvasAria") : undefined}
     >
       <div className="absolute inset-0 overflow-hidden rounded-xl">
         <img
@@ -384,8 +386,12 @@ export default function AnnotationCanvas({
         const colorClass = isResolved
           ? "bg-surface-2 border-border text-text-muted"
           : (TYPE_COLORS[ann.annotation_type] ?? TYPE_COLORS.general);
-        const preview = ann.body ? ann.body.slice(0, 80) : "Revizyon notu";
-        const label = `${isResolved ? "Çözüldü" : "Açık"} revizyon #${ann.label_number}: ${preview}`;
+        const preview = ann.body ? ann.body.slice(0, 80) : t("briefs.comments.revisionNote");
+        const label = t("briefs.annotation.markerAria", {
+          status: t(isResolved ? "briefs.annotation.resolved" : "briefs.annotation.open"),
+          number: ann.label_number,
+          preview,
+        });
 
         return (
           <span key={ann.id} className="absolute" style={{ ...pinStyle(ann.x_percent, ann.y_percent), transform: "translate(-50%, -50%)" }}>
@@ -451,7 +457,7 @@ export default function AnnotationCanvas({
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
             </svg>
-            Revize vermek istediğiniz noktaya tıklayın · Çıkmak için Esc
+            {t("briefs.annotation.canvasHint")}
           </span>
         </div>
       )}
@@ -462,7 +468,7 @@ export default function AnnotationCanvas({
           containerSize={containerSize}
           compact={isMobile}
           onRequestClose={closeNewPin}
-          ariaLabel="Revizyon Noktası Ekle"
+          ariaLabel={t("briefs.annotation.add")}
         >
           {renderNewPinComposer()}
         </PopoverBubble>
@@ -474,7 +480,7 @@ export default function AnnotationCanvas({
           containerSize={containerSize}
           compact={isMobile}
           onRequestClose={closeAnnotationPopover}
-          ariaLabel={`Revizyon #${activeAnnotation.label_number} detayı`}
+          ariaLabel={t("briefs.annotation.detailAria", { number: activeAnnotation.label_number })}
         >
           {renderAnnotationPopover(activeAnnotation)}
         </PopoverBubble>

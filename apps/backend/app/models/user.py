@@ -49,6 +49,7 @@ class User(BaseModel):
     whatsapp_consent_version: Mapped[str | None] = mapped_column(
         String(20), nullable=True, default=None
     )
+    locale: Mapped[str | None] = mapped_column(String(5), nullable=True, default=None)
 
     # No agency_id or brand_id — tenant membership is via AgencyMember / BrandMember tables.
     # platform_admin users have no membership records.

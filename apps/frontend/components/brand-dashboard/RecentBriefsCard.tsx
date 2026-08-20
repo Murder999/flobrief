@@ -5,6 +5,7 @@ import { FileText } from "lucide-react";
 import type { BriefRead } from "@/lib/api-client";
 import { BriefStatusBadge } from "@/components/briefs/brief-status-badge";
 import { isOverdue, fmtShortDate, fmtRelative } from "./shared";
+import { useLocale } from "@/context/locale-context";
 
 function RowSkeleton() {
   return (
@@ -23,6 +24,7 @@ export function RecentBriefsCard({ briefs, error, onRetry }: {
   error: boolean;
   onRetry: () => void;
 }) {
+  const { t } = useLocale();
   const recent = briefs
     ? [...new Map(briefs.map((b) => [b.id, b])).values()]
         .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -32,16 +34,16 @@ export function RecentBriefsCard({ briefs, error, onRetry }: {
   return (
     <div className="flex h-full flex-col rounded-xl border border-border bg-surface overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h2 className="text-sm font-semibold text-text">Son Briefler</h2>
+        <h2 className="text-sm font-semibold text-text">{t("dashboard.brand.recentBriefs")}</h2>
         <Link href="/brand/briefs" className="text-xs text-accent hover:underline">
-          Tüm briefleri görüntüle
+          {t("dashboard.brand.viewAllBriefs")}
         </Link>
       </div>
 
       {error ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-6 text-center">
-          <p className="text-[13px] text-danger">Veriler yüklenemedi.</p>
-          <button onClick={onRetry} className="text-xs text-accent hover:underline">Tekrar dene</button>
+          <p className="text-[13px] text-danger">{t("dashboard.brand.loadFailed")}</p>
+          <button onClick={onRetry} className="text-xs text-accent hover:underline">{t("common.actions.retry")}</button>
         </div>
       ) : briefs === null ? (
         <>
@@ -54,8 +56,8 @@ export function RecentBriefsCard({ briefs, error, onRetry }: {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2">
             <FileText className="h-4 w-4 text-text-muted" />
           </div>
-          <p className="text-[13px] font-medium text-text">Henüz brief yok</p>
-          <p className="text-[11.5px] text-text-muted">Ajansınız brief oluşturduğunda burada görünecek.</p>
+          <p className="text-[13px] font-medium text-text">{t("dashboard.brand.emptyBriefs")}</p>
+          <p className="text-[11.5px] text-text-muted">{t("dashboard.brand.emptyBriefsBody")}</p>
         </div>
       ) : (
         <div>
@@ -70,7 +72,7 @@ export function RecentBriefsCard({ briefs, error, onRetry }: {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-medium text-text group-hover:text-accent">{brief.title}</p>
                   <p className={`mt-0.5 text-[11px] ${od ? "font-medium text-danger" : "text-text-muted"}`}>
-                    {brief.deadline ? `Son tarih: ${fmtShortDate(brief.deadline)}${od ? " · Gecikti" : ""} · ` : ""}
+                    {brief.deadline ? `${t("dashboard.brand.deadline", { date: fmtShortDate(brief.deadline) })}${od ? ` · ${t("dashboard.brand.overdueLabel")}` : ""} · ` : ""}
                     {fmtRelative(brief.updated_at)}
                   </p>
                 </div>

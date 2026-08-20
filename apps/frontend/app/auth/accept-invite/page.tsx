@@ -7,10 +7,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/context/workspace-context";
 import { Button } from "@/components/ui/button";
 import { RoleBadge } from "@/components/team/role-badge";
+import { useLocale } from "@/context/locale-context";
 
 type PageState = "loading" | "preview" | "accepting" | "accepted" | "error";
 
 function AcceptInviteContent() {
+  const { t } = useLocale();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, accessToken } = useAuth();
@@ -23,7 +25,7 @@ function AcceptInviteContent() {
 
   useEffect(() => {
     if (!token) {
-      setErrorMsg("Davet bağlantısı geçersiz.");
+      setErrorMsg(t("auth.invite.invalidLink"));
       setState("error");
       return;
     }
@@ -35,10 +37,10 @@ function AcceptInviteContent() {
         setState("preview");
       })
       .catch((err: unknown) => {
-        setErrorMsg(err instanceof Error ? err.message : "Davet bulunamadı veya süresi dolmuş.");
+        setErrorMsg(err instanceof Error ? err.message : t("auth.invite.notFound"));
         setState("error");
       });
-  }, [token]);
+  }, [t, token]);
 
   const handleAccept = async () => {
     if (!accessToken) {
@@ -55,7 +57,7 @@ function AcceptInviteContent() {
       }
       setState("accepted");
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Davet kabul edilemedi.");
+      setErrorMsg(err instanceof Error ? err.message : t("auth.invite.acceptFailed"));
       setState("error");
     }
   };
@@ -68,7 +70,7 @@ function AcceptInviteContent() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <span className="text-sm">Davet yükleniyor…</span>
+          <span className="text-sm">{t("auth.invite.loading")}</span>
         </div>
       </div>
     );
@@ -83,12 +85,12 @@ function AcceptInviteContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-text mb-2">Daveti Kabul Ettiniz</h1>
+          <h1 className="text-xl font-bold text-text mb-2">{t("auth.invite.acceptedTitle")}</h1>
           <p className="text-sm text-text-muted mb-6">
-            {preview?.agency_name && `${preview.agency_name} ekibine hoş geldiniz.`}
+            {preview?.agency_name && t("auth.invite.welcome", { agency: preview.agency_name })}
           </p>
           <Button onClick={() => router.replace("/dashboard")} className="w-full">
-            Dashboard&apos;a Git
+            {t("auth.invite.goDashboard")}
           </Button>
         </div>
       </div>
@@ -104,10 +106,10 @@ function AcceptInviteContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-text mb-2">Davet Geçersiz</h1>
+          <h1 className="text-xl font-bold text-text mb-2">{t("auth.invite.invalidTitle")}</h1>
           <p className="text-sm text-text-muted mb-6">{errorMsg}</p>
           <Button onClick={() => router.replace("/")} variant="secondary" className="w-full">
-            Ana Sayfaya Dön
+            {t("auth.invite.home")}
           </Button>
         </div>
       </div>
@@ -121,9 +123,9 @@ function AcceptInviteContent() {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-accent/20 rounded-2xl mb-4">
             <span className="text-xl font-bold text-accent">F</span>
           </div>
-          <h1 className="text-2xl font-bold text-text">Davet Aldınız</h1>
+          <h1 className="text-2xl font-bold text-text">{t("auth.invite.receivedTitle")}</h1>
           <p className="mt-1 text-sm text-text-muted">
-            Aşağıdaki daveti kabul ederek Flobrief&apos;e katılabilirsiniz.
+            {t("auth.invite.receivedBody")}
           </p>
         </div>
 
@@ -147,7 +149,7 @@ function AcceptInviteContent() {
 
           {preview?.message && (
             <div className="px-4 py-3 bg-surface-2 rounded-xl border border-border">
-              <p className="text-xs text-text-muted mb-1">Mesaj</p>
+              <p className="text-xs text-text-muted mb-1">{t("auth.invite.message")}</p>
               <p className="text-sm text-text">{preview.message}</p>
             </div>
           )}
@@ -156,7 +158,7 @@ function AcceptInviteContent() {
             {!user ? (
               <>
                 <p className="text-xs text-text-muted text-center mb-1">
-                  Daveti kabul etmek için giriş yapmanız gerekiyor.
+                  {t("auth.invite.loginRequired")}
                 </p>
                 <Button
                   onClick={() =>
@@ -164,7 +166,7 @@ function AcceptInviteContent() {
                   }
                   className="w-full"
                 >
-                  Giriş Yap ve Kabul Et
+                  {t("auth.invite.loginAccept")}
                 </Button>
                 <Button
                   onClick={() =>
@@ -173,20 +175,20 @@ function AcceptInviteContent() {
                   variant="secondary"
                   className="w-full"
                 >
-                  Hesap Oluştur ve Kabul Et
+                  {t("auth.invite.registerAccept")}
                 </Button>
               </>
             ) : (
               <>
                 <p className="text-xs text-text-muted text-center mb-1">
-                  <span className="font-medium text-text">{user.email}</span> hesabıyla kabul ediyorsunuz.
+                  {t("auth.invite.account", { email: user.email })}
                 </p>
                 <Button
                   onClick={handleAccept}
                   disabled={state === "accepting"}
                   className="w-full"
                 >
-                  {state === "accepting" ? "Kabul Ediliyor…" : "Daveti Kabul Et"}
+                  {state === "accepting" ? t("auth.invite.accepting") : t("auth.invite.accept")}
                 </Button>
               </>
             )}
@@ -198,6 +200,7 @@ function AcceptInviteContent() {
 }
 
 export default function AcceptInvitePage() {
+  const { t } = useLocale();
   return (
     <Suspense
       fallback={
@@ -207,7 +210,7 @@ export default function AcceptInvitePage() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <span className="text-sm">Yükleniyor…</span>
+            <span className="text-sm">{t("common.status.loading")}</span>
           </div>
         </div>
       }

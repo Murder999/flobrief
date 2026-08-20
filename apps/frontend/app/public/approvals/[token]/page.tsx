@@ -7,28 +7,34 @@ import {
   type PublicApprovalView,
 } from "@/lib/api-client";
 import { CheckCircle2, RotateCcw, MessageSquare, Clock, XCircle, AlertCircle } from "lucide-react";
+import { useLocale } from "@/context/locale-context";
+import { LanguageSelector } from "@/components/i18n/language-selector";
+import { formatLocalizedDate } from "@/lib/i18n/format";
 
-function fmtDate(iso: string | null | undefined): string {
+function fmtDate(iso: string | null | undefined, locale: "en" | "tr"): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+  return formatLocalizedDate(iso, locale, { day: "numeric", month: "long", year: "numeric" });
 }
 
 const PRIORITY_LABEL: Record<string, string> = {
   urgent: "Acil", high: "Yüksek", normal: "Normal", low: "Düşük",
+};
+const PRIORITY_LABEL_EN: Record<string, string> = {
+  urgent: "Urgent", high: "High", normal: "Normal", low: "Low",
 };
 
 const PRIORITY_COLOR: Record<string, string> = {
   urgent: "text-red-500", high: "text-amber-500", normal: "text-blue-500", low: "text-gray-400",
 };
 
-function StatusBanner({ status, decidedAt }: { status: PublicApprovalView["status"]; decidedAt: string | null }) {
+function StatusBanner({ status, decidedAt, locale }: { status: PublicApprovalView["status"]; decidedAt: string | null; locale: "en" | "tr" }) {
   if (status === "approved") {
     return (
       <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-emerald-50 border border-emerald-200">
         <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-emerald-700">Bu brief onaylandı</p>
-          {decidedAt && <p className="text-xs text-emerald-600">{fmtDate(decidedAt)} tarihinde</p>}
+          <p className="text-sm font-semibold text-emerald-700">{locale === "tr" ? "Bu brief onaylandı" : "This brief was approved"}</p>
+          {decidedAt && <p className="text-xs text-emerald-600">{locale === "tr" ? `${fmtDate(decidedAt, locale)} tarihinde` : `On ${fmtDate(decidedAt, locale)}`}</p>}
         </div>
       </div>
     );
@@ -38,8 +44,8 @@ function StatusBanner({ status, decidedAt }: { status: PublicApprovalView["statu
       <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-amber-50 border border-amber-200">
         <RotateCcw className="w-5 h-5 text-amber-500 flex-shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-amber-700">Revizyon talep edildi</p>
-          {decidedAt && <p className="text-xs text-amber-600">{fmtDate(decidedAt)} tarihinde</p>}
+          <p className="text-sm font-semibold text-amber-700">{locale === "tr" ? "Revizyon talep edildi" : "A revision was requested"}</p>
+          {decidedAt && <p className="text-xs text-amber-600">{locale === "tr" ? `${fmtDate(decidedAt, locale)} tarihinde` : `On ${fmtDate(decidedAt, locale)}`}</p>}
         </div>
       </div>
     );
@@ -48,7 +54,7 @@ function StatusBanner({ status, decidedAt }: { status: PublicApprovalView["statu
     return (
       <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-gray-50 border border-gray-200">
         <XCircle className="w-5 h-5 text-gray-400 flex-shrink-0" />
-        <p className="text-sm font-semibold text-gray-600">Bu onay talebi iptal edildi</p>
+        <p className="text-sm font-semibold text-gray-600">{locale === "tr" ? "Bu onay talebi iptal edildi" : "This approval request was cancelled"}</p>
       </div>
     );
   }
@@ -56,7 +62,7 @@ function StatusBanner({ status, decidedAt }: { status: PublicApprovalView["statu
     return (
       <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-red-50 border border-red-200">
         <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-        <p className="text-sm font-semibold text-red-700">Bu onay talebinin süresi doldu</p>
+        <p className="text-sm font-semibold text-red-700">{locale === "tr" ? "Bu onay talebinin süresi doldu" : "This approval request has expired"}</p>
       </div>
     );
   }
@@ -64,6 +70,7 @@ function StatusBanner({ status, decidedAt }: { status: PublicApprovalView["statu
 }
 
 export default function PublicApprovalPage() {
+  const { locale } = useLocale();
   const { token } = useParams<{ token: string }>();
   const [approval, setApproval] = useState<PublicApprovalView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,11 +95,11 @@ export default function PublicApprovalPage() {
       const data = await publicApprovalApi.getByToken(token);
       setApproval(data);
     } catch {
-      setError("Bu onay talebi bulunamadı veya süresi dolmuş.");
+      setError(locale === "tr" ? "Bu onay talebi bulunamadı veya süresi dolmuş." : "This approval request could not be found or has expired.");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [locale, token]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -105,11 +112,11 @@ export default function PublicApprovalPage() {
         approver_name: approverName.trim() || undefined,
         approver_email: approverEmail.trim() || undefined,
       });
-      setSubmitSuccess("Brief onaylandı! Ajans bildirim aldı.");
+      setSubmitSuccess(locale === "tr" ? "Brief onaylandı! Ajans bildirim aldı." : "Brief approved. The agency has been notified.");
       await load();
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setSubmitError(e?.message ?? "Onay gönderilemedi.");
+      setSubmitError(e?.message ?? (locale === "tr" ? "Onay gönderilemedi." : "The approval could not be submitted."));
     } finally {
       setSubmitting(false);
     }
@@ -125,13 +132,13 @@ export default function PublicApprovalPage() {
         approver_name: approverName.trim() || undefined,
         approver_email: approverEmail.trim() || undefined,
       });
-      setSubmitSuccess("Revizyon talebiniz iletildi.");
+      setSubmitSuccess(locale === "tr" ? "Revizyon talebiniz iletildi." : "Your revision request was submitted.");
       setShowRevisionForm(false);
       setRevisionComment("");
       await load();
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setSubmitError(e?.message ?? "Revizyon gönderilemedi.");
+      setSubmitError(e?.message ?? (locale === "tr" ? "Revizyon gönderilemedi." : "The revision request could not be submitted."));
     } finally {
       setSubmitting(false);
     }
@@ -152,7 +159,7 @@ export default function PublicApprovalPage() {
       await load();
     } catch (err: unknown) {
       const e = err as { message?: string };
-      setSubmitError(e?.message ?? "Yorum gönderilemedi.");
+      setSubmitError(e?.message ?? (locale === "tr" ? "Yorum gönderilemedi." : "The comment could not be submitted."));
     } finally {
       setSubmitting(false);
     }
@@ -174,8 +181,8 @@ export default function PublicApprovalPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-sm border border-red-100 p-8 text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h1 className="text-lg font-bold text-gray-900 mb-2">Onay Talebi Bulunamadı</h1>
-          <p className="text-sm text-gray-500">{error ?? "Bu link geçersiz ya da süresi dolmuş."}</p>
+          <h1 className="text-lg font-bold text-gray-900 mb-2">{locale === "tr" ? "Onay Talebi Bulunamadı" : "Approval request not found"}</h1>
+          <p className="text-sm text-gray-500">{error ?? (locale === "tr" ? "Bu link geçersiz ya da süresi dolmuş." : "This link is invalid or has expired.")}</p>
         </div>
       </div>
     );
@@ -195,12 +202,13 @@ export default function PublicApprovalPage() {
             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
               <span className="text-white text-xs font-bold">F</span>
             </div>
-            <span className="text-sm font-semibold text-gray-900">Flobrief Onay Portalı</span>
+            <span className="text-sm font-semibold text-gray-900">PostPiloter {locale === "tr" ? "Onay Portalı" : "Approval Portal"}</span>
           </div>
+          <LanguageSelector compact />
           {isPending && (
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
               <Clock className="w-3.5 h-3.5" />
-              {hoursLeft > 0 ? `${hoursLeft} saat kaldı` : "Süresi yakında dolacak"}
+              {hoursLeft > 0 ? (locale === "tr" ? `${hoursLeft} saat kaldı` : `${hoursLeft} hours left`) : (locale === "tr" ? "Süresi yakında dolacak" : "Expires soon")}
             </div>
           )}
         </div>
@@ -209,7 +217,7 @@ export default function PublicApprovalPage() {
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         {/* Status banner */}
         {!isPending && (
-          <StatusBanner status={approval.status} decidedAt={approval.decided_at} />
+          <StatusBanner status={approval.status} decidedAt={approval.decided_at} locale={locale} />
         )}
 
         {/* Success message */}
@@ -229,15 +237,15 @@ export default function PublicApprovalPage() {
             <h1 className="text-xl font-bold text-gray-900 leading-snug">{approval.brief_title}</h1>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className={`text-xs font-medium ${PRIORITY_COLOR[approval.brief_priority] ?? "text-gray-500"}`}>
-                {PRIORITY_LABEL[approval.brief_priority] ?? approval.brief_priority}
+                {(locale === "tr" ? PRIORITY_LABEL : PRIORITY_LABEL_EN)[approval.brief_priority] ?? approval.brief_priority}
               </span>
               {approval.brief_deadline && (
                 <span className="text-xs text-gray-500">
-                  Termin: {fmtDate(approval.brief_deadline)}
+                  {locale === "tr" ? "Termin" : "Due"}: {fmtDate(approval.brief_deadline, locale)}
                 </span>
               )}
               {approval.template_name && (
-                <span className="text-xs text-gray-500">Şablon: {approval.template_name}</span>
+                <span className="text-xs text-gray-500">{locale === "tr" ? "Şablon" : "Template"}: {approval.template_name}</span>
               )}
               <span className="text-xs text-gray-400">v{approval.version_number}</span>
             </div>
@@ -288,13 +296,13 @@ export default function PublicApprovalPage() {
               <input
                 value={approverName}
                 onChange={(e) => setApproverName(e.target.value)}
-                placeholder="Adınız"
+                placeholder={locale === "tr" ? "Adınız" : "Your name"}
                 className="px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400"
               />
               <input
                 value={approverEmail}
                 onChange={(e) => setApproverEmail(e.target.value)}
-                placeholder="E-posta adresiniz"
+                placeholder={locale === "tr" ? "E-posta adresiniz" : "Your email address"}
                 type="email"
                 className="px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400"
               />
@@ -312,35 +320,35 @@ export default function PublicApprovalPage() {
                 className="flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl shadow-sm disabled:opacity-60 transition-colors"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                {submitting ? "Gönderiliyor…" : "Onayla"}
+                {submitting ? (locale === "tr" ? "Gönderiliyor…" : "Submitting…") : (locale === "tr" ? "Onayla" : "Approve")}
               </button>
               <button
                 onClick={() => { setShowRevisionForm(!showRevisionForm); setShowCommentForm(false); }}
                 className="flex items-center justify-center gap-2 px-5 py-3.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-xl border border-amber-200 transition-colors"
               >
                 <RotateCcw className="w-4 h-4" />
-                Revizyon İste
+                {locale === "tr" ? "Revizyon İste" : "Request revision"}
               </button>
             </div>
 
             {showRevisionForm && (
               <div className="bg-white rounded-2xl border border-amber-200 p-5 space-y-3">
-                <p className="text-sm font-semibold text-gray-800">Revizyon nedeni</p>
+                <p className="text-sm font-semibold text-gray-800">{locale === "tr" ? "Revizyon nedeni" : "Revision reason"}</p>
                 <textarea
                   value={revisionComment}
                   onChange={(e) => setRevisionComment(e.target.value)}
-                  placeholder="Hangi konuların revize edilmesini istiyorsunuz?"
+                  placeholder={locale === "tr" ? "Hangi konuların revize edilmesini istiyorsunuz?" : "What would you like to be revised?"}
                   rows={4}
                   className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-400"
                 />
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowRevisionForm(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">İptal</button>
+                  <button onClick={() => setShowRevisionForm(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">{locale === "tr" ? "İptal" : "Cancel"}</button>
                   <button
                     onClick={handleRevision}
                     disabled={submitting || !revisionComment.trim()}
                     className="px-4 py-2 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-xl disabled:opacity-50 transition-colors"
                   >
-                    {submitting ? "Gönderiliyor…" : "Revizyon Talebini Gönder"}
+                    {submitting ? (locale === "tr" ? "Gönderiliyor…" : "Submitting…") : (locale === "tr" ? "Revizyon Talebini Gönder" : "Submit revision request")}
                   </button>
                 </div>
               </div>
@@ -358,7 +366,7 @@ export default function PublicApprovalPage() {
         {approval.comments.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-50">
-              <p className="text-sm font-semibold text-gray-900">Yorumlar</p>
+              <p className="text-sm font-semibold text-gray-900">{locale === "tr" ? "Yorumlar" : "Comments"}</p>
             </div>
             <div className="divide-y divide-gray-50">
               {approval.comments.map((c) => (
@@ -368,7 +376,7 @@ export default function PublicApprovalPage() {
                       {(c.author_name ?? c.author_email ?? "?")[0].toUpperCase()}
                     </div>
                     <span className="text-xs font-semibold text-gray-800">{c.author_name ?? c.author_email ?? "Anonim"}</span>
-                    <span className="text-[11px] text-gray-400 ml-auto">{new Date(c.created_at).toLocaleDateString("tr-TR")}</span>
+                    <span className="text-[11px] text-gray-400 ml-auto">{formatLocalizedDate(c.created_at, locale)}</span>
                   </div>
                   <p className="text-sm text-gray-700 leading-relaxed pl-8">{c.comment}</p>
                 </div>
@@ -386,26 +394,26 @@ export default function PublicApprovalPage() {
                 className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <MessageSquare className="w-4 h-4" />
-                Yorum ekle
+                {locale === "tr" ? "Yorum ekle" : "Add comment"}
               </button>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3">
-                <p className="text-sm font-semibold text-gray-800">Yorum ekle</p>
+                <p className="text-sm font-semibold text-gray-800">{locale === "tr" ? "Yorum ekle" : "Add comment"}</p>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Yorumunuzu yazın…"
+                  placeholder={locale === "tr" ? "Yorumunuzu yazın…" : "Write your comment…"}
                   rows={3}
                   className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-400"
                 />
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowCommentForm(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">İptal</button>
+                  <button onClick={() => setShowCommentForm(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">{locale === "tr" ? "İptal" : "Cancel"}</button>
                   <button
                     onClick={handleComment}
                     disabled={submitting || !comment.trim()}
                     className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl disabled:opacity-50 transition-colors"
                   >
-                    {submitting ? "Gönderiliyor…" : "Gönder"}
+                    {submitting ? (locale === "tr" ? "Gönderiliyor…" : "Submitting…") : (locale === "tr" ? "Gönder" : "Send")}
                   </button>
                 </div>
               </div>
@@ -416,7 +424,7 @@ export default function PublicApprovalPage() {
         {/* Footer */}
         <div className="text-center py-4">
           <p className="text-xs text-gray-400">
-            Bu link {fmtDate(approval.expires_at)} tarihine kadar geçerlidir.
+            {locale === "tr" ? `Bu link ${fmtDate(approval.expires_at, locale)} tarihine kadar geçerlidir.` : `This link is valid until ${fmtDate(approval.expires_at, locale)}.`}
           </p>
         </div>
       </div>

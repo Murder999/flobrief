@@ -5,6 +5,8 @@ import type { BrandKPIStats, BriefRead } from "@/lib/api-client";
 import { countDraft, countRevisionLast7Days, countCompletedThisWeek, countPendingApproval } from "./shared";
 import { Package, Clock, RotateCcw, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/context/locale-context";
+import { formatLocalizedNumber } from "@/lib/i18n/format";
 
 type LucideIcon = React.ComponentType<{ className?: string }>;
 
@@ -14,7 +16,7 @@ interface SubMetric {
 }
 
 function Kpi({
-  label, value, icon: Icon, accentCls, href, subs,
+  label, value, icon: Icon, accentCls, href, subs, detail,
 }: {
   label: string;
   value: number;
@@ -22,6 +24,7 @@ function Kpi({
   accentCls: string;
   href: string;
   subs: SubMetric[];
+  detail: string;
 }) {
   return (
     <Link
@@ -33,11 +36,11 @@ function Kpi({
           <Icon className="h-4 w-4" />
         </div>
         <span className="text-[11px] font-medium text-text-muted opacity-0 transition-opacity group-hover:opacity-100">
-          Detay →
+          {detail}
         </span>
       </div>
       <div>
-        <p className="text-2xl font-bold leading-none tracking-tight text-text">{value.toLocaleString("tr-TR")}</p>
+        <p className="text-2xl font-bold leading-none tracking-tight text-text">{formatLocalizedNumber(value)}</p>
         <p className="mt-1.5 text-[12.5px] text-text-muted">{label}</p>
       </div>
       {subs.length > 0 && (
@@ -59,6 +62,7 @@ function KpiSkeleton() {
 }
 
 export function KpiCards({ kpis, briefs }: { kpis: BrandKPIStats | null; briefs: BriefRead[] | null }) {
+  const { t } = useLocale();
   if (!kpis || !briefs) {
     return (
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -75,37 +79,41 @@ export function KpiCards({ kpis, briefs }: { kpis: BrandKPIStats | null; briefs:
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       <Kpi
-        label="Toplam Brief"
+        label={t("dashboard.brand.totalBriefs")}
+        detail={t("dashboard.brand.detail")}
         value={kpis.total_briefs}
         icon={Package}
         accentCls="bg-accent/12 text-accent"
         href="/brand/briefs"
         subs={[
-          { label: "üretimde", value: kpis.in_production },
-          { label: "taslak", value: countDraft(briefs) },
+          { label: t("dashboard.brand.inProduction"), value: kpis.in_production },
+          { label: t("dashboard.brand.draft"), value: countDraft(briefs) },
         ]}
       />
       <Kpi
-        label="Onay Süreci"
+        label={t("dashboard.brand.approvalProcess")}
+        detail={t("dashboard.brand.detail")}
         value={pendingApproval}
         icon={Clock}
         accentCls="bg-amber-500/12 text-amber-500"
         href="/brand/approvals"
         subs={[
-          { label: "teslim bekliyor", value: kpis.pending_deliverables },
-          { label: "teslim onaylandı", value: kpis.approved_deliverables },
+          { label: t("dashboard.brand.deliverablesPending"), value: kpis.pending_deliverables },
+          { label: t("dashboard.brand.deliverablesApproved"), value: kpis.approved_deliverables },
         ]}
       />
       <Kpi
-        label="Revizyon"
+        label={t("dashboard.brand.revision")}
+        detail={t("dashboard.brand.detail")}
         value={kpis.revision_requested}
         icon={RotateCcw}
         accentCls="bg-orange-500/12 text-orange-500"
         href="/brand/briefs?status=revision_requested"
-        subs={[{ label: "son 7 gün", value: countRevisionLast7Days(briefs) }]}
+        subs={[{ label: t("dashboard.brand.lastSevenDays"), value: countRevisionLast7Days(briefs) }]}
       />
       <Kpi
-        label="Onaylanan"
+        label={t("dashboard.brand.approved")}
+        detail={t("dashboard.brand.detail")}
         value={kpis.approved}
         icon={CheckCircle}
         accentCls={cn(
@@ -114,8 +122,8 @@ export function KpiCards({ kpis, briefs }: { kpis: BrandKPIStats | null; briefs:
         )}
         href="/brand/briefs?status=approved"
         subs={[
-          { label: "geciken", value: kpis.overdue_briefs },
-          { label: "bu hafta tamam.", value: countCompletedThisWeek(briefs) },
+          { label: t("dashboard.brand.overdue"), value: kpis.overdue_briefs },
+          { label: t("dashboard.brand.completedWeek"), value: countCompletedThisWeek(briefs) },
         ]}
       />
     </div>

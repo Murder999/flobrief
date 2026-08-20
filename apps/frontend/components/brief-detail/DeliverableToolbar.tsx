@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Download, Maximize2, Eye, EyeOff, FileText } from "lucide-react";
 import { fmtDate } from "./shared";
+import { useLocale } from "@/context/locale-context";
 
 interface DeliverableToolbarProps {
   filename: string;
@@ -25,6 +26,7 @@ export function DeliverableToolbar({
   onToggleAnnotationMode,
   showAnnotationAction,
 }: DeliverableToolbarProps) {
+  const { t } = useLocale();
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border bg-surface/70">
       <div className="flex items-center gap-2 min-w-0">
@@ -40,7 +42,7 @@ export function DeliverableToolbar({
           type="button"
           onClick={onMaximize}
           className="p-1.5 rounded-lg text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
-          title="Büyüt"
+          title={t("briefs.media.maximize")}
         >
           <Maximize2 className="w-4 h-4" />
         </button>
@@ -48,7 +50,7 @@ export function DeliverableToolbar({
           type="button"
           onClick={onDownload}
           className="p-1.5 rounded-lg text-text-muted hover:text-accent hover:bg-accent/10 transition-colors"
-          title="İndir"
+          title={t("briefs.actions.download")}
         >
           <Download className="w-4 h-4" />
         </button>
@@ -64,7 +66,7 @@ export function DeliverableToolbar({
             )}
           >
             {annotationMode ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            {annotationMode ? "Revizyon Modunu Kapat" : "Revizyon Noktası Belirle"}
+            {t(annotationMode ? "briefs.deliverable.annotationClose" : "briefs.deliverable.annotationAdd")}
           </button>
         )}
       </div>

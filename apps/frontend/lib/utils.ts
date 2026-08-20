@@ -1,18 +1,19 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { formatLocalizedDate } from "@/lib/i18n/format";
+import type { Locale } from "@/lib/i18n/config";
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("tr-TR", {
+export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions, locale?: Locale): string {
+  return formatLocalizedDate(date, locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",
     ...options,
-  }).format(d);
+  });
 }
 
 export function truncate(str: string, length: number): string {

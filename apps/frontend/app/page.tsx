@@ -18,6 +18,9 @@ import {
   Building2, MessageSquare, Mail,
 } from "lucide-react";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { LanguageSelector } from "@/components/i18n/language-selector";
+import { EnglishHomePage } from "@/components/marketing/EnglishHomePage";
+import { useLocale } from "@/context/locale-context";
 
 /* ── Motion presets ──────────────────────────────────────────────────────── */
 
@@ -29,15 +32,15 @@ const VP = { once: true, margin: "-80px" } as const;
 /* ── Data ────────────────────────────────────────────────────────────────── */
 
 const stats = [
-  { value: "12×",  label: "daha hızlı brief süreci",   icon: Clock      },
-  { value: "%94",  label: "e-posta trafiğinde azalma", icon: TrendingUp },
-  { value: "3×",   label: "daha hızlı revize döngüsü", icon: Zap        },
-  { value: "1 dk", label: "yeni marka onboarding",     icon: Star       },
+  { value: "Tek yerde", label: "brief'ten onaya kadar tüm süreç", icon: Clock      },
+  { value: "Düzenli",   label: "onay ve revizyon takibi",          icon: TrendingUp },
+  { value: "Şeffaf",    label: "ajans ve marka iletişimi",         icon: Zap        },
+  { value: "Hızlı",     label: "yeni marka çalışma alanı kurulumu", icon: Star       },
 ] as const;
 
 const logos = [
-  "Nike TR", "L'Oréal", "Zara Home", "Vodafone", "Ülker", "Garanti",
-  "Nike TR", "L'Oréal", "Zara Home", "Vodafone", "Ülker", "Garanti",
+  "Brief Yönetimi", "Onay Akışları", "Revizyon Takibi", "İçerik Takvimi", "Ekip İletişimi", "Teslim Yönetimi",
+  "Brief Yönetimi", "Onay Akışları", "Revizyon Takibi", "İçerik Takvimi", "Ekip İletişimi", "Teslim Yönetimi",
 ];
 
 const mockBriefs = [
@@ -1100,7 +1103,7 @@ function PersonaTabs() {
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-text">{p.label} Dashboardu</div>
-                  <div className="text-xs text-text-muted">app.flobrief.com</div>
+                  <div className="text-xs text-text-muted">postpiloter.com</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-3">
@@ -1133,6 +1136,7 @@ function PersonaTabs() {
 /* ── Main export ─────────────────────────────────────────────────────────── */
 
 export default function HomePage() {
+  const { locale } = useLocale();
   const [loginOpen, setLoginOpen] = useState(false);
   const shouldReduceMotion = useReducedMotion() ?? false;
 
@@ -1157,6 +1161,8 @@ export default function HomePage() {
     mouseX.set(0);
     mouseY.set(0);
   }, [mouseX, mouseY]);
+
+  if (locale === "en") return <EnglishHomePage />;
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -1193,6 +1199,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <LanguageSelector compact />
               <button
                 onClick={() => setLoginOpen(true)}
                 className="hidden sm:block px-4 py-2 text-sm text-text-secondary hover:text-text transition-colors rounded-lg hover:bg-hover"
@@ -1276,10 +1283,7 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-            <span>Yüzlerce ajans tarafından kullanılıyor</span>
-            <span className="flex items-center gap-0.5 text-warning">
-              {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}
-            </span>
+            <span>Ajans–müşteri operasyonları için tasarlandı</span>
           </motion.div>
         </motion.div>
 
@@ -1361,7 +1365,7 @@ export default function HomePage() {
                   <div className="flex-1 flex justify-center">
                     <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-1.5">
                       <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                      <span className="text-xs text-text-muted font-mono">app.flobrief.com/dashboard</span>
+                      <span className="text-xs text-text-muted font-mono">postpiloter.com/dashboard</span>
                     </div>
                   </div>
                   <div className="w-16" />
@@ -1513,7 +1517,7 @@ export default function HomePage() {
       <div className="border-b border-border bg-background py-4 overflow-hidden">
         <div className="flex items-center gap-2 text-xs text-text-muted mb-3 px-6">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border-strong to-transparent" />
-          <span className="flex-shrink-0 text-label-xs text-text-muted/60">GÜVENDIKLERI PLATFORM</span>
+          <span className="flex-shrink-0 text-label-xs text-text-muted/60">TEK PLATFORMDA DÜZENLİ OPERASYON</span>
           <div className="flex-1 h-px bg-gradient-to-r from-border-strong via-transparent to-transparent" />
         </div>
         <div className="relative flex">
@@ -1561,7 +1565,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-text">Akıllı Brief Şablonları</h3>
-                  <p className="text-xs text-text-muted">Brief doldurma süresi %70 azalır</p>
+                  <p className="text-xs text-text-muted">Brief toplama sürecini standartlaştırın</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
@@ -1582,7 +1586,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-text">Onay & Revize Akışı</h3>
-                  <p className="text-xs text-text-muted">Revize döngüsü 3× hızlanır</p>
+                  <p className="text-xs text-text-muted">Revizyonları düzenli ve takip edilebilir yönetin</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
@@ -1692,7 +1696,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-text">Akıllı Bildirimler</h3>
-                  <p className="text-xs text-text-muted">E-posta %94 azalır</p>
+                  <p className="text-xs text-text-muted">Onayları dağınık e-posta zincirlerinden çıkarın</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
@@ -1736,8 +1740,8 @@ export default function HomePage() {
       <section id="stats" className="py-24 relative bg-surface">
         <div className="relative mx-auto max-w-5xl px-6">
           <motion.div className="text-center mb-12" initial="hidden" whileInView="visible" viewport={VP} variants={vStagger}>
-            <motion.p variants={vUp} className="text-label-sm text-accent mb-3">Kanıtlanmış Sonuçlar</motion.p>
-            <motion.h2 variants={vUp} className="text-heading-xl text-text">Rakamlarla Flobrief</motion.h2>
+            <motion.p variants={vUp} className="text-label-sm text-accent mb-3">Daha Düzenli Operasyon</motion.p>
+            <motion.h2 variants={vUp} className="text-heading-xl text-text">Brief&apos;ten onaya kadar tek çalışma alanı</motion.h2>
           </motion.div>
           <motion.div
             className="grid grid-cols-2 gap-px md:grid-cols-4 rounded-2xl overflow-hidden border border-border"
@@ -1774,7 +1778,7 @@ export default function HomePage() {
             viewport={VP}
             transition={{ duration: 0.4 }}
           >
-            Güvenli ve Uyumlu
+            Güvenlik ve Veri Gizliliği
           </motion.p>
           <motion.div
             className="flex flex-wrap items-center justify-center gap-8"
@@ -1784,9 +1788,9 @@ export default function HomePage() {
             variants={vStagger}
           >
             {[
-              { Icon: Shield,       text: "SOC 2 Uyumlu",        sub: "Güvenlik sertifikası"      },
-              { Icon: CheckCircle,  text: "KVKK Uyumlu",         sub: "Kişisel veri koruması"     },
-              { Icon: Zap,          text: "99.9% Uptime SLA",    sub: "Garantili erişilebilirlik" },
+              { Icon: Shield,       text: "Güvenlik Odaklı Altyapı", sub: "Veri gizliliği yaklaşımı"   },
+              { Icon: CheckCircle,  text: "Şifreli Bağlantı",        sub: "HTTPS/TLS ile veri aktarımı" },
+              { Icon: Zap,          text: "Bulut Altyapısı",         sub: "Servis sürekliliği odaklı"   },
               { Icon: Users,        text: "Çok Kiracılı Mimari", sub: "Tam veri izolasyonu"       },
               { Icon: Layers,       text: "Rol Tabanlı Erişim",  sub: "RBAC kontrol sistemi"      },
             ].map(({ Icon, text, sub }) => (

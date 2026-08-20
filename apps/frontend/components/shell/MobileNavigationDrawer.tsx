@@ -12,6 +12,8 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SafeAreaContainer } from "@/components/ui/safe-area-container";
 import type { NavDrawerGroup } from "./types";
+import { useLocale } from "@/context/locale-context";
+import { LanguageSelector } from "@/components/i18n/language-selector";
 
 interface MobileNavigationDrawerProps {
   isOpen: boolean;
@@ -49,6 +51,7 @@ export function MobileNavigationDrawer({
   profileHref,
   onLogout,
 }: MobileNavigationDrawerProps) {
+  const { t } = useLocale();
   const pathname = usePathname();
   const panelRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -124,7 +127,7 @@ export function MobileNavigationDrawer({
             ref={panelRef}
             role="dialog"
             aria-modal="true"
-            aria-label={`${brandTitle} navigasyon menüsü`}
+            aria-label={`${brandTitle} ${t("dashboard.navigation.more")}`}
             tabIndex={-1}
             className="relative h-full w-[85vw] max-w-[320px] bg-surface border-r border-border shadow-modal flex flex-col overflow-hidden outline-none"
             initial={{ x: "-100%" }}
@@ -152,7 +155,7 @@ export function MobileNavigationDrawer({
                 <button
                   onClick={handleChromeClose}
                   className="w-11 h-11 -mr-2.5 flex items-center justify-center rounded-lg text-text-muted hover:text-text hover:bg-hover transition-colors flex-shrink-0"
-                  aria-label="Menüyü kapat"
+                  aria-label={t("dashboard.shell.closeMenu")}
                 >
                   <X className="w-4.5 h-4.5" />
                 </button>
@@ -195,7 +198,7 @@ export function MobileNavigationDrawer({
                               </span>
                             )}
                             {showDot && (
-                              <span className="w-2 h-2 rounded-full bg-accent flex-shrink-0" aria-label="Yeni" />
+                              <span className="w-2 h-2 rounded-full bg-accent flex-shrink-0" aria-label={t("dashboard.shell.new")} />
                             )}
                           </Link>
                         );
@@ -208,6 +211,7 @@ export function MobileNavigationDrawer({
               {/* Profile + logout footer */}
               {user && (
                 <div className="flex-shrink-0 border-t border-border px-2.5 py-3">
+                  <div className="mb-2 flex justify-center"><LanguageSelector /></div>
                   <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl">
                     <Link
                       href={profileHref}
@@ -233,7 +237,7 @@ export function MobileNavigationDrawer({
                           onLogout();
                         }}
                         className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted hover:text-danger transition-colors"
-                        aria-label="Çıkış yap"
+                        aria-label={t("auth.actions.logout")}
                       >
                         <LogOut className="w-4 h-4" />
                       </button>

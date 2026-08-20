@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 if TYPE_CHECKING:
     from app.services.whatsapp_provider import WhatsAppProvider
 
+from app.core.config import settings
 from app.models.agency import Agency
 from app.models.agency_member import AgencyMember
 from app.models.brand_member import BrandMember
@@ -28,6 +29,7 @@ from app.repositories.notification import (
 )
 from app.repositories.whatsapp_template import WhatsAppTemplateRepository
 from app.services import email_service
+from app.services.email_i18n import normalize_email_locale
 from app.services.notification_dedupe import build_whatsapp_idempotency_key
 from app.services.notification_realtime import queue_notification_signal
 from app.services.phone_utils import mask_phone_e164, normalize_e164
@@ -97,6 +99,20 @@ _EVENT_TITLES: dict[str, str] = {
     NotificationEventType.COMMERCIAL_TERMS_EXPIRING.value: "Ticari koşul süresi doluyor",
     NotificationEventType.RETAINER_OVERAGE.value: "Retainer kullanım aşımı",
     NotificationEventType.CRITICAL_WORK_UNASSIGNED.value: "Kritik iş atanmamış",
+}
+
+_EVENT_EMAIL_TITLES_EN: dict[str, str] = {
+    NotificationEventType.BRIEF_CREATED.value: "Brief created",
+    NotificationEventType.BRIEF_REQUESTED.value: "New brief requested",
+    NotificationEventType.BRIEF_ACCEPTED.value: "Brief accepted",
+    NotificationEventType.BRIEF_PRODUCTION_STARTED.value: "Production started",
+    NotificationEventType.BRIEF_READY_FOR_REVIEW.value: "Ready for review",
+    NotificationEventType.BRIEF_COMPLETED.value: "Brief completed",
+    NotificationEventType.COMMENT_ADDED.value: "New comment",
+    NotificationEventType.FILE_UPLOADED.value: "New file",
+    NotificationEventType.CALENDAR_ITEM_DUE.value: "Calendar item due",
+    NotificationEventType.MENTIONED_IN_COMMENT.value: "You were mentioned in a comment",
+    NotificationEventType.MENTIONED_IN_ANNOTATION.value: "You were mentioned in an annotation",
 }
 
 
@@ -169,7 +185,12 @@ class NotificationDispatcher:
             email_provider: (
                 ResendEmailProvider | DisabledEmailProvider
             ) = await EmailProviderFactory.get_provider(self._db)
-        except Exception:
+        except Exception as exc:
+            log.error(
+                "Email provider resolution failed provider=resend "
+                "message_type=notification error_type=%s",
+                type(exc).__name__,
+            )
             email_provider = DisabledEmailProvider()
 
         actor_user: User | None = None
@@ -220,8 +241,27 @@ class NotificationDispatcher:
                     recipient_email=user.email,
                 )
             elif pref.email_enabled and user.email:
-                email_result = await self._deliver_event_email(
-                    event, user, title, body, email_provider
+                try:
+                    email_result = await self._deliver_event_email(
+                        event, user, title, body, email_provider
+                    )
+                except Exception as exc:
+                    log.error(
+                        "Email provider raised unexpectedly provider=%s "
+                        "message_type=notification.%s error_type=%s",
+                        email_provider.get_provider_name(),
+                        event.event_type,
+                        type(exc).__name__,
+                    )
+                    email_result = EmailDeliveryResult(
+                        status=NotificationDeliveryStatus.FAILED.value,
+                        provider=email_provider.get_provider_name(),
+                        provider_message_id=None,
+                        error_message="Unexpected provider failure",
+                    )
+                email_service.log_email_delivery(
+                    email_result,
+                    message_type=f"notification.{event.event_type}",
                 )
                 await self._delivery_repo.create(
                     event_id=event.id,
@@ -460,7 +500,7 @@ class NotificationDispatcher:
         """Deliver through Resend; return not_configured when email is disabled."""
         if email_provider.is_active():
             html = self._build_event_email_html(event, user, title, body)
-            subject = self._build_event_email_subject(event, title)
+            subject = self._build_event_email_subject(event, title, user.locale)
             if html is None:
                 return EmailDeliveryResult(
                     status=NotificationDeliveryStatus.SKIPPED.value,
@@ -488,9 +528,11 @@ class NotificationDispatcher:
         body: str,
     ) -> str | None:
         p = event.payload
+        lang = normalize_email_locale(user.locale)
+        is_tr = lang == "tr"
         brief_id_str = p.get("brief_id")
         brief_title = p.get("brief_title", "Brief")
-        agency_name = p.get("agency_name", "Ajans")
+        agency_name = p.get("agency_name", "Ajans" if is_tr else "Agency")
         et = event.event_type
 
         try:
@@ -501,14 +543,21 @@ class NotificationDispatcher:
                     agency_name=agency_name,
                     brief_title=brief_title,
                     approval_url=brief_url,
+                    locale=user.locale,
                 )
             if et == NotificationEventType.BRIEF_REVISION_REQUESTED.value and brief_id_str:
                 brief_url = url_builder.brief_detail(uuid.UUID(brief_id_str))
                 return email_service.build_brief_revision_requested_html(
                     recipient_name=user.full_name,
                     brief_title=brief_title,
-                    revision_note=p.get("reason", "Revizyon talep edildi."),
+                    revision_note=p.get(
+                        "reason",
+                        "Revizyon talep edildi."
+                        if is_tr
+                        else "A revision was requested.",
+                    ),
                     brief_url=brief_url,
+                    locale=user.locale,
                 )
             if et == NotificationEventType.BRIEF_APPROVED.value and brief_id_str:
                 brief_url = url_builder.brief_detail(uuid.UUID(brief_id_str))
@@ -516,55 +565,88 @@ class NotificationDispatcher:
                     recipient_name=user.full_name,
                     brief_title=brief_title,
                     brief_url=brief_url,
+                    locale=user.locale,
                 )
-            deliverable_title = p.get("deliverable_title", "Teslimat")
+            deliverable_title = p.get("deliverable_title", "Teslimat" if is_tr else "Deliverable")
             if et == NotificationEventType.DELIVERABLE_SUBMITTED.value and brief_id_str:
                 brief_url = url_builder.brief_detail(uuid.UUID(brief_id_str))
                 return email_service.build_generic_notification_html(
                     recipient_name=user.full_name,
-                    title=f"Yeni teslimat: {deliverable_title}",
+                    title=(
+                        f"Yeni teslimat: {deliverable_title}"
+                        if is_tr
+                        else f"New deliverable: {deliverable_title}"
+                    ),
                     body=(
                         f"{agency_name} — '{brief_title}' briefi için yeni bir teslimat "
                         f"incelemenizi bekliyor: {deliverable_title}"
+                        if is_tr
+                        else f"A new deliverable for '{brief_title}' from {agency_name} "
+                        f"is ready for your review: {deliverable_title}"
                     ),
                     action_url=brief_url,
-                    action_label="Teslimatı İncele",
+                    action_label="Teslimatı İncele" if is_tr else "Review deliverable",
+                    locale=user.locale,
                 )
             if et == NotificationEventType.DELIVERABLE_APPROVED.value and brief_id_str:
                 brief_url = url_builder.brief_detail(uuid.UUID(brief_id_str))
                 return email_service.build_generic_notification_html(
                     recipient_name=user.full_name,
-                    title=f"Teslimat onaylandı: {deliverable_title}",
+                    title=(
+                        f"Teslimat onaylandı: {deliverable_title}"
+                        if is_tr
+                        else f"Deliverable approved: {deliverable_title}"
+                    ),
                     body=(
-                        f"'{brief_title}' briefindeki '{deliverable_title}' teslimati "
+                        f"'{brief_title}' briefindeki '{deliverable_title}' teslimatı "
                         f"{p.get('brand_name', 'marka')} tarafından onaylandı."
+                        if is_tr
+                        else f"'{deliverable_title}' in '{brief_title}' was approved by "
+                        f"{p.get('brand_name', 'the brand')}."
                     ),
                     action_url=brief_url,
-                    action_label="Brief'e Git",
+                    action_label="Brief'e Git" if is_tr else "Open brief",
+                    locale=user.locale,
                 )
             if et == NotificationEventType.DELIVERABLE_REVISION_REQUESTED.value and brief_id_str:
                 brief_url = url_builder.brief_detail(uuid.UUID(brief_id_str))
                 return email_service.build_generic_notification_html(
                     recipient_name=user.full_name,
-                    title=f"Revizyon istendi: {deliverable_title}",
+                    title=(
+                        f"Revizyon istendi: {deliverable_title}"
+                        if is_tr
+                        else f"Revision requested: {deliverable_title}"
+                    ),
                     body=(
-                        f"'{deliverable_title}' teslimati için revizyon talep edildi. "
+                        f"'{deliverable_title}' teslimatı için revizyon talep edildi. "
                         f"Neden: {p.get('reason', '')[:300]}"
+                        if is_tr
+                        else f"A revision was requested for '{deliverable_title}'. "
+                        f"Reason: {p.get('reason', '')[:300]}"
                     ),
                     action_url=brief_url,
-                    action_label="Revizyon Detayı",
+                    action_label="Revizyon Detayı" if is_tr else "View revision",
+                    locale=user.locale,
                 )
             if et == NotificationEventType.MILESTONE_ASSIGNED.value and brief_id_str:
                 brief_url = url_builder.brief_detail(uuid.UUID(brief_id_str))
                 return email_service.build_generic_notification_html(
                     recipient_name=user.full_name,
-                    title=f"Görev atandı: {p.get('task_title', 'Görev')}",
+                    title=(
+                        f"Görev atandı: {p.get('task_title', 'Görev')}"
+                        if is_tr
+                        else f"Task assigned: {p.get('task_title', 'Task')}"
+                    ),
                     body=(
                         f"'{p.get('task_title', 'Yeni görev')}' görevi size atandı. "
                         f"Brief: {brief_title}"
+                        if is_tr
+                        else f"'{p.get('task_title', 'New task')}' was assigned to you. "
+                        f"Brief: {brief_title}"
                     ),
                     action_url=brief_url,
-                    action_label="Göreve Git",
+                    action_label="Göreve Git" if is_tr else "Open task",
+                    locale=user.locale,
                 )
             if et in (
                 NotificationEventType.BRIEF_CREATED.value,
@@ -584,124 +666,86 @@ class NotificationDispatcher:
                     if brief_id_str
                     else url_builder.notification_preferences()
                 )
+                localized_title = title if is_tr else _EVENT_EMAIL_TITLES_EN.get(et, title)
+                if is_tr:
+                    localized_body = body
+                else:
+                    subject_name = (
+                        p.get("brief_title")
+                        or p.get("deliverable_title")
+                        or p.get("file_name")
+                        or p.get("calendar_title")
+                    )
+                    actor_name = p.get("actor_name") or p.get("user_name")
+                    context = f"'{subject_name}'" if subject_name else "the related item"
+                    localized_body = (
+                        f"{actor_name} updated {context}."
+                        if actor_name
+                        else f"There is a new update for {context}."
+                    )
                 return email_service.build_generic_notification_html(
                     recipient_name=user.full_name,
-                    title=title,
-                    body=body,
+                    title=localized_title,
+                    body=localized_body,
                     action_url=brief_url,
+                    locale=user.locale,
                 )
-        except Exception:
+        except Exception as exc:
+            log.warning(
+                "Email template rendering failed provider=resend message_type=notification.%s "
+                "error_type=%s",
+                event.event_type,
+                type(exc).__name__,
+            )
             return None
         return None
 
-    def _build_event_email_subject(self, event: NotificationEvent, title: str) -> str:
+    def _build_event_email_subject(
+        self, event: NotificationEvent, title: str, locale: str | None = None
+    ) -> str:
         p = event.payload
         brief_title = p.get("brief_title", "")
         deliverable_title = p.get("deliverable_title", "")
         et = event.event_type
+        product_name = settings.EMAIL_FROM_NAME
 
+        is_tr = locale == "tr"
         if et == NotificationEventType.BRIEF_SUBMITTED.value:
-            return f"Flobrief — Onay Bekleniyor: {brief_title}"
+            label = "Onay Bekleniyor" if is_tr else "Approval requested"
+            return f"{product_name} — {label}: {brief_title}"
         if et == NotificationEventType.BRIEF_REVISION_REQUESTED.value:
-            return f"Flobrief — Revizyon İstendi: {brief_title}"
+            label = "Revizyon İstendi" if is_tr else "Revision requested"
+            return f"{product_name} — {label}: {brief_title}"
         if et == NotificationEventType.BRIEF_APPROVED.value:
-            return f"Flobrief — Onaylandı: {brief_title}"
+            label = "Onaylandı" if is_tr else "Approved"
+            return f"{product_name} — {label}: {brief_title}"
         if et == NotificationEventType.BRIEF_ACCEPTED.value:
-            return f"Flobrief — Brief Kabul Edildi: {brief_title}"
+            label = "Brief Kabul Edildi" if is_tr else "Brief accepted"
+            return f"{product_name} — {label}: {brief_title}"
         if et == NotificationEventType.BRIEF_READY_FOR_REVIEW.value:
-            return f"Flobrief — İncelemenizi Bekliyor: {brief_title}"
+            label = "İncelemenizi Bekliyor" if is_tr else "Ready for your review"
+            return f"{product_name} — {label}: {brief_title}"
         if et == NotificationEventType.DELIVERABLE_SUBMITTED.value:
-            return f"Flobrief — Yeni Teslimat: {deliverable_title or brief_title}"
+            label = "Yeni Teslimat" if is_tr else "New deliverable"
+            return f"{product_name} — {label}: {deliverable_title or brief_title}"
         if et == NotificationEventType.DELIVERABLE_APPROVED.value:
-            return f"Flobrief — Teslimat Onaylandı: {deliverable_title or brief_title}"
+            label = "Teslimat Onaylandı" if is_tr else "Deliverable approved"
+            return f"{product_name} — {label}: {deliverable_title or brief_title}"
         if et == NotificationEventType.DELIVERABLE_REVISION_REQUESTED.value:
-            return f"Flobrief — Teslimat Revizyonu: {deliverable_title or brief_title}"
+            label = "Teslimat Revizyonu" if is_tr else "Deliverable revision"
+            return f"{product_name} — {label}: {deliverable_title or brief_title}"
         if et == NotificationEventType.MILESTONE_ASSIGNED.value:
-            return f"Flobrief — Görev Atandı: {p.get('task_title', 'Yeni Görev')}"
+            label = "Görev Atandı" if is_tr else "Task assigned"
+            fallback = "Yeni Görev" if is_tr else "New task"
+            return f"{product_name} — {label}: {p.get('task_title', fallback)}"
         if et in (
             NotificationEventType.MENTIONED_IN_COMMENT.value,
             NotificationEventType.MENTIONED_IN_ANNOTATION.value,
         ):
-            return f"Flobrief — {p.get('actor_name', 'Biri')} sizi etiketledi: {brief_title}"
-        return f"Flobrief — {title}"
-
-    async def _send_event_email(
-        self, event: NotificationEvent, user: User, title: str, body: str
-    ) -> bool:
-        """Route event to the correct email template. Returns True on success."""
-        p = event.payload
-        brief_id_str = p.get("brief_id")
-        brief_title = p.get("brief_title", "Brief")
-        agency_name = p.get("agency_name", "Ajans")
-
-        try:
-            et = event.event_type
-
-            if et == NotificationEventType.BRIEF_SUBMITTED.value and brief_id_str:
-                brief_url = url_builder.brief_detail(uuid.UUID(brief_id_str))
-                await email_service.send_brief_approval_request_email(
-                    to_email=user.email,
-                    recipient_name=user.full_name,
-                    agency_name=agency_name,
-                    brief_title=brief_title,
-                    approval_url=brief_url,
-                )
-
-            elif et == NotificationEventType.BRIEF_REVISION_REQUESTED.value and brief_id_str:
-                brief_url = url_builder.brief_detail(uuid.UUID(brief_id_str))
-                await email_service.send_brief_revision_requested_email(
-                    to_email=user.email,
-                    recipient_name=user.full_name,
-                    brief_title=brief_title,
-                    revision_note=p.get("reason", "Revizyon talep edildi."),
-                    brief_url=brief_url,
-                )
-
-            elif et == NotificationEventType.BRIEF_APPROVED.value and brief_id_str:
-                brief_url = url_builder.brief_detail(uuid.UUID(brief_id_str))
-                await email_service.send_brief_approved_email(
-                    to_email=user.email,
-                    recipient_name=user.full_name,
-                    brief_title=brief_title,
-                    brief_url=brief_url,
-                )
-
-            elif et in (
-                NotificationEventType.BRIEF_CREATED.value,
-                NotificationEventType.BRIEF_REQUESTED.value,
-                NotificationEventType.BRIEF_ACCEPTED.value,
-                NotificationEventType.BRIEF_PRODUCTION_STARTED.value,
-                NotificationEventType.BRIEF_READY_FOR_REVIEW.value,
-                NotificationEventType.BRIEF_COMPLETED.value,
-                NotificationEventType.COMMENT_ADDED.value,
-                NotificationEventType.FILE_UPLOADED.value,
-                NotificationEventType.CALENDAR_ITEM_DUE.value,
-                NotificationEventType.DELIVERABLE_SUBMITTED.value,
-                NotificationEventType.DELIVERABLE_APPROVED.value,
-                NotificationEventType.DELIVERABLE_REVISION_REQUESTED.value,
-                NotificationEventType.MILESTONE_ASSIGNED.value,
-            ):
-                brief_url = (
-                    url_builder.brief_detail(uuid.UUID(brief_id_str))
-                    if brief_id_str
-                    else url_builder.notification_preferences()
-                )
-                await email_service.send_generic_notification_email(
-                    to_email=user.email,
-                    recipient_name=user.full_name,
-                    title=title,
-                    body=body,
-                    action_url=brief_url,
-                )
-
-            else:
-                # Unknown event type — skip email
-                return False
-
-        except Exception:
-            return False
-
-        return True
+            actor = p.get("actor_name", "Biri" if is_tr else "Someone")
+            label = "sizi etiketledi" if is_tr else "mentioned you"
+            return f"{product_name} — {actor} {label}: {brief_title}"
+        return f"{product_name} — {title}"
 
     # ── Recipient helpers ─────────────────────────────────────────────────────
 

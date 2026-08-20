@@ -37,6 +37,7 @@ import { DeliverableVersionStrip } from "./DeliverableVersionStrip";
 import { fmtDate, DELIVERABLE_STATUS_CFG, DELIVERABLE_TYPE_LABEL } from "./shared";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { useToast } from "@/components/ui/toast";
+import { useLocale } from "@/context/locale-context";
 
 // ── Non-image / non-video fallback for the main preview area ────────────────
 
@@ -51,19 +52,20 @@ function MainAssetFallback({
   sizeBytes: number | null;
   accessToken: string;
 }) {
+  const { t } = useLocale();
   return (
     <button
       type="button"
       onClick={() => downloadWithAuth(assetId, filename, accessToken)}
       className="w-full min-h-[420px] flex flex-col items-center justify-center gap-3 bg-surface-2 hover:bg-hover transition-colors"
-      title="İndirmek için tıklayın"
+      title={t("briefs.deliverable.clickToDownload")}
     >
       <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center border border-border">
         <FileText className="w-6 h-6 text-text-muted" />
       </div>
       <div className="text-center">
         <p className="text-sm text-text font-medium">{filename}</p>
-        {sizeBytes != null && <p className="text-xs text-text-muted mt-0.5">{(sizeBytes / 1024).toFixed(1)} KB · indirmek için tıklayın</p>}
+        {sizeBytes != null && <p className="text-xs text-text-muted mt-0.5">{t("briefs.deliverable.sizeDownload", { size: (sizeBytes / 1024).toFixed(1) })}</p>}
       </div>
     </button>
   );
@@ -86,6 +88,7 @@ interface DeliverablePreviewPaneProps {
 }
 
 function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, deepLinkAnnotationId, isLatestVersion = true }: DeliverablePreviewPaneProps) {
+  const { t } = useLocale();
   const [annotations, setAnnotations] = useState<AnnotationRead[]>([]);
   const [loadingAnns, setLoadingAnns] = useState(true);
   const [selectedAssetIndex, setSelectedAssetIndex] = useState(0);
@@ -195,7 +198,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
       setNewPinMentionedIds([]);
       setActiveAnnotationId(created.id);
     } catch (err: unknown) {
-      setPinError(err instanceof Error ? err.message : "Revizyon noktası kaydedilemedi.");
+      setPinError(err instanceof Error ? err.message : t("briefs.error.annotationSave"));
     } finally {
       setSavingPin(false);
     }
@@ -256,10 +259,10 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
   const handleApprove = async () => {
     if (approving) return;
     const ok = await confirm({
-      title: "Teslimi Onayla",
-      message: "Bu teslimi onaylamak istediğinizden emin misiniz? Onay sonrası bu adım geri alınamaz.",
-      confirmLabel: "Onayla",
-      cancelLabel: "Vazgeç",
+      title: t("briefs.deliverable.confirmTitle"),
+      message: t("briefs.deliverable.confirmMessage"),
+      confirmLabel: t("briefs.actions.approve"),
+      cancelLabel: t("briefs.actions.cancel"),
     });
     if (!ok) return;
     setApproving(true);
@@ -300,19 +303,19 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
         <div className="px-5 pt-4 space-y-2.5">
           {d.revision_note && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-              <p className="text-[11px] font-semibold text-amber-700 mb-0.5">Revizyon Notu</p>
+              <p className="text-[11px] font-semibold text-amber-700 mb-0.5">{t("briefs.comments.revisionNote")}</p>
               <p className="text-xs text-amber-700">{d.revision_note}</p>
             </div>
           )}
           {d.approve_note && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
-              <p className="text-[11px] font-semibold text-emerald-700 mb-0.5">Onay Notu</p>
+              <p className="text-[11px] font-semibold text-emerald-700 mb-0.5">{t("briefs.comments.approvalNote")}</p>
               <p className="text-xs text-emerald-700">{d.approve_note}</p>
             </div>
           )}
           {canAct && (
             <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-4 py-2.5">
-              <p className="text-xs text-text-muted">Bu teslimi inceleyip onaylayın veya revizyon isteyin.</p>
+              <p className="text-xs text-text-muted">{t("briefs.deliverable.reviewHelp")}</p>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={handleApprove}
@@ -320,14 +323,14 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 text-[12px] font-semibold rounded-lg hover:bg-emerald-500/20 disabled:opacity-50 transition-colors border border-emerald-500/20"
                 >
                   {approving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                  {approving ? "Onaylanıyor…" : "Onayla"}
+                  {t(approving ? "briefs.actions.approving" : "briefs.actions.approve")}
                 </button>
                 <button
                   onClick={() => setShowRevision((v) => !v)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-600 text-[12px] font-semibold rounded-lg hover:bg-amber-500/20 transition-colors border border-amber-500/20"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  Revizyon
+                  {t("briefs.comment.revision")}
                 </button>
               </div>
             </div>
@@ -337,7 +340,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
               <textarea
                 value={revisionNote}
                 onChange={(e) => setRevisionNote(e.target.value)}
-                placeholder="Revizyon nedeninizi yazın…"
+                placeholder={t("briefs.deliverable.revisionPlaceholder")}
                 rows={2}
                 className="w-full px-3 py-2 text-xs bg-surface-2 border border-border rounded-lg resize-none focus:outline-none focus:border-amber-400 text-text placeholder:text-text-muted"
               />
@@ -347,13 +350,13 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
                   disabled={revising || !revisionNote.trim()}
                   className="px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg disabled:opacity-50 transition-colors"
                 >
-                  {revising ? "Gönderiliyor…" : "Revizyon İste"}
+                  {t(revising ? "briefs.actions.sending" : "briefs.actions.requestRevision")}
                 </button>
                 <button
                   onClick={() => setShowRevision(false)}
                   className="px-3 py-1.5 text-xs text-text-muted hover:text-text border border-border rounded-lg transition-colors"
                 >
-                  İptal
+                  {t("briefs.actions.cancel")}
                 </button>
               </div>
             </div>
@@ -373,7 +376,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
             className="flex-1 flex items-center justify-center gap-1.5 min-h-[44px] px-3 bg-emerald-500 text-white text-[13px] font-semibold rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-colors"
           >
             {approving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-            {approving ? "Onaylanıyor…" : "Onayla"}
+            {t(approving ? "briefs.actions.approving" : "briefs.actions.approve")}
           </button>
           <button
             data-testid="sticky-revision-btn"
@@ -381,7 +384,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
             className="flex-1 flex items-center justify-center gap-1.5 min-h-[44px] px-3 bg-amber-500/10 text-amber-600 text-[13px] font-semibold rounded-lg border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
-            Revizyon İste
+            {t("briefs.actions.requestRevision")}
           </button>
         </div>
       )}
@@ -389,7 +392,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
       {d.assets.length > 0 && selectedAsset && (
         <div className="mt-4" ref={sceneRef}>
           {!previewLoading && !previewUnavailable && previewConfig && (
-            <div className="px-5 pb-3 flex items-center gap-1.5" role="tablist" aria-label="Görüntüleme modu">
+            <div className="px-5 pb-3 flex items-center gap-1.5" role="tablist" aria-label={t("briefs.deliverable.viewMode")}>
               <button
                 type="button"
                 role="tab"
@@ -400,7 +403,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
                   viewMode === "raw" ? "bg-accent text-white border-accent" : "bg-surface text-text-muted border-border",
                 )}
               >
-                <ImageIcon className="w-3.5 h-3.5" /> Ham Dosya
+                <ImageIcon className="w-3.5 h-3.5" /> {t("briefs.deliverable.raw")}
               </button>
               <button
                 type="button"
@@ -412,7 +415,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
                   viewMode === "platform" ? "bg-accent text-white border-accent" : "bg-surface text-text-muted border-border",
                 )}
               >
-                <Smartphone className="w-3.5 h-3.5" /> Platform Önizlemesi
+                <Smartphone className="w-3.5 h-3.5" /> {t("briefs.deliverable.platformPreview")}
               </button>
             </div>
           )}
@@ -432,7 +435,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
                     )}
                   >
                     {annotationMode ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    {annotationMode ? "Revizyon Modunu Kapat" : "Revizyon Noktası Belirle"}
+                    {t(annotationMode ? "briefs.deliverable.annotationClose" : "briefs.deliverable.annotationAdd")}
                   </button>
                 </div>
               )}
@@ -463,7 +466,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
                 renderAnnotationPopover={(ann) => (
                   <AnnotationDetailPopover
                     annotation={ann}
-                    fallbackAuthorLabel="Ajans"
+                    fallbackAuthorLabel={t("briefs.annotation.agency")}
                     replyValue={replyBody[ann.id] ?? ""}
                     onReplyChange={(v) => setReplyBody((prev) => ({ ...prev, [ann.id]: v }))}
                     onReply={() => handleReply(ann.id)}
@@ -516,7 +519,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
               <>
                 {annotationMode && !newPinData && !activeAnnotationId && (
                   <p className="px-4 pt-2.5 text-[11px] text-accent font-medium">
-                    Revize edilmesini istediğiniz noktaya tıklayın.
+                    {t("briefs.deliverable.annotationHint")}
                   </p>
                 )}
                 {/*
@@ -558,7 +561,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
                       renderAnnotationPopover={(ann) => (
                         <AnnotationDetailPopover
                           annotation={ann}
-                          fallbackAuthorLabel="Ajans"
+                          fallbackAuthorLabel={t("briefs.annotation.agency")}
                           replyValue={replyBody[ann.id] ?? ""}
                           onReplyChange={(v) => setReplyBody((prev) => ({ ...prev, [ann.id]: v }))}
                           onReply={() => handleReply(ann.id)}
@@ -597,7 +600,7 @@ function DeliverablePreviewPane({ d, accessToken, onUpdate, onOpenCountChange, d
           {/* Annotation list — a secondary index; the popover above is the primary detail view */}
           {!loadingAnns && annotations.length > 0 && (
             <div className="space-y-1.5 mx-5 mt-3">
-              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wide px-1">Revizyon Noktaları ({annotations.length})</p>
+              <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wide px-1">{t("briefs.deliverable.annotations", { count: annotations.length })}</p>
               {annotations.map((ann) => (
                 <button
                   key={ann.id}
@@ -654,6 +657,7 @@ interface DeliverableWorkspaceProps {
 }
 
 export function DeliverableWorkspace({ deliverables, accessToken, onUpdate, deepLinkDeliverableId, deepLinkAnnotationId }: DeliverableWorkspaceProps) {
+  const { t } = useLocale();
   const sorted = useMemo(
     () => [...deliverables].sort((a, b) => {
       const ta = new Date(a.submitted_at ?? a.created_at).getTime();
@@ -698,10 +702,10 @@ export function DeliverableWorkspace({ deliverables, accessToken, onUpdate, deep
             <Package2 className="w-4 h-4 text-accent" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-text">Teslim Edilen Çalışmalar</p>
+            <p className="text-sm font-semibold text-text">{t("briefs.deliverable.title")}</p>
             <p className="text-xs text-text-muted truncate">
-              {deliverables.length} teslim · v{selected.version_number} · {approvedCount} onaylı
-              {openCount > 0 && ` · ${openCount} açık revizyon noktası`}
+              {t("briefs.deliverable.summary", { count: deliverables.length, version: selected.version_number, approved: approvedCount })}
+              {openCount > 0 && ` · ${t("briefs.deliverable.openAnnotations", { count: openCount })}`}
             </p>
           </div>
         </div>
@@ -709,7 +713,7 @@ export function DeliverableWorkspace({ deliverables, accessToken, onUpdate, deep
           {selected.open_annotation_count > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
               <AlertCircle className="w-3 h-3" />
-              {selected.open_annotation_count} açık nokta
+              {t("briefs.deliverable.openPoints", { count: selected.open_annotation_count })}
             </span>
           )}
           {cfg && (
@@ -723,7 +727,7 @@ export function DeliverableWorkspace({ deliverables, accessToken, onUpdate, deep
       <div className="px-5 pt-3 flex items-center gap-2 text-xs text-text-muted">
         <span className="font-medium text-text">{selected.title}</span>
         <span>· {DELIVERABLE_TYPE_LABEL[selected.deliverable_type] ?? selected.deliverable_type}</span>
-        {selected.revision_count > 0 && <span className="text-amber-500">· {selected.revision_count}. revizyon</span>}
+        {selected.revision_count > 0 && <span className="text-amber-500">· {t("briefs.deliverable.revisionCount", { count: selected.revision_count })}</span>}
         {selected.submitted_at && <span>· {fmtDate(selected.submitted_at)}</span>}
       </div>
 

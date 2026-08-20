@@ -6,8 +6,10 @@ import { authApi, ApiError } from "@/lib/api-client";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { ArrowLeft, Mail, AlertCircle } from "lucide-react";
+import { useLocale } from "@/context/locale-context";
 
 export default function ForgotPasswordPage() {
+  const { t } = useLocale();
   const [email,     setEmail]     = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [sent,      setSent]      = useState(false);
@@ -24,7 +26,7 @@ export default function ForgotPasswordPage() {
       if (err instanceof ApiError && err.status !== 422) {
         setSent(true);
       } else {
-        setError("Geçerli bir e-posta adresi girin.");
+        setError(t("auth.error.invalidFields"));
       }
     } finally {
       setIsLoading(false);
@@ -38,16 +40,13 @@ export default function ForgotPasswordPage() {
           <div className="w-12 h-12 bg-success/10 border border-success/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
             <Mail className="w-6 h-6 text-success" />
           </div>
-          <h2 className="text-xl font-bold text-text mb-2 tracking-tight">E-posta gönderildi</h2>
+          <h2 className="text-xl font-bold text-text mb-2 tracking-tight">{t("auth.forgot.sentTitle")}</h2>
           <p className="text-sm text-text-muted mb-6 leading-relaxed">
-            Eğer{" "}
-            <strong className="text-text font-medium">{email}</strong>{" "}
-            adresiyle kayıtlı bir hesap varsa, şifre sıfırlama bağlantısı gönderildi.
-            Spam klasörünüzü de kontrol edin.
+            {t("auth.forgot.sentBody", { email })}
           </p>
           <Link href="/auth/login">
             <Button variant="secondary" className="w-full">
-              Giriş sayfasına dön
+              {t("auth.backToLogin")}
             </Button>
           </Link>
         </div>
@@ -64,18 +63,18 @@ export default function ForgotPasswordPage() {
             className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-accent transition-colors mb-4"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Giriş sayfasına dön
+            {t("auth.backToLogin")}
           </Link>
-          <h1 className="text-2xl font-bold text-text tracking-tight mb-1.5">Şifremi Unuttum</h1>
+          <h1 className="text-2xl font-bold text-text tracking-tight mb-1.5">{t("auth.forgot.title")}</h1>
           <p className="text-sm text-text-muted leading-relaxed">
-            E-posta adresinizi girin, şifre sıfırlama bağlantısı gönderelim.
+            {t("auth.forgot.subtitle")}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="block text-xs font-medium text-text-muted" htmlFor="fp-email">
-              E-posta adresi
+              {t("auth.fields.email")}
             </label>
             <input
               id="fp-email"
@@ -100,7 +99,7 @@ export default function ForgotPasswordPage() {
           )}
 
           <Button type="submit" className="w-full" isLoading={isLoading}>
-            Sıfırlama Bağlantısı Gönder
+            {t("auth.forgot.send")}
           </Button>
         </form>
       </>

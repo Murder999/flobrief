@@ -6,6 +6,7 @@ import RichTextEditor from "@/components/forms/RichTextEditor";
 import { cn } from "@/lib/utils";
 import type { AssetRead, MentionCandidate } from "@/lib/api-client";
 import { useAuthBlob, mediaType } from "@/components/media/MediaPreview";
+import { useLocale } from "@/context/locale-context";
 
 interface PremiumCommentComposerProps {
   onSubmit: (
@@ -24,7 +25,7 @@ interface PremiumCommentComposerProps {
   mentionCandidatesFetcher?: (query: string) => Promise<MentionCandidate[]>;
 }
 
-function AttachmentThumb({ asset, accessToken, onRemove }: { asset: AssetRead; accessToken: string; onRemove: () => void }) {
+function AttachmentThumb({ asset, accessToken, onRemove, removeLabel }: { asset: AssetRead; accessToken: string; onRemove: () => void; removeLabel: string }) {
   const type = mediaType(asset.mime_type);
   const { blobUrl } = useAuthBlob(asset.id, accessToken, type === "image");
   return (
@@ -44,7 +45,7 @@ function AttachmentThumb({ asset, accessToken, onRemove }: { asset: AssetRead; a
         type="button"
         onClick={onRemove}
         className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-danger text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-        title="Kaldır"
+        title={removeLabel}
       >
         <X className="w-2.5 h-2.5" />
       </button>
@@ -57,12 +58,14 @@ export default function PremiumCommentComposer({
   onSubmit,
   onUploadAttachment,
   accessToken: accessTokenProp,
-  placeholder = "Yorum, revize notu veya ekip içi not yazın…",
+  placeholder,
   defaultVisibility = "internal",
   showTypeSelector = true,
   className,
   mentionCandidatesFetcher,
 }: PremiumCommentComposerProps) {
+  const { t } = useLocale();
+  const editorPlaceholder = placeholder ?? t("briefs.comments.composerPlaceholder");
   const [body, setBody] = useState("");
   const [visibility, setVisibility] = useState<"internal" | "client_visible">(defaultVisibility);
   const [commentType, setCommentType] = useState<"general" | "revision" | "approval_note">("general");
@@ -84,7 +87,7 @@ export default function PremiumCommentComposer({
       const asset = await onUploadAttachment(file);
       setAttachments((prev) => [...prev, asset]);
     } catch (e: unknown) {
-      const msg = (e as { message?: string })?.message ?? "Dosya yüklenemedi.";
+      const msg = (e as { message?: string })?.message ?? t("briefs.error.file");
       setError(msg);
     } finally {
       setUploading(false);
@@ -106,7 +109,7 @@ export default function PremiumCommentComposer({
       setMentionedUserIds([]);
     } catch (e: unknown) {
       const err = e as { message?: string };
-      setError(err?.message ?? "Yorum gönderilemedi.");
+      setError(err?.message ?? t("briefs.error.comment"));
     } finally {
       setSubmitting(false);
     }
@@ -117,7 +120,7 @@ export default function PremiumCommentComposer({
       <RichTextEditor
         value={body}
         onChange={setBody}
-        placeholder={placeholder}
+        placeholder={editorPlaceholder}
         minHeight={96}
         mentionCandidatesFetcher={mentionCandidatesFetcher}
         onMentionInsert={(candidate) =>
@@ -136,6 +139,7 @@ export default function PremiumCommentComposer({
               asset={a}
               accessToken={accessToken}
               onRemove={() => removeAttachment(a.id)}
+              removeLabel={t("briefs.actions.remove")}
             />
           ))}
         </div>
@@ -156,7 +160,7 @@ export default function PremiumCommentComposer({
             )}
           >
             <Lock className="w-3 h-3" />
-            Dahili
+            {t("briefs.comments.internal")}
           </button>
           <button
             type="button"
@@ -169,7 +173,7 @@ export default function PremiumCommentComposer({
             )}
           >
             <Globe className="w-3 h-3" />
-            Müşteri Görür
+            {t("briefs.comments.customerVisible")}
           </button>
         </div>
 
@@ -179,9 +183,9 @@ export default function PremiumCommentComposer({
             onChange={(e) => setCommentType(e.target.value as typeof commentType)}
             className="text-[11px] border border-border rounded-lg px-2 py-1.5 bg-surface text-text-muted focus:outline-none focus:border-accent"
           >
-            <option value="general">Genel Yorum</option>
-            <option value="revision">Revize Talebi</option>
-            <option value="approval_note">Onay Notu</option>
+            <option value="general">{t("briefs.comments.general")}</option>
+            <option value="revision">{t("briefs.comments.revisionRequest")}</option>
+            <option value="approval_note">{t("briefs.comments.approvalNote")}</option>
           </select>
         )}
 
@@ -192,7 +196,7 @@ export default function PremiumCommentComposer({
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              title="Dosya ekle"
+              title={t("briefs.actions.addFile")}
               className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium text-text-muted hover:text-accent border border-border hover:border-accent rounded-lg transition-colors disabled:opacity-40"
             >
               {uploading ? (
@@ -203,17 +207,17 @@ export default function PremiumCommentComposer({
               ) : (
                 <Paperclip className="w-3 h-3" />
               )}
-              {uploading ? "Yükleniyor…" : "Dosya Ekle"}
+              {uploading ? t("briefs.actions.uploading") : t("briefs.actions.addFile")}
             </button>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              title="Görsel ekle"
+              title={t("briefs.actions.addImage")}
               className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium text-text-muted hover:text-accent border border-border hover:border-accent rounded-lg transition-colors disabled:opacity-40"
             >
               <ImageIcon className="w-3 h-3" />
-              Görsel/Video
+              {t("briefs.actions.imageVideo")}
             </button>
             <input
               ref={fileRef}
@@ -239,7 +243,7 @@ export default function PremiumCommentComposer({
           className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-accent hover:bg-accent-hover rounded-lg disabled:opacity-40 transition-colors"
         >
           <Send className="w-3 h-3" />
-          {submitting ? "Gönderiliyor…" : "Gönder"}
+          {submitting ? t("briefs.actions.sending") : t("briefs.actions.send")}
         </button>
       </div>
     </div>

@@ -5,12 +5,10 @@ import type { AnnotationRead, MentionCandidate } from "@/lib/api-client";
 import { CheckCircle2, RotateCcw, Send, Loader2, X } from "lucide-react";
 import { MentionTextArea } from "@/components/mentions/MentionTextArea";
 import { MentionAwareBody } from "@/components/mentions/MentionAwareBody";
+import { useLocale } from "@/context/locale-context";
+import { formatLocalizedDateTime } from "@/lib/i18n/format";
 
 const MAX_BODY_LENGTH = 10_000;
-
-function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
 
 /** Annotation bodies are stored as plain text (no rich HTML authored) — escape
  * for safe use as MentionAwareBody's `html` input, preserving line breaks. */
@@ -47,14 +45,16 @@ export function NewPinComposer({
   mentionCandidatesFetcher,
   onMentionInsert,
 }: NewPinComposerProps) {
+  const { t } = useLocale();
+
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold text-text flex items-center gap-1.5">
           <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">+</span>
-          Revizyon Noktası Ekle
+          {t("briefs.annotation.add")}
         </p>
-        <button type="button" onClick={onCancel} className="text-text-muted hover:text-text transition-colors flex-shrink-0" aria-label="Kapat">
+        <button type="button" onClick={onCancel} className="text-text-muted hover:text-text transition-colors flex-shrink-0" aria-label={t("briefs.annotation.close")}>
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -65,16 +65,16 @@ export function NewPinComposer({
         mentionCandidatesFetcher={mentionCandidatesFetcher}
         onMentionInsert={onMentionInsert}
         rows={3}
-        placeholder="Bu noktadaki revizyon talebini yazın… (@ ile etiketle)"
+        placeholder={t("briefs.annotation.placeholder")}
         maxLength={MAX_BODY_LENGTH}
         autoFocus
-        aria-label="Revizyon talebi"
+        aria-label={t("briefs.annotation.request")}
         submitOn="mod-enter"
         onSubmitShortcut={onSave}
         className="w-full text-xs bg-surface-2 border border-border rounded-lg px-2.5 py-2 text-text placeholder:text-text-muted focus:outline-none focus:border-amber-400 resize-none"
       />
       <div className="flex items-center justify-between text-[10px] text-text-muted">
-        <span>{error ? <span className="text-danger">{error}</span> : "Ctrl+Enter ile kaydet"}</span>
+        <span>{error ? <span className="text-danger">{error}</span> : t("briefs.annotation.shortcut")}</span>
         <span>{value.length}/{MAX_BODY_LENGTH}</span>
       </div>
 
@@ -88,7 +88,7 @@ export function NewPinComposer({
           className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg disabled:opacity-50 transition-colors"
         >
           {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-          {saving ? "Kaydediliyor…" : "Kaydet"}
+          {saving ? t("briefs.annotation.saving") : t("briefs.annotation.save")}
         </button>
         <button
           type="button"
@@ -96,7 +96,7 @@ export function NewPinComposer({
           disabled={saving}
           className="px-2.5 py-1.5 text-[11px] border border-border text-text-muted hover:text-text rounded-lg transition-colors disabled:opacity-50"
         >
-          Vazgeç
+          {t("briefs.annotation.cancel")}
         </button>
       </div>
     </div>
@@ -136,6 +136,7 @@ export function AnnotationDetailPopover({
   mentionCandidatesFetcher,
   onMentionInsert,
 }: AnnotationDetailPopoverProps) {
+  const { locale, t } = useLocale();
   const isResolved = annotation.status === "resolved";
 
   return (
@@ -152,12 +153,12 @@ export function AnnotationDetailPopover({
         <span className="flex-shrink-0 flex items-center gap-1.5">
           {statusBadge}
           {isResolved ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-success" aria-label="Çözüldü" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-success" aria-label={t("briefs.annotation.resolved")} />
           ) : null}
         </span>
       </div>
 
-      <p className="text-[11px] text-text-muted">{fmtDateTime(annotation.created_at)}</p>
+      <p className="text-[11px] text-text-muted">{formatLocalizedDateTime(annotation.created_at, locale)}</p>
 
       {annotation.body && (
         <MentionAwareBody
@@ -174,7 +175,7 @@ export function AnnotationDetailPopover({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <span className="text-[10px] font-semibold text-text">{r.author_name ?? fallbackAuthorLabel}</span>
-                  <span className="text-[10px] text-text-muted">{fmtDateTime(r.created_at)}</span>
+                  <span className="text-[10px] text-text-muted">{formatLocalizedDateTime(r.created_at, locale)}</span>
                 </div>
                 <MentionAwareBody
                   html={r.body_html || textToSafeHtml(r.body)}
@@ -196,7 +197,7 @@ export function AnnotationDetailPopover({
             className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-amber-600 border border-amber-300 rounded-lg hover:bg-amber-50 disabled:opacity-50 transition-colors"
           >
             <RotateCcw className="w-3 h-3" />
-            {reopening ? "Açılıyor…" : "Yeniden Aç"}
+            {reopening ? t("briefs.annotation.reopening") : t("briefs.actions.reopen")}
           </button>
         )
       ) : (
@@ -209,8 +210,8 @@ export function AnnotationDetailPopover({
               onMentionInsert={onMentionInsert}
               submitOn="enter"
               onSubmitShortcut={onReply}
-              placeholder="Yanıtla… (@ ile etiketle)"
-              aria-label={`#${annotation.label_number} numaralı revizyona yanıt yaz`}
+              placeholder={t("briefs.annotation.replyPlaceholder")}
+              aria-label={t("briefs.annotation.replyAria", { number: annotation.label_number })}
               className="flex-1 text-[11px] bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-text placeholder:text-text-muted focus:outline-none focus:border-accent"
             />
             <button
@@ -218,7 +219,7 @@ export function AnnotationDetailPopover({
               onClick={onReply}
               disabled={replying || !replyValue.trim()}
               className="p-1.5 rounded-lg text-accent hover:bg-accent/10 disabled:opacity-40 transition-colors flex-shrink-0"
-              aria-label="Yanıtı gönder"
+              aria-label={t("briefs.annotation.sendReply")}
             >
               <Send className="w-3 h-3" />
             </button>
@@ -234,7 +235,7 @@ export function AnnotationDetailPopover({
               )}
             >
               <CheckCircle2 className="w-3 h-3" />
-              {resolving ? "İşleniyor…" : "Çözüldü Yap"}
+              {resolving ? t("briefs.annotation.processing") : t("briefs.actions.resolve")}
             </button>
           )}
         </div>

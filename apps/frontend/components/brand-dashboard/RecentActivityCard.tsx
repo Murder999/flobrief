@@ -6,6 +6,8 @@ import { Activity, MessageSquare, Package, RotateCcw, CheckCircle, CalendarClock
 import type { NotificationRead } from "@/lib/api-client";
 import { cn, isSafeInternalPath } from "@/lib/utils";
 import { bucketForEventType, activityDotCls, fmtRelative, type ActivityBucket } from "./shared";
+import { useLocale } from "@/context/locale-context";
+import { localizeNotification } from "@/lib/i18n/notification-presentation";
 
 const BUCKET_ICON: Record<ActivityBucket, typeof Package> = {
   deliverable: Package,
@@ -35,6 +37,7 @@ export function RecentActivityCard({
   notifications: NotificationRead[] | null;
   onMarkRead: (id: string) => Promise<unknown>;
 }) {
+  const { locale, t } = useLocale();
   const router = useRouter();
   const navigatingIdRef = useRef<string | null>(null);
   const items = (notifications ?? []).slice(0, 5);
@@ -53,7 +56,7 @@ export function RecentActivityCard({
     <div className="flex h-full flex-col rounded-xl border border-border bg-surface overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
         <Activity className="h-4 w-4 text-accent" />
-        <h2 className="text-sm font-semibold text-text">Son Hareketler</h2>
+        <h2 className="text-sm font-semibold text-text">{t("dashboard.brand.recentActivity")}</h2>
       </div>
 
       {notifications === null ? (
@@ -63,14 +66,15 @@ export function RecentActivityCard({
         </>
       ) : items.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-6 text-center">
-          <p className="text-[13px] font-medium text-text">Henüz bir hareket yok</p>
-          <p className="text-[11.5px] text-text-muted">Yeni gelişmeler burada listelenecek.</p>
+          <p className="text-[13px] font-medium text-text">{t("dashboard.brand.noActivity")}</p>
+          <p className="text-[11.5px] text-text-muted">{t("dashboard.brand.activityBody")}</p>
         </div>
       ) : (
         <div>
           {items.map((n) => {
             const Icon = BUCKET_ICON[bucketForEventType(n.event_type)];
             const clickable = isSafeInternalPath(n.action_url);
+            const copy = localizeNotification(n, locale);
             return (
               <button
                 key={n.id}
@@ -87,9 +91,9 @@ export function RecentActivityCard({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", activityDotCls(n))} />
-                    <p className="truncate text-[13px] text-text">{n.title}</p>
+                    <p className="truncate text-[13px] text-text">{copy.title}</p>
                   </div>
-                  <p className="mt-0.5 line-clamp-1 text-[11.5px] text-text-muted">{n.body}</p>
+                  <p className="mt-0.5 line-clamp-1 text-[11.5px] text-text-muted">{copy.body}</p>
                 </div>
                 <span className="flex-shrink-0 text-[10.5px] text-text-muted/70">{fmtRelative(n.created_at)}</span>
               </button>

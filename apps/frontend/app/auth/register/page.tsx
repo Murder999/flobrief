@@ -9,16 +9,11 @@ import { ApiError } from "@/lib/api-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
-
-const PASSWORD_HINTS = [
-  "En az 10 karakter",
-  "Büyük ve küçük harf",
-  "En az bir rakam",
-  "En az bir özel karakter (!@#$%^&*)",
-];
+import { useLocale } from "@/context/locale-context";
 
 export default function RegisterPage() {
   const { register, isLoading } = useAuth();
+  const { locale, t } = useLocale();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -38,13 +33,13 @@ export default function RegisterPage() {
     setPhoneError(null);
 
     if (password !== confirmPassword) {
-      setError("Şifreler eşleşmiyor");
+      setError(t("auth.password.mismatch"));
       return;
     }
 
     // Validate phone format if provided
     if (phone && !/^\+[1-9]\d{6,14}$/.test(phone)) {
-      setPhoneError("Geçerli bir telefon numarası girin.");
+      setPhoneError(t("auth.password.invalidPhone"));
       return;
     }
 
@@ -60,14 +55,14 @@ export default function RegisterPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
-          setError("Bu e-posta adresi zaten kayıtlı");
+          setError(t("auth.error.emailExists"));
         } else if (err.status === 422) {
-          setError("Lütfen tüm alanları doğru doldurun");
+          setError(t("auth.error.invalidFields"));
         } else {
           setError(err.message);
         }
       } else {
-        setError("Bir hata oluştu. Lütfen tekrar deneyin.");
+        setError(t("auth.error.generic"));
       }
     }
   }
@@ -81,13 +76,12 @@ export default function RegisterPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-text mb-2">Hesabınız oluşturuldu</h2>
+          <h2 className="text-xl font-bold text-text mb-2">{t("auth.register.createdTitle")}</h2>
           <p className="text-sm text-text-muted mb-6">
-            <strong className="text-text">{email}</strong> adresine bir doğrulama e-postası gönderdik.
-            Hesabınızı aktifleştirmek için e-postanızdaki bağlantıya tıklayın.
+            {t("auth.register.createdBody", { email })}
           </p>
           <Button variant="secondary" className="w-full" onClick={() => router.push("/auth/login")}>
-            Giriş sayfasına git
+            {t("auth.register.goToLogin")}
           </Button>
         </div>
       </AuthCard>
@@ -98,17 +92,17 @@ export default function RegisterPage() {
     <AuthCard>
       <>
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-text">Hesap Oluştur</h1>
+          <h1 className="text-2xl font-bold text-text">{t("auth.register.title")}</h1>
           <p className="mt-1 text-sm text-text-muted">
-            14 gün ücretsiz deneyin. Kredi kartı gerekmez.
+            {t("auth.register.subtitle")}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Ad Soyad"
+            label={t("auth.fields.fullName")}
             type="text"
-            placeholder="Adınız Soyadınız"
+            placeholder={t("auth.fields.fullName")}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
@@ -116,7 +110,7 @@ export default function RegisterPage() {
           />
 
           <Input
-            label="E-posta"
+            label={t("auth.fields.email")}
             type="email"
             placeholder="siz@ajans.com"
             value={email}
@@ -127,16 +121,16 @@ export default function RegisterPage() {
 
           <PhoneNumberInput
             id="register-phone"
-            label="Telefon Numarası"
+            label={t("auth.fields.phone")}
             value={phone}
             onChange={(e164) => {
               setPhone(e164);
               setPhoneError(null);
               if (!e164) setWhatsappOptIn(false);
             }}
-            defaultCountry="TR"
+            defaultCountry={locale === "tr" ? "TR" : "US"}
             error={phoneError ?? undefined}
-            helperText="Onay, revize ve yorum bildirimlerini WhatsApp'tan almak için kullanılır."
+            helperText={t("auth.phone.helper")}
           />
 
           {/* WhatsApp opt-in */}
@@ -176,18 +170,18 @@ export default function RegisterPage() {
               className={`text-sm cursor-pointer select-none ${hasPhone ? "text-text" : "text-text-muted cursor-not-allowed"}`}
               onClick={() => hasPhone && setWhatsappOptIn((v) => !v)}
             >
-              WhatsApp üzerinden bildirim almak istiyorum.
+              {t("auth.whatsapp.optIn")}
               <span className="block text-xs text-text-muted mt-0.5 leading-relaxed">
-                Brief onayı, revize talebi, yorum ve teslim tarihi gibi önemli bildirimler için kullanılır.
+                {t("auth.whatsapp.detail")}
                 {!hasPhone && (
-                  <span className="block mt-0.5 italic">Etkinleştirmek için telefon numarası girin.</span>
+                  <span className="block mt-0.5 italic">{t("auth.whatsapp.phoneRequired")}</span>
                 )}
               </span>
             </label>
           </div>
 
           <Input
-            label="Şifre"
+            label={t("auth.fields.password")}
             type="password"
             placeholder="••••••••••"
             value={password}
@@ -197,7 +191,7 @@ export default function RegisterPage() {
           />
 
           <Input
-            label="Şifre Tekrar"
+            label={t("auth.fields.confirmPassword")}
             type="password"
             placeholder="••••••••••"
             value={confirmPassword}
@@ -207,14 +201,17 @@ export default function RegisterPage() {
           />
 
           <div className="bg-surface-2 rounded-lg px-4 py-3">
-            <p className="text-xs font-medium text-text-muted mb-2">Şifre gereksinimleri:</p>
+            <p className="text-xs font-medium text-text-muted mb-2">{t("auth.password.requirements")}</p>
             <ul className="space-y-1">
-              {PASSWORD_HINTS.map((hint) => (
+              {["auth.password.minTen", "auth.password.mixedCase", "auth.password.number", "auth.password.special"].map((key) => {
+                const hint = t(key as "auth.password.minTen");
+                return (
                 <li key={hint} className="flex items-center gap-2 text-xs text-text-muted">
                   <span className="w-1 h-1 bg-text-muted rounded-full flex-shrink-0" />
                   {hint}
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </div>
 
@@ -225,23 +222,22 @@ export default function RegisterPage() {
           )}
 
           <Button type="submit" className="w-full" isLoading={isLoading}>
-            Hesap Oluştur
+            {t("auth.actions.register")}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-text-muted">
-          Zaten hesabınız var mı?{" "}
+          {t("auth.register.haveAccount")}{" "}
           <Link href="/auth/login" className="text-accent hover:text-accent-hover font-medium">
-            Giriş yapın
+            {t("auth.register.loginLink")}
           </Link>
         </p>
 
         <p className="mt-4 text-center text-xs text-text-muted">
-          Kayıt olarak{" "}
-          <span className="text-text-muted underline cursor-pointer">Kullanım Koşulları</span>
-          {" "}ve{" "}
-          <span className="text-text-muted underline cursor-pointer">Gizlilik Politikası</span>
-          {" "}kabul edersiniz.
+          {t("auth.register.termsPrefix")}{" "}
+          <span className="text-text-muted underline cursor-pointer">{t("auth.register.terms")}</span>
+          {" "}{t("auth.register.and")}{" "}
+          <span className="text-text-muted underline cursor-pointer">{t("auth.register.privacy")}</span>.
         </p>
       </>
     </AuthCard>

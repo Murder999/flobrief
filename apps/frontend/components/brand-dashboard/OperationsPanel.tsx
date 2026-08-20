@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Users, CheckCircle, Calendar, FolderOpen, PlusSquare } from "lucide-react";
 import type { BrandTeamUsage } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/context/locale-context";
 
 interface QuickAction {
   href: string;
@@ -22,19 +23,21 @@ export function OperationsPanel({
   approvedDeliverables: number;
   pendingDeliverables: number;
 }) {
+  const { t } = useLocale();
   const quickActions: QuickAction[] = [
-    { href: "/brand/approvals", label: "Onayları İncele", icon: CheckCircle, iconCls: "bg-accent/10 text-accent", hint: pendingApprovalCount > 0 ? `${pendingApprovalCount} onay bekliyor` : undefined },
-    { href: "/brand/briefs/new", label: "Yeni Brief Ver", icon: PlusSquare, iconCls: "bg-indigo-500/10 text-indigo-400" },
-    { href: "/brand/calendar", label: "Takvimi Gör", icon: Calendar, iconCls: "bg-blue-500/10 text-blue-400" },
-    { href: "/brand/files", label: "Dosyalar", icon: FolderOpen, iconCls: "bg-emerald-500/10 text-emerald-400" },
+    { href: "/brand/approvals", label: t("dashboard.brand.reviewApprovals"), icon: CheckCircle, iconCls: "bg-accent/10 text-accent", hint: pendingApprovalCount > 0 ? t("dashboard.brand.approvalsHint", { count: pendingApprovalCount }) : undefined },
+    { href: "/brand/briefs/new", label: t("dashboard.brand.newBrief"), icon: PlusSquare, iconCls: "bg-indigo-500/10 text-indigo-400" },
+    { href: "/brand/calendar", label: t("dashboard.brand.viewCalendar"), icon: Calendar, iconCls: "bg-blue-500/10 text-blue-400" },
+    { href: "/brand/files", label: t("dashboard.brand.files"), icon: FolderOpen, iconCls: "bg-emerald-500/10 text-emerald-400" },
   ];
 
   const healthLines: string[] = [];
-  if (pendingApprovalCount === 0 && overdueCount === 0) {
-    healthLines.push("Süreçler normal");
+  const healthy = pendingApprovalCount === 0 && overdueCount === 0;
+  if (healthy) {
+    healthLines.push(t("dashboard.brand.healthNormal"));
   } else {
-    if (pendingApprovalCount > 0) healthLines.push(`${pendingApprovalCount} aksiyon bekliyor`);
-    if (overdueCount > 0) healthLines.push(`${overdueCount} brief son tarihi geçti`);
+    if (pendingApprovalCount > 0) healthLines.push(t("dashboard.brand.actionsWaiting", { count: pendingApprovalCount }));
+    if (overdueCount > 0) healthLines.push(t("dashboard.brand.briefsOverdue", { count: overdueCount }));
   }
   const deliverableTotal = pendingDeliverables + approvedDeliverables;
   const deliverableRatio = deliverableTotal > 0 ? Math.round((approvedDeliverables / deliverableTotal) * 100) : null;
@@ -45,34 +48,34 @@ export function OperationsPanel({
         <div className="rounded-xl border border-border bg-surface p-4">
           <div className="mb-3 flex items-center gap-2">
             <Users className="h-4 w-4 text-accent" />
-            <h2 className="text-[13px] font-semibold text-text">Ekip ve Plan</h2>
+            <h2 className="text-[13px] font-semibold text-text">{t("dashboard.brand.teamPlan")}</h2>
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11.5px] text-text-muted">Koltuk</span>
+              <span className="text-[11.5px] text-text-muted">{t("dashboard.brand.seats")}</span>
               <span className="text-xs font-semibold text-text">
-                {teamUsage.users.used} / {teamUsage.users.limit ?? "sınırsız"}
+                {teamUsage.users.used} / {teamUsage.users.limit ?? t("dashboard.brand.unlimited")}
               </span>
             </div>
             {teamUsage.users.pending_invites > 0 && (
               <div className="flex items-center justify-between">
-                <span className="text-[11.5px] text-text-muted">Bekleyen davet</span>
+                <span className="text-[11.5px] text-text-muted">{t("dashboard.brand.pendingInvites")}</span>
                 <span className="text-xs font-semibold text-text">{teamUsage.users.pending_invites}</span>
               </div>
             )}
             {teamUsage.users.limit !== null && teamUsage.users.available !== null && teamUsage.users.available <= 0 && (
-              <p className="text-[11px] font-medium text-warning">Koltuk limitine ulaşıldı</p>
+              <p className="text-[11px] font-medium text-warning">{t("dashboard.brand.seatLimit")}</p>
             )}
-            {teamUsage.plan_name && <p className="pt-0.5 text-[10.5px] text-text-muted/70">Plan: {teamUsage.plan_name}</p>}
+            {teamUsage.plan_name && <p className="pt-0.5 text-[10.5px] text-text-muted/70">{t("dashboard.brand.plan", { plan: teamUsage.plan_name })}</p>}
           </div>
           <Link href="/brand/team" className="mt-2.5 block text-xs text-accent hover:underline">
-            Ekibi yönet →
+            {t("dashboard.brand.manageTeam")}
           </Link>
         </div>
       )}
 
       <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-[13px] font-semibold text-text">Hızlı İşlemler</h2>
+        <h2 className="mb-3 text-[13px] font-semibold text-text">{t("dashboard.actions.title")}</h2>
         <div className="space-y-1">
           {quickActions.map((action) => (
             <Link
@@ -93,10 +96,10 @@ export function OperationsPanel({
       </div>
 
       <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-2.5 text-[13px] font-semibold text-text">Operasyon Sağlığı</h2>
+        <h2 className="mb-2.5 text-[13px] font-semibold text-text">{t("dashboard.brand.health")}</h2>
         <div className="space-y-1">
           {healthLines.map((line) => (
-            <p key={line} className={cn("text-[12px]", line === "Süreçler normal" ? "text-emerald-500" : "text-text")}>
+            <p key={line} className={cn("text-[12px]", healthy ? "text-emerald-500" : "text-text")}>
               {line}
             </p>
           ))}
@@ -104,7 +107,7 @@ export function OperationsPanel({
         {deliverableRatio !== null && (
           <div className="mt-3">
             <div className="mb-1 flex items-center justify-between text-[10.5px] text-text-muted">
-              <span>Teslim onay oranı</span>
+              <span>{t("dashboard.brand.deliveryRate")}</span>
               <span>{deliverableRatio}%</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
