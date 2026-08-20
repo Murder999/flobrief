@@ -98,6 +98,34 @@ type RequestOptions = Omit<RequestInit, "body"> & {
   agencyId?: string | null;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function resolveApiErrorMessage(errorData: unknown, status: number): string {
+  const detail = isRecord(errorData) ? errorData.detail : undefined;
+  if (typeof detail === "string" && detail.trim()) {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (isRecord(item) && typeof item.msg === "string") return item.msg;
+        return null;
+      })
+      .filter((message): message is string => Boolean(message));
+    if (messages.length) return messages.join(" ");
+  }
+  if (isRecord(detail) && typeof detail.message === "string") {
+    return detail.message;
+  }
+  if (isRecord(errorData) && typeof errorData.message === "string") {
+    return errorData.message;
+  }
+  return `HTTP ${status}`;
+}
+
 async function request<T>(
   path: string,
   options: RequestOptions = {},
@@ -128,7 +156,7 @@ async function request<T>(
     const errorData = await response.json().catch(() => ({}));
     throw new ApiError(
       response.status,
-      errorData?.detail || `HTTP ${response.status}`,
+      resolveApiErrorMessage(errorData, response.status),
       errorData
     );
   }
@@ -194,6 +222,18 @@ export interface DemoStartResponse {
   expires_at: string;
 }
 
+export interface DemoSessionStatus {
+  is_demo: boolean;
+  active_portal: "agency" | "brand" | null;
+  expires_at: string | null;
+}
+
+export interface DemoPortalSwitchResponse {
+  portal: "agency" | "brand";
+  redirect_to: string;
+  expires_at: string;
+}
+
 export const demoApi = {
   status: () => request<DemoPublicStatus>("/api/v1/demo/status"),
   start: (turnstileToken?: string | null) =>
@@ -201,6 +241,14 @@ export const demoApi = {
       method: "POST",
       body: { turnstile_token: turnstileToken ?? null },
     }),
+  session: (accessToken: string) =>
+    request<DemoSessionStatus>("/api/v1/demo/session", {}, accessToken),
+  switchPortal: (portal: "agency" | "brand", accessToken: string) =>
+    request<DemoPortalSwitchResponse>(
+      "/api/v1/demo/switch-portal",
+      { method: "POST", body: { portal } },
+      accessToken
+    ),
 };
 
 export interface ContactSubmissionRequest {
@@ -2352,7 +2400,7 @@ export const publicApprovalApi = {
 
 // ── Branding types ────────────────────────────────────────────────────────────
 
-export type BrandingAssetType = "logo" | "email_logo" | "favicon" | "social_preview";
+export type BrandingAssetType = "logo" | "dark_logo" | "email_logo" | "favicon" | "social_preview";
 export type CustomDomainStatus = "pending" | "verified" | "failed" | "disabled";
 
 export interface AgencyBrandingRead {
@@ -2362,15 +2410,25 @@ export interface AgencyBrandingRead {
   primary_color: string | null;
   secondary_color: string | null;
   accent_color: string | null;
+  background_color: string | null;
+  surface_color: string | null;
+  text_color: string | null;
+  border_color: string | null;
   logo_url: string | null;
+  dark_logo_url: string | null;
   email_logo_url: string | null;
   favicon_url: string | null;
+  og_image_url: string | null;
   custom_footer_text: string | null;
+  support_email: string | null;
+  support_phone: string | null;
+  website_url: string | null;
+  footer_company_name: string | null;
+  copyright_text: string | null;
   is_white_label_enabled: boolean;
   white_label_entitlement: boolean;
   seo_title: string | null;
   seo_description: string | null;
-  og_image_url: string | null;
   google_analytics_id: string | null;
   created_at: string;
   updated_at: string;
@@ -2381,7 +2439,16 @@ export interface BrandingSettingsUpdate {
   primary_color?: string | null;
   secondary_color?: string | null;
   accent_color?: string | null;
+  background_color?: string | null;
+  surface_color?: string | null;
+  text_color?: string | null;
+  border_color?: string | null;
   custom_footer_text?: string | null;
+  support_email?: string | null;
+  support_phone?: string | null;
+  website_url?: string | null;
+  footer_company_name?: string | null;
+  copyright_text?: string | null;
   is_white_label_enabled?: boolean;
   seo_title?: string | null;
   seo_description?: string | null;
@@ -2409,9 +2476,23 @@ export interface PublicBrandingView {
   primary_color: string | null;
   secondary_color: string | null;
   accent_color: string | null;
+  background_color: string | null;
+  surface_color: string | null;
+  text_color: string | null;
+  border_color: string | null;
   logo_url: string | null;
+  dark_logo_url: string | null;
+  email_logo_url: string | null;
   favicon_url: string | null;
+  og_image_url: string | null;
   custom_footer_text: string | null;
+  support_email: string | null;
+  support_phone: string | null;
+  website_url: string | null;
+  footer_company_name: string | null;
+  copyright_text: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
   is_branded: boolean;
 }
 
@@ -2470,6 +2551,13 @@ export const brandingApi = {
       { method: "POST", body: { domain }, agencyId },
       accessToken
     ),
+
+  verifyDomain: (agencyId: string, accessToken: string) =>
+    request<CustomDomainRead>(
+      "/api/v1/branding/domain/verify",
+      { method: "POST", agencyId },
+      accessToken
+    ),
 };
 
 export const publicBrandingApi = {
@@ -2478,6 +2566,14 @@ export const publicBrandingApi = {
 
   getByReportToken: (token: string) =>
     request<PublicBrandingView>(`/api/v1/public/branding/by-report-token/${token}`),
+
+  getPlatformDefaults: () =>
+    request<PlatformBrandingDefaults>("/api/v1/public/branding/platform-defaults"),
+
+  resolveHost: (host: string) =>
+    request<PublicBrandingView>(
+      `/api/v1/public/branding/resolve-host?host=${encodeURIComponent(host)}`
+    ),
 
   assetUrl: (assetId: string) =>
     `${API_BASE}/api/v1/public/branding/assets/${assetId}`,
@@ -2552,6 +2648,7 @@ export interface PlatformSeoPageRead {
   page_key: string;
   title: string | null;
   description: string | null;
+  keywords: string | null;
   canonical_url: string | null;
   og_title: string | null;
   og_description: string | null;
@@ -2566,6 +2663,7 @@ export interface PlatformSeoPageRead {
 export interface PlatformSeoPageUpdate {
   title?: string | null;
   description?: string | null;
+  keywords?: string | null;
   canonical_url?: string | null;
   og_title?: string | null;
   og_description?: string | null;
@@ -2585,6 +2683,47 @@ export interface PlatformGrowthSettingsRead {
   robots_txt: string | null;
   sitemap_last_generated_at: string | null;
   public_app_url: string | null;
+}
+
+export interface PlatformAnalyticsTotals {
+  active_users: number;
+  new_users: number;
+  sessions: number;
+  engaged_sessions: number;
+  views: number;
+}
+
+export interface PlatformAnalyticsAiSource {
+  provider: "chatgpt" | "gemini" | "claude" | "perplexity" | "copilot" | string;
+  sessions: number;
+  active_users: number;
+  views: number;
+}
+
+export interface PlatformAnalyticsSource {
+  source: string;
+  medium: string;
+  sessions: number;
+  active_users: number;
+  views: number;
+}
+
+export interface PlatformAnalyticsPage {
+  path: string;
+  title: string;
+  views: number;
+  active_users: number;
+}
+
+export interface PlatformAnalyticsOverview {
+  data_source: "first_party" | "ga4";
+  period_days: number;
+  generated_at: string;
+  realtime_active_users: number;
+  totals: PlatformAnalyticsTotals;
+  ai_sources: PlatformAnalyticsAiSource[];
+  sources: PlatformAnalyticsSource[];
+  top_pages: PlatformAnalyticsPage[];
 }
 
 export interface PlatformSeoAuditIssue {
@@ -2807,20 +2946,29 @@ export interface PlatformBrandingDefaults {
   login_title: string | null;
   login_description: string | null;
   primary_color: string | null;
+  secondary_color: string | null;
   accent_color: string | null;
   background_color: string | null;
   surface_color: string | null;
   text_color: string | null;
+  border_color: string | null;
   link_color: string | null;
   logo_url: string | null;
   logo_dark_url: string | null;
   favicon_url: string | null;
+  og_image_url: string | null;
   email_from_name: string | null;
   support_email: string | null;
+  support_phone: string | null;
+  website_url: string | null;
+  footer_company_name: string | null;
+  copyright_text: string | null;
   footer_text: string | null;
   terms_url: string | null;
   privacy_url: string | null;
   social_links: Record<string, string> | null;
+  public_title: string | null;
+  public_description: string | null;
   updated_at: string;
 }
 
@@ -2829,17 +2977,25 @@ export interface PlatformBrandingDefaultsUpdate {
   login_title?: string | null;
   login_description?: string | null;
   primary_color?: string | null;
+  secondary_color?: string | null;
   accent_color?: string | null;
   background_color?: string | null;
   surface_color?: string | null;
   text_color?: string | null;
+  border_color?: string | null;
   link_color?: string | null;
   email_from_name?: string | null;
   support_email?: string | null;
+  support_phone?: string | null;
+  website_url?: string | null;
+  footer_company_name?: string | null;
+  copyright_text?: string | null;
   footer_text?: string | null;
   terms_url?: string | null;
   privacy_url?: string | null;
   social_links?: Record<string, string> | null;
+  public_title?: string | null;
+  public_description?: string | null;
 }
 
 export const platformBrandingApi = {
@@ -2856,7 +3012,7 @@ export const platformBrandingApi = {
       "/api/v1/platform/branding/reset", { method: "POST" }, accessToken
     ),
 
-  uploadAsset: (file: File, assetType: "logo" | "logo_dark" | "favicon", accessToken: string) => {
+  uploadAsset: (file: File, assetType: "logo" | "logo_dark" | "favicon" | "og_image", accessToken: string) => {
     const form = new FormData();
     form.append("file", file);
     return fetch(
@@ -3137,6 +3293,26 @@ export const platformApi = {
     request<Record<string, unknown>[]>(`/api/v1/platform/brands/${brandId}/briefs`, {}, accessToken),
 
   // SEO management
+  listContactSubmissions: (accessToken: string, statusFilter?: string) => {
+    const query = statusFilter ? `?submission_status=${encodeURIComponent(statusFilter)}` : "";
+    return request<ContactSubmissionRead[]>(
+      `/api/v1/platform/contact-submissions${query}`,
+      {},
+      accessToken
+    );
+  },
+
+  updateContactSubmissionStatus: (
+    submissionId: string,
+    status: ContactSubmissionRead["status"],
+    accessToken: string
+  ) =>
+    request<ContactSubmissionRead>(
+      `/api/v1/platform/contact-submissions/${submissionId}`,
+      { method: "PATCH", body: { status } },
+      accessToken
+    ),
+
   listSeoPages: (accessToken: string) =>
     request<PlatformSeoPageRead[]>("/api/v1/platform/seo/pages", {}, accessToken),
 
@@ -3177,6 +3353,11 @@ export const platformApi = {
   ) =>
     request<PlatformIntegrationStatus>(
       `/api/v1/platform/seo/integrations/${provider}`, {}, accessToken
+    ),
+
+  getAnalyticsOverview: (days: 7 | 30 | 90, accessToken: string) =>
+    request<PlatformAnalyticsOverview>(
+      `/api/v1/platform/seo/analytics/overview?days=${days}`, {}, accessToken
     ),
 
   regenerateSitemap: (accessToken: string) =>
@@ -3244,6 +3425,7 @@ export const ownerApi = {
 // ── Brief Center types ────────────────────────────────────────────────────────
 
 export interface BriefCenterKPI {
+  total_briefs: number;
   total_active_briefs: number;
   overdue_briefs: number;
   revision_requested: number;
@@ -3265,6 +3447,18 @@ export interface AttentionItem {
   attention_reason: "overdue" | "revision_requested" | "urgent" | "new_request";
 }
 
+export interface BriefCenterItem {
+  id: string;
+  title: string;
+  brand_id: string | null;
+  brand_name: string | null;
+  status: string;
+  priority: string;
+  deadline: string | null;
+  source: string | null;
+  updated_at: string;
+}
+
 export interface BrandCardItem {
   id: string;
   name: string;
@@ -3283,6 +3477,7 @@ export interface BrandCardItem {
 export interface BriefCenterData {
   kpis: BriefCenterKPI;
   attention_items: AttentionItem[];
+  briefs: BriefCenterItem[];
   brand_cards: BrandCardItem[];
 }
 
@@ -3682,6 +3877,9 @@ export interface BrandInvoiceWithLines extends BrandInvoiceRead {
 export const brandPortalApi = {
   me: (accessToken: string) =>
     request<BrandPortalMeResponse>("/api/v1/brand-portal/me", {}, accessToken),
+
+  branding: (accessToken: string) =>
+    request<PublicBrandingView>("/api/v1/brand-portal/branding", {}, accessToken),
 
   dashboard: (accessToken: string) =>
     request<BrandPortalDashboard>("/api/v1/brand-portal/dashboard", {}, accessToken),
