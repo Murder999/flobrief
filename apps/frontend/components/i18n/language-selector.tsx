@@ -1,7 +1,7 @@
 "use client";
 
 import { Languages } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuthContext } from "@/context/auth-context";
 import { useLocale } from "@/context/locale-context";
 import { authApi } from "@/lib/api-client";
@@ -12,14 +12,13 @@ export function LanguageSelector({ compact = false, className }: { compact?: boo
   const { locale, setLocale, t } = useLocale();
   const { accessToken, refreshUser } = useAuthContext();
   const pathname = usePathname();
-  const router = useRouter();
 
   async function changeLocale(nextLocale: Locale) {
     if (nextLocale === locale) return;
     setLocale(nextLocale);
     const visiblePath = typeof window === "undefined" ? pathname : window.location.pathname;
     const localizedPath = localizePublicPath(visiblePath, nextLocale);
-    if (localizedPath !== visiblePath) router.push(localizedPath);
+    if (localizedPath !== visiblePath) window.location.assign(localizedPath);
 
     if (accessToken) {
       try {
