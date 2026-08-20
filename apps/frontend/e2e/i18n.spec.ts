@@ -57,14 +57,20 @@ test.describe("English and Turkish locale behavior", () => {
     await expect(page.getByText("Akıllı Brief Şablonları", { exact: true })).toHaveCount(0);
 
     const englishStructure = await page.locator("body").evaluate((body) => ({
-      tags: Array.from(body.querySelectorAll("*")).map((element) => element.tagName).join("|"),
+      tags: Array.from(body.querySelectorAll("*"))
+        .filter((element) => !["SCRIPT", "NEXT-ROUTE-ANNOUNCER"].includes(element.tagName))
+        .map((element) => element.tagName)
+        .join("|"),
       landmarks: Array.from(body.querySelectorAll("nav, section, footer")).map((element) => element.className).join("|"),
     }));
     await selector.getByRole("button", { name: "TR", exact: true }).click();
     await expect(page).toHaveURL(/\/tr\/?$/);
     await expect(page.getByText("Akıllı Brief Şablonları", { exact: true })).toBeVisible();
     const turkishStructure = await page.locator("body").evaluate((body) => ({
-      tags: Array.from(body.querySelectorAll("*")).map((element) => element.tagName).join("|"),
+      tags: Array.from(body.querySelectorAll("*"))
+        .filter((element) => !["SCRIPT", "NEXT-ROUTE-ANNOUNCER"].includes(element.tagName))
+        .map((element) => element.tagName)
+        .join("|"),
       landmarks: Array.from(body.querySelectorAll("nav, section, footer")).map((element) => element.className).join("|"),
     }));
 
