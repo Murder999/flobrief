@@ -19,8 +19,8 @@ import {
 } from "lucide-react";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { LanguageSelector } from "@/components/i18n/language-selector";
-import { EnglishHomePage } from "@/components/marketing/EnglishHomePage";
 import { useLocale } from "@/context/locale-context";
+import { homeEnglishCopy } from "@/messages/home";
 
 /* ── Motion presets ──────────────────────────────────────────────────────── */
 
@@ -28,6 +28,11 @@ const ES = [0.16, 1, 0.3, 1] as const;
 const vUp = { hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: ES } } };
 const vStagger = { hidden: {}, visible: { transition: { staggerChildren: 0.09, delayChildren: 0.06 } } };
 const VP = { once: true, margin: "-80px" } as const;
+
+function useHomeText() {
+  const { locale } = useLocale();
+  return (value: string) => locale === "en" ? homeEnglishCopy[value] ?? value : value;
+}
 
 /* ── Data ────────────────────────────────────────────────────────────────── */
 
@@ -71,6 +76,7 @@ const BRIEF_FIELDS = [
 ] as const;
 
 function BriefMiniUI({ reduced }: { reduced: boolean }) {
+  const homeText = useHomeText();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true });
   const [step, setStep] = useState(0);
@@ -94,8 +100,8 @@ function BriefMiniUI({ reduced }: { reduced: boolean }) {
           transition={{ duration: 0.3, ease: ES }}
           className="rounded-lg border border-border bg-background px-3 py-2"
         >
-          <div className="text-[9px] text-text-muted mb-0.5 uppercase tracking-wider">{f.label}</div>
-          <div className="text-xs font-medium text-text">{f.value}</div>
+          <div className="text-[9px] text-text-muted mb-0.5 uppercase tracking-wider">{homeText(f.label)}</div>
+          <div className="text-xs font-medium text-text">{homeText(f.value)}</div>
         </motion.div>
       ))}
       <AnimatePresence>
@@ -107,7 +113,7 @@ function BriefMiniUI({ reduced }: { reduced: boolean }) {
             className="w-full rounded-lg py-2 text-center text-xs font-semibold text-white cursor-default"
             style={{ background: "var(--gradient-accent)" }}
           >
-            Brief Gönder →
+            {homeText("Brief Gönder →")}
           </motion.div>
         )}
       </AnimatePresence>
@@ -134,6 +140,7 @@ const APPROVAL_PHASES: ApprovalPhase[] = [
 const PHASE_DOT = ["bg-accent", "bg-danger", "bg-info", "bg-success"];
 
 function ApprovalMiniUI({ reduced }: { reduced: boolean }) {
+  const homeText = useHomeText();
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
@@ -182,7 +189,7 @@ function ApprovalMiniUI({ reduced }: { reduced: boolean }) {
           exit={{ opacity: 0, scale: 0.85 }}
           transition={{ duration: 0.18 }}
         >
-          {p.label}
+          {homeText(p.label)}
         </motion.span>
       </AnimatePresence>
 
@@ -198,7 +205,7 @@ function ApprovalMiniUI({ reduced }: { reduced: boolean }) {
             className="overflow-hidden"
           >
             <div className={`rounded-lg border px-3 py-2 text-[10px] leading-relaxed ${p.commentCls}`}>
-              {p.comment}
+              {homeText(p.comment)}
             </div>
           </motion.div>
         )}
@@ -219,6 +226,7 @@ const CAL_ITEMS = [
 ] as const;
 
 function CalendarMiniUI({ reduced }: { reduced: boolean }) {
+  const homeText = useHomeText();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true });
   const [count, setCount] = useState(0);
@@ -236,7 +244,7 @@ function CalendarMiniUI({ reduced }: { reduced: boolean }) {
     <div ref={ref}>
       <div className="grid grid-cols-5 gap-1 mb-1">
         {CAL_DAYS.map(d => (
-          <div key={d} className="text-center text-[9px] text-text-muted font-medium py-0.5">{d}</div>
+          <div key={d} className="text-center text-[9px] text-text-muted font-medium py-0.5">{homeText(d)}</div>
         ))}
       </div>
       {[0, 1].map(row => (
@@ -254,7 +262,7 @@ function CalendarMiniUI({ reduced }: { reduced: boolean }) {
                     transition={{ duration: 0.28, ease: ES }}
                     className={`absolute inset-0.5 rounded flex items-center justify-center ${item.cls}`}
                   >
-                    <span className="text-[7px] font-semibold leading-tight text-center px-0.5">{item.label}</span>
+                    <span className="text-[7px] font-semibold leading-tight text-center px-0.5">{homeText(item.label)}</span>
                   </motion.div>
                 )}
               </div>
@@ -276,6 +284,7 @@ const METRICS = [
 ] as const;
 
 function ReportingMiniUI({ reduced }: { reduced: boolean }) {
+  const homeText = useHomeText();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true });
 
@@ -284,7 +293,7 @@ function ReportingMiniUI({ reduced }: { reduced: boolean }) {
       {METRICS.map((m, i) => (
         <div key={m.label}>
           <div className="flex justify-between text-[10px] mb-1">
-            <span className="text-text-muted">{m.label}</span>
+            <span className="text-text-muted">{homeText(m.label)}</span>
             <span className="font-semibold text-text">{m.pct}%</span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
@@ -311,6 +320,7 @@ const NOTIFS = [
 ] as const;
 
 function NotifMiniUI({ reduced }: { reduced: boolean }) {
+  const homeText = useHomeText();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true });
 
@@ -328,9 +338,9 @@ function NotifMiniUI({ reduced }: { reduced: boolean }) {
             <n.Icon className={`w-3 h-3 ${n.iconCls}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-medium text-text truncate">{n.text}</div>
+            <div className="text-[10px] font-medium text-text truncate">{homeText(n.text)}</div>
           </div>
-          <div className="text-[9px] text-text-muted flex-shrink-0">{n.time}</div>
+          <div className="text-[9px] text-text-muted flex-shrink-0">{homeText(n.time)}</div>
         </motion.div>
       ))}
     </div>
@@ -347,6 +357,7 @@ const TEAM_MEMBERS = [
 ] as const;
 
 function TeamsMiniUI({ reduced }: { reduced: boolean }) {
+  const homeText = useHomeText();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true });
 
@@ -369,7 +380,7 @@ function TeamsMiniUI({ reduced }: { reduced: boolean }) {
           <div className="flex-1 min-w-0">
             <div className="flex justify-between text-[10px] mb-0.5">
               <span className="font-medium text-text">{m.name}</span>
-              <span className="text-text-muted">{m.count} brief</span>
+              <span className="text-text-muted">{m.count} {homeText("brief")}</span>
             </div>
             <div className="h-1 rounded-full bg-surface-2 overflow-hidden">
               <motion.div
@@ -389,11 +400,12 @@ function TeamsMiniUI({ reduced }: { reduced: boolean }) {
 /* ── Brief Card Body (stage-specific content) ────────────────────────────── */
 
 function BriefCardBody({ idx }: { idx: number }) {
+  const homeText = useHomeText();
   if (idx === 0) return (
     <div className="space-y-4">
       <div>
         <div className="flex justify-between text-xs mb-1.5">
-          <span className="text-text-muted">Brief tamamlanma</span>
+          <span className="text-text-muted">{homeText("Brief tamamlanma")}</span>
           <span className="font-semibold text-warning">65%</span>
         </div>
         <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
@@ -401,12 +413,12 @@ function BriefCardBody({ idx }: { idx: number }) {
         </div>
       </div>
       <div>
-        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Tamamlanmayı bekleyen alanlar</div>
+        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">{homeText("Tamamlanmayı bekleyen alanlar")}</div>
         <div className="space-y-1.5">
           {["Platform seçimi", "Hedef kitle demografisi", "Bütçe aralığı"].map(f => (
             <div key={f} className="flex items-center gap-2 text-xs">
               <div className="w-3.5 h-3.5 rounded border border-danger-border bg-danger-subtle flex-shrink-0" />
-              <span className="text-text-secondary">{f}</span>
+              <span className="text-text-secondary">{homeText(f)}</span>
             </div>
           ))}
         </div>
@@ -418,7 +430,7 @@ function BriefCardBody({ idx }: { idx: number }) {
           ))}
           <div className="w-7 h-7 rounded-full border-2 border-surface bg-surface-2 flex items-center justify-center text-[9px] text-text-muted">+3</div>
         </div>
-        <span className="text-[10px] status-neutral px-2.5 py-1 rounded-full">Düzenleniyor</span>
+        <span className="text-[10px] status-neutral px-2.5 py-1 rounded-full">{homeText("Düzenleniyor")}</span>
       </div>
     </div>
   );
@@ -429,17 +441,17 @@ function BriefCardBody({ idx }: { idx: number }) {
         <div className="flex items-center gap-3 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0" style={{ background: "var(--color-accent)" }}>AY</div>
           <div>
-            <div className="text-xs font-semibold text-text">Ahmet Y. → Nike TR Ekibi</div>
-            <div className="text-[10px] text-text-muted">3 dk önce</div>
+            <div className="text-xs font-semibold text-text">{homeText("Ahmet Y. → Nike TR Ekibi")}</div>
+            <div className="text-[10px] text-text-muted">{homeText("3 dk önce")}</div>
           </div>
         </div>
-        <p className="text-xs text-text-secondary">&quot;Q3 kampanyası için brief hazır, incelemenizi bekliyoruz.&quot;</p>
+        <p className="text-xs text-text-secondary">&quot;{homeText("Q3 kampanyası için brief hazır, incelemenizi bekliyoruz.")}&quot;</p>
       </div>
       <div className="space-y-2.5">
         {[["Alıcı", "Nike TR Marka Ekibi"], ["Öncelik", "Yüksek"], ["Beklenen yanıt", "24 saat"]].map(([label, value]) => (
           <div key={label} className="flex justify-between text-xs">
-            <span className="text-text-muted">{label}</span>
-            <span className="font-medium text-text">{value}</span>
+            <span className="text-text-muted">{homeText(label)}</span>
+            <span className="font-medium text-text">{homeText(value)}</span>
           </div>
         ))}
       </div>
@@ -451,17 +463,17 @@ function BriefCardBody({ idx }: { idx: number }) {
       <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background">
         <div className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0" style={{ background: "var(--color-info)" }}>MA</div>
         <div>
-          <div className="text-xs font-semibold text-text">Murat A. inceliyor</div>
-          <div className="text-[10px] text-text-muted">Nike TR · Marka Direktörü</div>
+          <div className="text-xs font-semibold text-text">{homeText("Murat A. inceliyor")}</div>
+          <div className="text-[10px] text-text-muted">{homeText("Nike TR · Marka Direktörü")}</div>
         </div>
       </div>
       <div className="rounded-xl border border-info-border bg-info-subtle p-3.5">
-        <div className="text-[9px] text-text-muted uppercase tracking-wider mb-1.5">Son Yorum</div>
-        <p className="text-xs text-info-text">&quot;Platform seçimini netleştirir misiniz? TikTok önemli.&quot;</p>
+        <div className="text-[9px] text-text-muted uppercase tracking-wider mb-1.5">{homeText("Son Yorum")}</div>
+        <p className="text-xs text-info-text">&quot;{homeText("Platform seçimini netleştirir misiniz? TikTok önemli.")}&quot;</p>
       </div>
       <div className="flex items-center gap-2 pt-1">
         <Bell className="w-3.5 h-3.5 text-warning" />
-        <span className="text-xs text-warning-text font-medium">Yanıt bekleniyor</span>
+        <span className="text-xs text-warning-text font-medium">{homeText("Yanıt bekleniyor")}</span>
       </div>
     </div>
   );
@@ -474,17 +486,17 @@ function BriefCardBody({ idx }: { idx: number }) {
             <CheckCircle className="w-4 h-4 text-white" />
           </div>
           <div>
-            <div className="text-sm font-bold text-text">Brief Kabul Edildi</div>
-            <div className="text-[10px] text-text-muted">Murat A. · 5 dk önce</div>
+            <div className="text-sm font-bold text-text">{homeText("Brief Kabul Edildi")}</div>
+            <div className="text-[10px] text-text-muted">{homeText("Murat A. · 5 dk önce")}</div>
           </div>
         </div>
-        <p className="text-xs text-success-text">&quot;Brief yapısı onaylandı, üretime geçebilirsiniz.&quot;</p>
+        <p className="text-xs text-success-text">&quot;{homeText("Brief yapısı onaylandı, üretime geçebilirsiniz.")}&quot;</p>
       </div>
       <div className="space-y-2.5">
         {[["Kanal", "Instagram + TikTok"], ["Teslim", "15 Tem 2026"], ["Ekip", "Kreatif + Tasarım"]].map(([label, value]) => (
           <div key={label} className="flex justify-between text-xs">
-            <span className="text-text-muted">{label}</span>
-            <span className="font-medium text-text">{value}</span>
+            <span className="text-text-muted">{homeText(label)}</span>
+            <span className="font-medium text-text">{homeText(value)}</span>
           </div>
         ))}
       </div>
@@ -494,12 +506,12 @@ function BriefCardBody({ idx }: { idx: number }) {
   if (idx === 4) return (
     <div className="space-y-4">
       <div>
-        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2.5">Atanan Ekip</div>
+        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2.5">{homeText("Atanan Ekip")}</div>
         <div className="flex flex-wrap gap-2">
           {([["SK", "var(--color-info)", "Selin K. · Strateji"], ["MD", "var(--color-purple)", "Murat D. · Tasarım"]] as const).map(([init, bg, name]) => (
             <div key={name} className="flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0" style={{ background: bg }}>{init}</div>
-              <span className="text-[10px] font-medium text-text">{name}</span>
+              <span className="text-[10px] font-medium text-text">{homeText(name)}</span>
             </div>
           ))}
         </div>
@@ -508,16 +520,16 @@ function BriefCardBody({ idx }: { idx: number }) {
         <div className="flex items-center gap-2">
           <FileText className="w-3.5 h-3.5 text-text-muted" />
           <div>
-            <div className="text-xs font-semibold text-text">V1 Taslak</div>
-            <div className="text-[10px] text-text-muted">8 dk önce yüklendi</div>
+            <div className="text-xs font-semibold text-text">{homeText("V1 Taslak")}</div>
+            <div className="text-[10px] text-text-muted">{homeText("8 dk önce yüklendi")}</div>
           </div>
         </div>
-        <span className="text-[10px] status-info px-2 py-0.5 rounded-full">İnceleniyor</span>
+        <span className="text-[10px] status-info px-2 py-0.5 rounded-full">{homeText("İnceleniyor")}</span>
       </div>
       <div className="flex items-center gap-2 text-xs">
         <Clock className="w-3.5 h-3.5 text-text-muted" />
-        <span className="text-text-muted">Teslim tarihi:</span>
-        <span className="font-semibold text-text">15 Tem 2026</span>
+        <span className="text-text-muted">{homeText("Teslim tarihi:")}</span>
+        <span className="font-semibold text-text">{homeText("15 Tem 2026")}</span>
       </div>
     </div>
   );
@@ -525,11 +537,11 @@ function BriefCardBody({ idx }: { idx: number }) {
   if (idx === 5) return (
     <div className="space-y-4">
       <div className="rounded-xl border border-danger-border bg-danger-subtle p-4">
-        <div className="text-[9px] text-text-muted uppercase tracking-wider mb-2">Marka Yorumu</div>
-        <p className="text-xs text-danger-text mb-3">&quot;Logo boyutu küçültülmeli, metin kontrası artırılmalı. Renk paleti markamızla uyumsuz.&quot;</p>
+        <div className="text-[9px] text-text-muted uppercase tracking-wider mb-2">{homeText("Marka Yorumu")}</div>
+        <p className="text-xs text-danger-text mb-3">&quot;{homeText("Logo boyutu küçültülmeli, metin kontrası artırılmalı. Renk paleti markamızla uyumsuz.")}&quot;</p>
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0" style={{ background: "var(--color-accent)" }}>MA</div>
-          <span className="text-[10px] text-text-muted">Murat A. · 12 dk önce</span>
+          <span className="text-[10px] text-text-muted">{homeText("Murat A. · 12 dk önce")}</span>
         </div>
       </div>
       <div className="flex items-center gap-3">
@@ -540,7 +552,7 @@ function BriefCardBody({ idx }: { idx: number }) {
         <ArrowRight className="w-3.5 h-3.5 text-text-muted" />
         <div className="flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent-subtle px-2.5 py-1.5">
           <FileText className="w-3 h-3 text-accent" />
-          <span className="text-[10px] text-accent font-semibold">V2 hazırlanıyor</span>
+          <span className="text-[10px] text-accent font-semibold">{homeText("V2 hazırlanıyor")}</span>
         </div>
       </div>
     </div>
@@ -554,17 +566,17 @@ function BriefCardBody({ idx }: { idx: number }) {
             <CheckCircle className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="text-base font-bold text-text">Brief Onaylandı ✓</div>
-            <div className="text-[10px] text-text-muted">Murat A. · Az önce</div>
+            <div className="text-base font-bold text-text">{homeText("Brief Onaylandı ✓")}</div>
+            <div className="text-[10px] text-text-muted">{homeText("Murat A. · Az önce")}</div>
           </div>
         </div>
-        <p className="text-xs text-success-text">&quot;Mükemmel! V2 tam istediğimiz gibi, yayına geçebilir.&quot;</p>
+        <p className="text-xs text-success-text">&quot;{homeText("Mükemmel! V2 tam istediğimiz gibi, yayına geçebilir.")}&quot;</p>
       </div>
       <div className="space-y-2.5">
         {[["Son Versiyon", "V2 Final"], ["Onay Tarihi", "Bugün"], ["Yayın Planı", "15 Tem 2026"]].map(([label, value]) => (
           <div key={label} className="flex justify-between text-xs">
-            <span className="text-text-muted">{label}</span>
-            <span className="font-medium text-text">{value}</span>
+            <span className="text-text-muted">{homeText(label)}</span>
+            <span className="font-medium text-text">{homeText(value)}</span>
           </div>
         ))}
       </div>
@@ -577,26 +589,26 @@ function BriefCardBody({ idx }: { idx: number }) {
       <div className="rounded-xl border border-success-border bg-success-subtle p-4">
         <div className="flex items-center gap-2 mb-3">
           <Zap className="w-4 h-4 text-success" />
-          <span className="text-sm font-bold text-text">Yayına Alındı!</span>
+          <span className="text-sm font-bold text-text">{homeText("Yayına Alındı!")}</span>
         </div>
         <div className="flex gap-2 mb-3">
           {["Instagram", "TikTok"].map(ch => (
             <span key={ch} className="text-[10px] font-medium px-2.5 py-1 rounded-full status-success">{ch}</span>
           ))}
         </div>
-        <p className="text-xs text-success-text">Süreç başarıyla tamamlandı. İçerik takviminde görüntülenebilir.</p>
+        <p className="text-xs text-success-text">{homeText("Süreç başarıyla tamamlandı. İçerik takviminde görüntülenebilir.")}</p>
       </div>
       <div className="space-y-2.5">
         {[["Yayın Tarihi", "15 Tem 2026"], ["Format", "8 post, 3 story, 2 reel"], ["Hedef", "18-34, sport & lifestyle"]].map(([label, value]) => (
           <div key={label} className="flex justify-between text-xs">
-            <span className="text-text-muted">{label}</span>
-            <span className="font-medium text-text">{value}</span>
+            <span className="text-text-muted">{homeText(label)}</span>
+            <span className="font-medium text-text">{homeText(value)}</span>
           </div>
         ))}
       </div>
       <div className="flex items-center gap-2 text-xs text-accent pt-1">
         <Calendar className="w-3.5 h-3.5" />
-        <span className="font-medium">Takvimde görüntüle →</span>
+        <span className="font-medium">{homeText("Takvimde görüntüle →")}</span>
       </div>
     </div>
   );
@@ -629,6 +641,7 @@ const STAGE_BOTTOM_EVENTS = [
 /* ── Brief Lifecycle Scene ───────────────────────────────────────────────── */
 
 function BriefLifecycleScene() {
+  const homeText = useHomeText();
   const [activeIdx, setActiveIdx] = useState(0);
   const [autoRunning, setAutoRunning] = useState(true);
   const shouldReduceMotion = useReducedMotion() ?? false;
@@ -669,13 +682,12 @@ function BriefLifecycleScene() {
           viewport={VP}
           variants={vStagger}
         >
-          <motion.p variants={vUp} className="text-label-sm text-accent mb-3">İş Akışı</motion.p>
+          <motion.p variants={vUp} className="text-label-sm text-accent mb-3">{homeText("İş Akışı")}</motion.p>
           <motion.h2 variants={vUp} className="text-heading-xl text-text mb-4 max-w-2xl">
-            Brief&apos;ten yayına, tüm süreç tek akışta.
+            {homeText("Brief'ten yayına, tüm süreç tek akışta.")}
           </motion.h2>
           <motion.p variants={vUp} className="text-text-secondary text-base leading-relaxed max-w-2xl">
-            Brief oluşturma, ekip atama, üretim, revizyon, onay ve yayın süreçlerini tek merkezden yönetin.
-            Her aşama görünür, her karar kayıt altında.
+            {homeText("Brief oluşturma, ekip atama, üretim, revizyon, onay ve yayın süreçlerini tek merkezden yönetin. Her aşama görünür, her karar kayıt altında.")}
           </motion.p>
         </motion.div>
 
@@ -702,8 +714,8 @@ function BriefLifecycleScene() {
                     <div className="w-1.5 h-1.5 rounded-full bg-accent" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-text mb-0.5">{b.title}</div>
-                    <div className="text-xs text-text-muted leading-relaxed">{b.desc}</div>
+                    <div className="text-sm font-semibold text-text mb-0.5">{homeText(b.title)}</div>
+                    <div className="text-xs text-text-muted leading-relaxed">{homeText(b.desc)}</div>
                   </div>
                 </motion.div>
               ))}
@@ -718,7 +730,7 @@ function BriefLifecycleScene() {
               transition={{ duration: 0.5, delay: 0.3, ease: ES }}
             >
               <div className="px-5 py-3.5 border-b border-border bg-surface-2">
-                <span className="text-[10px] text-text-muted uppercase tracking-wider">Aktif Aşama</span>
+                <span className="text-[10px] text-text-muted uppercase tracking-wider">{homeText("Aktif Aşama")}</span>
               </div>
               <div className="p-5">
                 <AnimatePresence mode="wait">
@@ -730,15 +742,15 @@ function BriefLifecycleScene() {
                     transition={{ duration: 0.2 }}
                   >
                     <div className={`inline-flex text-xs font-semibold px-2.5 py-1 rounded-full mb-3 ${stage.cls}`}>
-                      {activeIdx + 1}. {stage.label}
+                      {activeIdx + 1}. {homeText(stage.label)}
                     </div>
-                    <p className="text-xs text-text-secondary leading-relaxed">{stage.desc}</p>
+                    <p className="text-xs text-text-secondary leading-relaxed">{homeText(stage.desc)}</p>
                   </motion.div>
                 </AnimatePresence>
                 <div className="mt-4 pt-4 border-t border-border">
                   <div className="flex justify-between text-[10px] text-text-muted mb-1.5">
-                    <span>Süreç</span>
-                    <span>{activeIdx + 1}/{LIFECYCLE_STAGES.length} adım · {Math.round(((activeIdx + 1) / LIFECYCLE_STAGES.length) * 100)}%</span>
+                    <span>{homeText("Süreç")}</span>
+                    <span>{activeIdx + 1}/{LIFECYCLE_STAGES.length} {homeText("adım")} · {Math.round(((activeIdx + 1) / LIFECYCLE_STAGES.length) * 100)}%</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
                     <motion.div
@@ -764,14 +776,14 @@ function BriefLifecycleScene() {
                 className="flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
                 style={{ background: "var(--gradient-accent)", boxShadow: "0 2px 16px rgba(99,102,241,0.28)" }}
               >
-                Ücretsiz başlayın
+                {homeText("Ücretsiz başlayın")}
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="#features"
                 className="text-center text-xs text-text-muted hover:text-text transition-colors py-1"
               >
-                Tüm özellikleri incele →
+                {homeText("Tüm özellikleri incele →")}
               </a>
             </motion.div>
           </div>
@@ -787,7 +799,7 @@ function BriefLifecycleScene() {
               viewport={VP}
               transition={{ duration: 0.5, delay: 0.1, ease: ES }}
               role="tablist"
-              aria-label="Lifecycle aşamaları"
+              aria-label={homeText("Lifecycle aşamaları")}
             >
               <div className="flex items-start gap-0 min-w-max">
                 {LIFECYCLE_STAGES.map((s, i) => (
@@ -796,7 +808,7 @@ function BriefLifecycleScene() {
                       <button
                         role="tab"
                         aria-selected={i === activeIdx}
-                        aria-label={`Aşama ${i + 1}: ${s.label}`}
+                        aria-label={`${homeText("Aşama")} ${i + 1}: ${homeText(s.label)}`}
                         onClick={() => handleStep(i)}
                         className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all duration-250 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
                           i === activeIdx
@@ -811,7 +823,7 @@ function BriefLifecycleScene() {
                       <span className={`text-[10px] font-medium whitespace-nowrap transition-colors duration-200 ${
                         i === activeIdx ? "text-accent" : i < activeIdx ? "text-success-text" : "text-text-muted"
                       }`}>
-                        {s.label}
+                        {homeText(s.label)}
                       </span>
                     </div>
                     {i < LIFECYCLE_STAGES.length - 1 && (
@@ -853,8 +865,8 @@ function BriefLifecycleScene() {
                         <topEv.icon className={`w-3.5 h-3.5 ${topEv.iconCls}`} />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-[11px] font-semibold text-text leading-tight">{topEv.text}</div>
-                        <div className="text-[9px] text-text-muted mt-0.5">{topEv.sub}</div>
+                        <div className="text-[11px] font-semibold text-text leading-tight">{homeText(topEv.text)}</div>
+                        <div className="text-[9px] text-text-muted mt-0.5">{homeText(topEv.sub)}</div>
                       </div>
                     </div>
                   </motion.div>
@@ -878,8 +890,8 @@ function BriefLifecycleScene() {
                   >
                     <div className="text-[9px] text-text-muted uppercase tracking-wider mb-1.5">Flobrief</div>
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-text-secondary">{botEv.label}</span>
-                      <span className="text-[10px] font-semibold text-text">{botEv.value}</span>
+                      <span className="text-[10px] text-text-secondary">{homeText(botEv.label)}</span>
+                      <span className="text-[10px] font-semibold text-text">{homeText(botEv.value)}</span>
                     </div>
                   </motion.div>
                 </AnimatePresence>
@@ -896,8 +908,8 @@ function BriefLifecycleScene() {
                         style={{ background: "var(--gradient-accent)" }}
                       >N</div>
                       <div className="min-w-0">
-                        <div className="text-base font-bold text-text leading-tight">Q3 Sosyal Medya Kampanyası</div>
-                        <div className="text-xs text-text-muted mt-0.5">Nike TR · #BRF-0124 · Yüksek Öncelik</div>
+                        <div className="text-base font-bold text-text leading-tight">{homeText("Q3 Sosyal Medya Kampanyası")}</div>
+                        <div className="text-xs text-text-muted mt-0.5">Nike TR · #BRF-0124 · {homeText("Yüksek Öncelik")}</div>
                       </div>
                     </div>
                     <AnimatePresence mode="wait">
@@ -909,7 +921,7 @@ function BriefLifecycleScene() {
                         exit={{ opacity: 0, scale: 0.85, y: 4 }}
                         transition={{ duration: 0.18 }}
                       >
-                        {stage.label}
+                        {homeText(stage.label)}
                       </motion.span>
                     </AnimatePresence>
                   </div>
@@ -922,7 +934,7 @@ function BriefLifecycleScene() {
                     ].map(({ icon: Icon, label }) => (
                       <div key={label} className="flex items-center gap-1.5 text-xs text-text-muted">
                         <Icon className="w-3.5 h-3.5 text-text-muted/50" />
-                        {label}
+                        {homeText(label)}
                       </div>
                     ))}
                   </div>
@@ -946,8 +958,8 @@ function BriefLifecycleScene() {
                 {/* Card footer — progress bar */}
                 <div className="px-6 pb-6 pt-2 border-t border-border">
                   <div className="flex justify-between text-[10px] text-text-muted mb-1.5">
-                    <span>Süreç İlerlemesi</span>
-                    <span>{Math.round(((activeIdx + 1) / LIFECYCLE_STAGES.length) * 100)}% tamamlandı</span>
+                    <span>{homeText("Süreç İlerlemesi")}</span>
+                    <span>{Math.round(((activeIdx + 1) / LIFECYCLE_STAGES.length) * 100)}% {homeText("tamamlandı")}</span>
                   </div>
                   <div className="h-2 rounded-full bg-surface-2 overflow-hidden">
                     <motion.div
@@ -969,7 +981,7 @@ function BriefLifecycleScene() {
                 transition={{ delay: 1.5 }}
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse flex-shrink-0" />
-                <span>Otomatik ilerliyor · Adımlara tıklayarak inceleyebilirsiniz</span>
+                <span>{homeText("Otomatik ilerliyor · Adımlara tıklayarak inceleyebilirsiniz")}</span>
               </motion.div>
             )}
           </div>
@@ -1018,6 +1030,7 @@ const PERSONAS = [
 ] as const;
 
 function PersonaTabs() {
+  const homeText = useHomeText();
   const [active, setActive] = useState(0);
   const p = PERSONAS[active];
 
@@ -1025,10 +1038,10 @@ function PersonaTabs() {
     <section className="py-24 bg-background relative">
       <div className="mx-auto max-w-5xl px-6">
         <motion.div className="text-center mb-12" initial="hidden" whileInView="visible" viewport={VP} variants={vStagger}>
-          <motion.p variants={vUp} className="text-label-sm text-accent mb-3">Kim İçin?</motion.p>
-          <motion.h2 variants={vUp} className="text-heading-xl text-text mb-4">Her role özel tasarlandı</motion.h2>
+          <motion.p variants={vUp} className="text-label-sm text-accent mb-3">{homeText("Kim İçin?")}</motion.p>
+          <motion.h2 variants={vUp} className="text-heading-xl text-text mb-4">{homeText("Her role özel tasarlandı")}</motion.h2>
           <motion.p variants={vUp} className="text-text-secondary max-w-lg mx-auto text-base">
-            Ajans yöneticisinden marka yetkilisine, içerik ekibinden proje müdürüne kadar herkes kendi iş akışını bulur.
+            {homeText("Ajans yöneticisinden marka yetkilisine, içerik ekibinden proje müdürüne kadar herkes kendi iş akışını bulur.")}
           </motion.p>
         </motion.div>
 
@@ -1052,7 +1065,7 @@ function PersonaTabs() {
                 }`}
               >
                 <tab.Icon className="w-3.5 h-3.5" />
-                {tab.label}
+                {homeText(tab.label)}
               </button>
             ))}
           </div>
@@ -1072,17 +1085,17 @@ function PersonaTabs() {
             <div>
               <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 ${p.badgeCls}`}>
                 <p.Icon className="w-3.5 h-3.5" />
-                <span className="text-xs font-semibold">{p.label}</span>
+                <span className="text-xs font-semibold">{homeText(p.label)}</span>
               </div>
-              <h3 className="text-2xl font-bold text-text mb-3 tracking-tight leading-snug">{p.tagline}</h3>
-              <p className="text-text-secondary text-sm leading-relaxed mb-6">{p.desc}</p>
+              <h3 className="text-2xl font-bold text-text mb-3 tracking-tight leading-snug">{homeText(p.tagline)}</h3>
+              <p className="text-text-secondary text-sm leading-relaxed mb-6">{homeText(p.desc)}</p>
               <ul className="space-y-2.5">
                 {p.points.map(point => (
                   <li key={point} className="flex items-center gap-2.5 text-sm text-text-secondary">
                     <div className="w-4 h-4 rounded-full bg-accent-subtle flex items-center justify-center flex-shrink-0">
                       <CheckCircle className="w-2.5 h-2.5 text-accent" />
                     </div>
-                    {point}
+                    {homeText(point)}
                   </li>
                 ))}
               </ul>
@@ -1090,7 +1103,7 @@ function PersonaTabs() {
                 href="/auth/register"
                 className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-accent hover:text-accent-hover transition-colors group"
               >
-                Ücretsiz başlayın
+                {homeText("Ücretsiz başlayın")}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
@@ -1102,26 +1115,26 @@ function PersonaTabs() {
                   <p.Icon className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-text">{p.label} Dashboardu</div>
+                  <div className="text-sm font-semibold text-text">{homeText(p.label)} {homeText("Dashboardu")}</div>
                   <div className="text-xs text-text-muted">postpiloter.com</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {p.miniStats.map(s => (
                   <div key={s.label} className="rounded-xl border border-border bg-background p-3">
-                    <div className="text-[10px] text-text-muted mb-1">{s.label}</div>
+                    <div className="text-[10px] text-text-muted mb-1">{homeText(s.label)}</div>
                     <div className="text-xl font-bold text-text">{s.v}</div>
                   </div>
                 ))}
               </div>
               <div className="rounded-xl border border-border bg-background overflow-hidden">
                 <div className="border-b border-border px-3 py-2">
-                  <span className="text-[10px] font-semibold text-text">Son Aktivite</span>
+                  <span className="text-[10px] font-semibold text-text">{homeText("Son Aktivite")}</span>
                 </div>
                 {p.activity.map(item => (
                   <div key={item.label} className="flex items-center gap-2 px-3 py-2 border-b border-border last:border-0">
                     <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.dot}`} />
-                    <span className="text-[10px] text-text-secondary">{item.label}</span>
+                    <span className="text-[10px] text-text-secondary">{homeText(item.label)}</span>
                   </div>
                 ))}
               </div>
@@ -1136,7 +1149,7 @@ function PersonaTabs() {
 /* ── Main export ─────────────────────────────────────────────────────────── */
 
 export default function HomePage() {
-  const { locale } = useLocale();
+  const homeText = useHomeText();
   const [loginOpen, setLoginOpen] = useState(false);
   const shouldReduceMotion = useReducedMotion() ?? false;
 
@@ -1161,8 +1174,6 @@ export default function HomePage() {
     mouseX.set(0);
     mouseY.set(0);
   }, [mouseX, mouseY]);
-
-  if (locale === "en") return <EnglishHomePage />;
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -1193,7 +1204,7 @@ export default function HomePage() {
                   href={item.href}
                   className="px-4 py-2 text-sm text-text-secondary transition-colors hover:text-text rounded-lg hover:bg-hover"
                 >
-                  {item.label}
+                  {homeText(item.label)}
                 </a>
               ))}
             </div>
@@ -1204,14 +1215,14 @@ export default function HomePage() {
                 onClick={() => setLoginOpen(true)}
                 className="hidden sm:block px-4 py-2 text-sm text-text-secondary hover:text-text transition-colors rounded-lg hover:bg-hover"
               >
-                Giriş Yap
+                {homeText("Giriş Yap")}
               </button>
               <Link
                 href="/auth/register"
                 className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-xl transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
                 style={{ background: "var(--gradient-accent)", boxShadow: "0 2px 12px rgba(99,102,241,0.28)" }}
               >
-                Ücretsiz Başla
+                {homeText("Ücretsiz Başla")}
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -1238,20 +1249,19 @@ export default function HomePage() {
             className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-border bg-surface px-4 py-1.5 shadow-xs"
           >
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse-ring flex-shrink-0" />
-            <span className="text-xs font-semibold text-accent tracking-wide">Ajanslar için premium brief yönetimi</span>
+            <span className="text-xs font-semibold text-accent tracking-wide">{homeText("Ajanslar için premium brief yönetimi")}</span>
             <span className="w-px h-3 bg-border-strong" />
             <span className="text-xs text-text-muted">Beta</span>
           </motion.div>
 
           <motion.h1 variants={vUp} className="mb-6 text-display text-text">
-            WhatsApp&apos;ı bırakın,
+            {homeText("WhatsApp'ı bırakın,")}
             <br className="hidden sm:block" />
-            <span className="text-gradient-animated"> profesyonel çalışın.</span>
+            <span className="text-gradient-animated">{homeText(" profesyonel çalışın.")}</span>
           </motion.h1>
 
           <motion.p variants={vUp} className="mx-auto mb-10 max-w-xl text-lg leading-relaxed text-text-secondary">
-            Ajans–marka arasındaki e-posta, WhatsApp ve Excel karmaşasını bitirin.
-            Briefleri standartlaştırın, onayları izleyin, teslimatları kolaylaştırın.
+            {homeText("Ajans–marka arasındaki e-posta, WhatsApp ve Excel karmaşasını bitirin. Briefleri standartlaştırın, onayları izleyin, teslimatları kolaylaştırın.")}
           </motion.p>
 
           <motion.div variants={vUp} className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -1260,14 +1270,14 @@ export default function HomePage() {
               className="group flex items-center gap-2.5 rounded-xl px-8 py-3.5 text-sm font-semibold text-white transition-all hover:scale-[1.03] active:scale-[0.98]"
               style={{ background: "var(--gradient-accent)", boxShadow: "0 4px 24px rgba(99,102,241,0.35), 0 1px 4px rgba(0,0,0,0.10)" }}
             >
-              Ücretsiz Demo Başlat
+              {homeText("Ücretsiz Demo Başlat")}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </Link>
             <a
               href="#workflow"
               className="flex items-center gap-2 rounded-xl border border-border bg-surface px-8 py-3.5 text-sm font-medium text-text-secondary shadow-xs transition-all hover:border-border-hover hover:text-text hover:shadow-sm"
             >
-              Nasıl Çalışır?
+              {homeText("Nasıl Çalışır?")}
             </a>
           </motion.div>
 
@@ -1283,7 +1293,7 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-            <span>Ajans–müşteri operasyonları için tasarlandı</span>
+            <span>{homeText("Ajans–müşteri operasyonları için tasarlandı")}</span>
           </motion.div>
         </motion.div>
 
@@ -1313,13 +1323,13 @@ export default function HomePage() {
                     <div className="w-6 h-6 rounded-full bg-success-subtle flex items-center justify-center flex-shrink-0">
                       <CheckCircle className="w-3.5 h-3.5 text-success" />
                     </div>
-                    <span className="text-xs font-semibold text-text">Brief Onaylandı</span>
+                    <span className="text-xs font-semibold text-text">{homeText("Brief Onaylandı")}</span>
                   </div>
-                  <div className="text-[11px] text-text-muted mb-0.5">Yılbaşı Kampanyası</div>
+                  <div className="text-[11px] text-text-muted mb-0.5">{homeText("Yılbaşı Kampanyası")}</div>
                   <div className="text-[11px] font-medium text-text mb-3">Zara Home</div>
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0" style={{ background: "var(--color-accent)" }}>M</div>
-                    <span className="text-[10px] text-text-muted">Murat A. · Az önce</span>
+                    <span className="text-[10px] text-text-muted">{homeText("Murat A. · Az önce")}</span>
                   </div>
                 </motion.div>
               </motion.div>
@@ -1340,11 +1350,11 @@ export default function HomePage() {
                     <div className="w-5 h-5 rounded-full bg-warning-subtle flex items-center justify-center flex-shrink-0">
                       <Bell className="w-3 h-3 text-warning" />
                     </div>
-                    <span className="text-[11px] font-semibold text-text">Revizyon İstendi</span>
+                    <span className="text-[11px] font-semibold text-text">{homeText("Revizyon İstendi")}</span>
                   </div>
                   <div className="text-[11px] text-text-secondary mb-2.5">Nike TR · Influencer Brief</div>
                   <div className="flex items-center gap-1 text-[10px] text-accent font-medium">
-                    <span>İncele</span>
+                    <span>{homeText("İncele")}</span>
                     <ArrowRight className="w-2.5 h-2.5" />
                   </div>
                 </motion.div>
@@ -1383,7 +1393,7 @@ export default function HomePage() {
                       {[{ label: "Dashboard", active: true }, { label: "Brief'ler", active: false }, { label: "Takvim", active: false }, { label: "Markalar", active: false }, { label: "Raporlar", active: false }].map(item => (
                         <div key={item.label} className={`flex h-8 items-center gap-2 rounded-lg px-2.5 text-xs font-medium ${item.active ? "bg-accent-subtle text-accent" : "text-text-muted"}`}>
                           <div className={`w-1.5 h-1.5 rounded-full ${item.active ? "bg-accent" : "bg-border-strong"}`} />
-                          {item.label}
+                          {homeText(item.label)}
                         </div>
                       ))}
                     </div>
@@ -1404,11 +1414,11 @@ export default function HomePage() {
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <div className="text-sm font-semibold text-text tracking-tight">Dashboard</div>
-                        <div className="text-xs text-text-muted">Temmuz 2026</div>
+                        <div className="text-xs text-text-muted">{homeText("Temmuz 2026")}</div>
                       </div>
                       <div className="flex items-center gap-1.5 rounded-full border border-success-border bg-success-subtle px-3 py-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                        <span className="text-xs text-success-text font-medium">Canlı</span>
+                        <span className="text-xs text-success-text font-medium">{homeText("Canlı")}</span>
                       </div>
                     </div>
                     <div className="mb-4 grid grid-cols-4 gap-3">
@@ -1419,7 +1429,7 @@ export default function HomePage() {
                         { label: "Aktif Marka", value: "11", delta: "+1", statusClass: "status-purple" },
                       ].map(m => (
                         <div key={m.label} className="rounded-xl border border-border bg-surface p-3 shadow-xs">
-                          <div className="text-[10px] text-text-muted mb-1.5">{m.label}</div>
+                          <div className="text-[10px] text-text-muted mb-1.5">{homeText(m.label)}</div>
                           <div className="flex items-end justify-between">
                             <span className="text-xl font-bold text-text">{m.value}</span>
                             <span className={`inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full ${m.statusClass}`}>{m.delta}</span>
@@ -1429,18 +1439,18 @@ export default function HomePage() {
                     </div>
                     <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-xs">
                       <div className="border-b border-border px-4 py-2.5">
-                        <span className="text-xs font-semibold text-text">Son Brief&apos;ler</span>
+                        <span className="text-xs font-semibold text-text">{homeText("Son Brief'ler")}</span>
                       </div>
                       {mockBriefs.map(brief => (
                         <div key={brief.name} className="flex items-center justify-between px-4 py-2.5 border-b border-border last:border-0 hover:bg-hover transition-colors">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${brief.dot}`} />
                             <div className="min-w-0">
-                              <div className="text-xs font-medium text-text truncate">{brief.name}</div>
+                              <div className="text-xs font-medium text-text truncate">{homeText(brief.name)}</div>
                               <div className="text-[10px] text-text-muted">{brief.brand}</div>
                             </div>
                           </div>
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${brief.statusClass}`}>{brief.status}</span>
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${brief.statusClass}`}>{homeText(brief.status)}</span>
                         </div>
                       ))}
                     </div>
@@ -1463,7 +1473,7 @@ export default function HomePage() {
             viewport={VP}
             transition={{ duration: 0.4, ease: ES }}
           >
-            <p className="text-xs text-text-muted uppercase tracking-widest font-medium">Eski yöntemlere elveda</p>
+            <p className="text-xs text-text-muted uppercase tracking-widest font-medium">{homeText("Eski yöntemlere elveda")}</p>
           </motion.div>
           <motion.div
             className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
@@ -1486,8 +1496,8 @@ export default function HomePage() {
                   <Icon className="w-4 h-4 text-text-muted" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold text-text line-through opacity-60">{label}</div>
-                  <div className="text-[10px] text-danger-text">{desc}</div>
+                  <div className="text-xs font-semibold text-text line-through opacity-60">{homeText(label)}</div>
+                  <div className="text-[10px] text-danger-text">{homeText(desc)}</div>
                 </div>
               </motion.div>
             ))}
@@ -1506,7 +1516,7 @@ export default function HomePage() {
               </div>
               <div>
                 <div className="text-xs font-semibold text-text">Flobrief</div>
-                <div className="text-[10px] text-success-text">Tek platform, tam kontrol</div>
+                <div className="text-[10px] text-success-text">{homeText("Tek platform, tam kontrol")}</div>
               </div>
             </motion.div>
           </motion.div>
@@ -1517,14 +1527,14 @@ export default function HomePage() {
       <div className="border-b border-border bg-background py-4 overflow-hidden">
         <div className="flex items-center gap-2 text-xs text-text-muted mb-3 px-6">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border-strong to-transparent" />
-          <span className="flex-shrink-0 text-label-xs text-text-muted/60">TEK PLATFORMDA DÜZENLİ OPERASYON</span>
+          <span className="flex-shrink-0 text-label-xs text-text-muted/60">{homeText("TEK PLATFORMDA DÜZENLİ OPERASYON")}</span>
           <div className="flex-1 h-px bg-gradient-to-r from-border-strong via-transparent to-transparent" />
         </div>
         <div className="relative flex">
           <div className="flex gap-12 animate-marquee whitespace-nowrap">
             {logos.map((logo, i) => (
               <span key={i} className="text-sm font-semibold text-text-muted/35 hover:text-text-muted/65 transition-colors tracking-wider">
-                {logo}
+                {homeText(logo)}
               </span>
             ))}
           </div>
@@ -1536,12 +1546,12 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-6">
 
           <motion.div className="mb-14 text-center" initial="hidden" whileInView="visible" viewport={VP} variants={vStagger}>
-            <motion.p variants={vUp} className="text-label-sm text-accent mb-3">Ürün</motion.p>
+            <motion.p variants={vUp} className="text-label-sm text-accent mb-3">{homeText("Ürün")}</motion.p>
             <motion.h2 variants={vUp} className="text-heading-xl text-text mb-4">
-              Brief, üretim, revizyon ve onay —<br className="hidden sm:block" /> hepsi aynı yerde.
+              {homeText("Brief, üretim, revizyon ve onay — hepsi aynı yerde.")}
             </motion.h2>
             <motion.p variants={vUp} className="mx-auto max-w-xl text-base text-text-secondary leading-relaxed">
-              Soyut özellikler değil, gerçek iş akışları. Aşağıdaki her kart, canlı Flobrief arayüzünden bir kesit.
+              {homeText("Soyut özellikler değil, gerçek iş akışları. Aşağıdaki her kart, canlı Flobrief arayüzünden bir kesit.")}
             </motion.p>
           </motion.div>
 
@@ -1564,12 +1574,12 @@ export default function HomePage() {
                   <FileText className="w-4 h-4 text-accent" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-text">Akıllı Brief Şablonları</h3>
-                  <p className="text-xs text-text-muted">Brief toplama sürecini standartlaştırın</p>
+                  <h3 className="text-sm font-semibold text-text">{homeText("Akıllı Brief Şablonları")}</h3>
+                  <p className="text-xs text-text-muted">{homeText("Brief toplama sürecini standartlaştırın")}</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                Sektöre özgü dinamik şablonlar, zorunlu alanlar ve onay öncesi otomatik doğrulama ile her marka için mükemmel brief yapısı oluşturun.
+                {homeText("Sektöre özgü dinamik şablonlar, zorunlu alanlar ve onay öncesi otomatik doğrulama ile her marka için mükemmel brief yapısı oluşturun.")}
               </p>
               <BriefMiniUI reduced={shouldReduceMotion} />
             </motion.div>
@@ -1585,12 +1595,12 @@ export default function HomePage() {
                   <CheckCircle className="w-4 h-4 text-success" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-text">Onay & Revize Akışı</h3>
-                  <p className="text-xs text-text-muted">Revizyonları düzenli ve takip edilebilir yönetin</p>
+                  <h3 className="text-sm font-semibold text-text">{homeText("Onay & Revize Akışı")}</h3>
+                  <p className="text-xs text-text-muted">{homeText("Revizyonları düzenli ve takip edilebilir yönetin")}</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                Marka yöneticileri tek tıkla onay verir, revize notlarını bölüm bazında bırakır. Her versiyon kayıt altında.
+                {homeText("Marka yöneticileri tek tıkla onay verir, revize notlarını bölüm bazında bırakır. Her versiyon kayıt altında.")}
               </p>
               <ApprovalMiniUI reduced={shouldReduceMotion} />
             </motion.div>
@@ -1606,12 +1616,12 @@ export default function HomePage() {
                   <Calendar className="w-4 h-4 text-info" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-text">İçerik Takvimi</h3>
-                  <p className="text-xs text-text-muted">Tüm markaların planı tek ekranda</p>
+                  <h3 className="text-sm font-semibold text-text">{homeText("İçerik Takvimi")}</h3>
+                  <p className="text-xs text-text-muted">{homeText("Tüm markaların planı tek ekranda")}</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                Markalara göre filtrelenebilir takvim görünümünde içerik planını yönetin. Çakışmaları anında görün.
+                {homeText("Markalara göre filtrelenebilir takvim görünümünde içerik planını yönetin. Çakışmaları anında görün.")}
               </p>
               <CalendarMiniUI reduced={shouldReduceMotion} />
             </motion.div>
@@ -1627,16 +1637,16 @@ export default function HomePage() {
                   <Layers className="w-4 h-4 text-purple" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-text">White-Label Marka Portali</h3>
-                  <p className="text-xs text-text-muted">Her müşteri kendi özel portalını görür</p>
+                  <h3 className="text-sm font-semibold text-text">{homeText("White-Label Marka Portali")}</h3>
+                  <p className="text-xs text-text-muted">{homeText("Her müşteri kendi özel portalını görür")}</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                Ajans markanızla özelleştirilmiş marka portalleri. Müşteriniz ajans panelini değil, kendi markalı çalışma ortamını görür.
+                {homeText("Ajans markanızla özelleştirilmiş marka portalleri. Müşteriniz ajans panelini değil, kendi markalı çalışma ortamını görür.")}
               </p>
               <div className="flex gap-3 h-28">
                 <div className="flex-1 rounded-xl border border-border bg-background p-3">
-                  <div className="text-[10px] font-semibold text-accent mb-2">Ajans Görünümü</div>
+                  <div className="text-[10px] font-semibold text-accent mb-2">{homeText("Ajans Görünümü")}</div>
                   <div className="space-y-1.5">
                     {["Nike TR", "Zara Home", "L'Oréal TR"].map(brand => (
                       <div key={brand} className="flex items-center gap-1.5">
@@ -1650,14 +1660,14 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full border border-border bg-surface-2 flex items-center justify-center text-[10px] text-text-muted flex-shrink-0">↔</div>
                 </div>
                 <div className="flex-1 rounded-xl border border-accent/20 bg-accent-subtle/20 p-3">
-                  <div className="text-[10px] font-semibold text-text mb-2">Marka Portali</div>
+                  <div className="text-[10px] font-semibold text-text mb-2">{homeText("Marka Portali")}</div>
                   <div className="rounded-lg border border-border bg-background p-2 mb-1.5">
-                    <div className="text-[9px] text-text-muted mb-1">Q3 Sosyal Medya</div>
-                    <span className="text-[9px] status-warning px-1.5 py-0.5 rounded-full">Bekliyor</span>
+                    <div className="text-[9px] text-text-muted mb-1">{homeText("Q3 Sosyal Medya")}</div>
+                    <span className="text-[9px] status-warning px-1.5 py-0.5 rounded-full">{homeText("Bekliyor")}</span>
                   </div>
                   <div className="rounded-lg border border-border bg-background p-2">
-                    <div className="text-[9px] text-text-muted mb-1">Yılbaşı Kampanya</div>
-                    <span className="text-[9px] status-success px-1.5 py-0.5 rounded-full">Onaylandı</span>
+                    <div className="text-[9px] text-text-muted mb-1">{homeText("Yılbaşı Kampanya")}</div>
+                    <span className="text-[9px] status-success px-1.5 py-0.5 rounded-full">{homeText("Onaylandı")}</span>
                   </div>
                 </div>
               </div>
@@ -1674,12 +1684,12 @@ export default function HomePage() {
                   <BarChart3 className="w-4 h-4 text-warning" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-text">Raporlama</h3>
-                  <p className="text-xs text-text-muted">Onay oranları ve metrikler</p>
+                  <h3 className="text-sm font-semibold text-text">{homeText("Raporlama")}</h3>
+                  <p className="text-xs text-text-muted">{homeText("Onay oranları ve metrikler")}</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                Teslimat performansını ve onay oranlarını tek dashboardda izleyin.
+                {homeText("Teslimat performansını ve onay oranlarını tek dashboardda izleyin.")}
               </p>
               <ReportingMiniUI reduced={shouldReduceMotion} />
             </motion.div>
@@ -1695,12 +1705,12 @@ export default function HomePage() {
                   <Bell className="w-4 h-4 text-danger" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-text">Akıllı Bildirimler</h3>
-                  <p className="text-xs text-text-muted">Onayları dağınık e-posta zincirlerinden çıkarın</p>
+                  <h3 className="text-sm font-semibold text-text">{homeText("Akıllı Bildirimler")}</h3>
+                  <p className="text-xs text-text-muted">{homeText("Onayları dağınık e-posta zincirlerinden çıkarın")}</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                Onay, revizyon ve teslim anında bildirim. E-posta ve entegrasyon desteğiyle.
+                {homeText("Onay, revizyon ve teslim anında bildirim. E-posta ve entegrasyon desteğiyle.")}
               </p>
               <NotifMiniUI reduced={shouldReduceMotion} />
             </motion.div>
@@ -1716,12 +1726,12 @@ export default function HomePage() {
                   <Users className="w-4 h-4 text-info" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-text">Ekip İş Birliği</h3>
-                  <p className="text-xs text-text-muted">Kim, ne yapıyor, ne zaman?</p>
+                  <h3 className="text-sm font-semibold text-text">{homeText("Ekip İş Birliği")}</h3>
+                  <p className="text-xs text-text-muted">{homeText("Kim, ne yapıyor, ne zaman?")}</p>
                 </div>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                Rol tabanlı erişim, görev atama ve ekip iş yükü takibi tek yerden.
+                {homeText("Rol tabanlı erişim, görev atama ve ekip iş yükü takibi tek yerden.")}
               </p>
               <TeamsMiniUI reduced={shouldReduceMotion} />
             </motion.div>
@@ -1740,8 +1750,8 @@ export default function HomePage() {
       <section id="stats" className="py-24 relative bg-surface">
         <div className="relative mx-auto max-w-5xl px-6">
           <motion.div className="text-center mb-12" initial="hidden" whileInView="visible" viewport={VP} variants={vStagger}>
-            <motion.p variants={vUp} className="text-label-sm text-accent mb-3">Daha Düzenli Operasyon</motion.p>
-            <motion.h2 variants={vUp} className="text-heading-xl text-text">Brief&apos;ten onaya kadar tek çalışma alanı</motion.h2>
+            <motion.p variants={vUp} className="text-label-sm text-accent mb-3">{homeText("Daha Düzenli Operasyon")}</motion.p>
+            <motion.h2 variants={vUp} className="text-heading-xl text-text">{homeText("Brief'ten onaya kadar tek çalışma alanı")}</motion.h2>
           </motion.div>
           <motion.div
             className="grid grid-cols-2 gap-px md:grid-cols-4 rounded-2xl overflow-hidden border border-border"
@@ -1760,8 +1770,8 @@ export default function HomePage() {
                 <div className="w-10 h-10 rounded-xl bg-accent-subtle flex items-center justify-center mb-4 ring-1 ring-border group-hover:ring-accent/30 transition-all">
                   <Icon className="w-5 h-5 text-accent" />
                 </div>
-                <div className="text-3xl font-black text-text mb-1 md:text-4xl tracking-tightest gradient-text">{value}</div>
-                <div className="text-xs text-text-muted text-center leading-relaxed">{label}</div>
+                <div className="text-3xl font-black text-text mb-1 md:text-4xl tracking-tightest gradient-text">{homeText(value)}</div>
+                <div className="text-xs text-text-muted text-center leading-relaxed">{homeText(label)}</div>
               </motion.div>
             ))}
           </motion.div>
@@ -1778,7 +1788,7 @@ export default function HomePage() {
             viewport={VP}
             transition={{ duration: 0.4 }}
           >
-            Güvenlik ve Veri Gizliliği
+            {homeText("Güvenlik ve Veri Gizliliği")}
           </motion.p>
           <motion.div
             className="flex flex-wrap items-center justify-center gap-8"
@@ -1799,8 +1809,8 @@ export default function HomePage() {
                   <Icon className="w-4 h-4 text-accent" />
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-text">{text}</div>
-                  <div className="text-[10px] text-text-muted">{sub}</div>
+                  <div className="text-xs font-semibold text-text">{homeText(text)}</div>
+                  <div className="text-[10px] text-text-muted">{homeText(sub)}</div>
                 </div>
               </motion.div>
             ))}
@@ -1833,17 +1843,17 @@ export default function HomePage() {
               <div className="relative p-10 md:p-14 flex flex-col justify-center">
                 <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 shadow-xs">
                   <Sparkles className="w-3.5 h-3.5 text-accent" />
-                  <span className="text-xs font-semibold text-text-secondary">14 gün ücretsiz, kredi kartı yok</span>
+                  <span className="text-xs font-semibold text-text-secondary">{homeText("14 gün ücretsiz, kredi kartı yok")}</span>
                 </div>
 
                 <h2 className="mb-4 text-3xl font-black text-text leading-tight tracking-tight md:text-4xl">
-                  Brief süreçlerinizi tek{" "}
-                  <span className="gradient-text">merkezde</span>{" "}
-                  yönetin.
+                  {homeText("Brief süreçlerinizi tek")}{" "}
+                  <span className="gradient-text">{homeText("merkezde")}</span>{" "}
+                  {homeText("yönetin.")}
                 </h2>
 
                 <p className="mb-8 text-base text-text-secondary leading-relaxed max-w-md">
-                  Ajansınız, markalarınız ve ekibiniz aynı akışta çalışsın. Brief&apos;ten yayına, tüm süreç şeffaf ve izlenebilir.
+                  {homeText("Ajansınız, markalarınız ve ekibiniz aynı akışta çalışsın. Brief'ten yayına, tüm süreç şeffaf ve izlenebilir.")}
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-3 mb-8">
@@ -1852,14 +1862,14 @@ export default function HomePage() {
                     className="flex items-center justify-center gap-2.5 rounded-2xl px-7 py-3.5 text-sm font-bold text-white transition-all hover:scale-[1.03] active:scale-[0.98]"
                     style={{ background: "var(--gradient-accent)", boxShadow: "0 4px 20px rgba(99,102,241,0.30)" }}
                   >
-                    Ücretsiz Başlayın
+                    {homeText("Ücretsiz Başlayın")}
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                   <Link
                     href="/pricing"
                     className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-7 py-3.5 text-sm font-semibold text-text-secondary hover:border-border-hover hover:text-text hover:shadow-sm transition-all"
                   >
-                    Fiyatlandırmayı gör
+                    {homeText("Fiyatlandırmayı gör")}
                   </Link>
                 </div>
 
@@ -1867,7 +1877,7 @@ export default function HomePage() {
                   {["Kredi kartı gerekmez", "İstediğin zaman iptal", "14 gün tam erişim"].map(t => (
                     <div key={t} className="flex items-center gap-1.5 text-xs text-text-muted">
                       <CheckCircle className="w-3.5 h-3.5 text-success flex-shrink-0" />
-                      {t}
+                      {homeText(t)}
                     </div>
                   ))}
                 </div>
@@ -1888,10 +1898,10 @@ export default function HomePage() {
                       <div className="w-6 h-6 rounded-full bg-success-subtle flex items-center justify-center flex-shrink-0">
                         <CheckCircle className="w-3.5 h-3.5 text-success" />
                       </div>
-                      <span className="text-xs font-semibold text-text">Brief Onaylandı ✓</span>
+                      <span className="text-xs font-semibold text-text">{homeText("Brief Onaylandı ✓")}</span>
                     </div>
-                    <div className="text-[10px] text-text-muted">Q3 Sosyal Medya · Zara Home</div>
-                    <div className="text-[10px] text-text-muted mt-0.5">Murat A. · Az önce</div>
+                    <div className="text-[10px] text-text-muted">{homeText("Q3 Sosyal Medya · Zara Home")}</div>
+                    <div className="text-[10px] text-text-muted mt-0.5">{homeText("Murat A. · Az önce")}</div>
                   </div>
                 </motion.div>
 
@@ -1904,9 +1914,9 @@ export default function HomePage() {
                   <div className="bg-surface border border-border rounded-xl shadow-modal p-3.5">
                     <div className="flex items-center gap-2 mb-2">
                       <Calendar className="w-3.5 h-3.5 text-accent" />
-                      <span className="text-[11px] font-semibold text-text">15 Tem</span>
+                      <span className="text-[11px] font-semibold text-text">{homeText("15 Tem")}</span>
                     </div>
-                    <span className="text-[10px] status-success px-2 py-0.5 rounded-full">Yayına alındı</span>
+                    <span className="text-[10px] status-success px-2 py-0.5 rounded-full">{homeText("Yayına alındı")}</span>
                   </div>
                 </motion.div>
 
@@ -1917,7 +1927,7 @@ export default function HomePage() {
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black text-white flex-shrink-0" style={{ background: "var(--gradient-accent)" }}>N</div>
                     <div>
                       <div className="text-xs font-bold text-text">Nike TR</div>
-                      <div className="text-[9px] text-text-muted">4 aktif brief</div>
+                      <div className="text-[9px] text-text-muted">{homeText("4 aktif brief")}</div>
                     </div>
                   </div>
                   <div className="space-y-1.5">
@@ -1927,7 +1937,7 @@ export default function HomePage() {
                       { label: "Brand Kit",   cls: "status-accent"   },
                     ].map(item => (
                       <div key={item.label} className="flex items-center justify-between text-[10px]">
-                        <span className="text-text-secondary">{item.label}</span>
+                        <span className="text-text-secondary">{homeText(item.label)}</span>
                         <span className={`px-1.5 py-0.5 rounded-full ${item.cls}`}>•</span>
                       </div>
                     ))}
@@ -1962,8 +1972,8 @@ export default function HomePage() {
               onClick={() => setLoginOpen(true)}
               className="text-sm text-text-muted hover:text-text transition-colors"
             >
-              Zaten hesabınız var mı?{" "}
-              <span className="text-accent font-medium">Giriş yapın →</span>
+              {homeText("Zaten hesabınız var mı?")}{" "}
+              <span className="text-accent font-medium">{homeText("Giriş yapın →")}</span>
             </button>
           </motion.div>
         </div>
@@ -1985,8 +1995,7 @@ export default function HomePage() {
                 <span className="text-base font-bold text-text group-hover:text-accent transition-colors tracking-tight">Flobrief</span>
               </Link>
               <p className="text-sm text-text-muted leading-relaxed max-w-xs mb-6">
-                Ajanslar ve markalar için brief yönetimi, onay akışları ve içerik takvimi platformu.
-                Uçtan uca süreç, tek ekrandan.
+                {homeText("Ajanslar ve markalar için brief yönetimi, onay akışları ve içerik takvimi platformu. Uçtan uca süreç, tek ekrandan.")}
               </p>
               <div className="flex gap-3">
                 <Link
@@ -1994,21 +2003,21 @@ export default function HomePage() {
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-white px-4 py-2 rounded-xl transition-all hover:opacity-90"
                   style={{ background: "var(--gradient-accent)" }}
                 >
-                  Başla
+                  {homeText("Başla")}
                   <ArrowRight className="w-3 h-3" />
                 </Link>
                 <Link
                   href="/pricing"
                   className="inline-flex items-center text-xs font-medium text-text-secondary px-4 py-2 rounded-xl border border-border hover:border-border-hover hover:text-text transition-all"
                 >
-                  Fiyatlandırma
+                  {homeText("Fiyatlandırma")}
                 </Link>
               </div>
             </div>
 
             {/* Product */}
             <div>
-              <h4 className="text-xs font-bold text-text uppercase tracking-wider mb-4">Ürün</h4>
+              <h4 className="text-xs font-bold text-text uppercase tracking-wider mb-4">{homeText("Ürün")}</h4>
               <ul className="space-y-3">
                 {[
                   { label: "Ajans Programı",         href: "/ajans-programi" },
@@ -2023,7 +2032,7 @@ export default function HomePage() {
                       href={href}
                       className="text-sm text-text-muted hover:text-text transition-colors inline-flex items-center gap-1 group"
                     >
-                      {label}
+                      {homeText(label)}
                       <ChevronRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                     </a>
                   </li>
@@ -2033,7 +2042,7 @@ export default function HomePage() {
 
             {/* Get started */}
             <div>
-              <h4 className="text-xs font-bold text-text uppercase tracking-wider mb-4">Başlangıç</h4>
+              <h4 className="text-xs font-bold text-text uppercase tracking-wider mb-4">{homeText("Başlangıç")}</h4>
               <ul className="space-y-3">
                 {[
                   { label: "Ücretsiz Kayıt",  href: "/auth/register"      },
@@ -2043,7 +2052,7 @@ export default function HomePage() {
                       href={href}
                       className="text-sm text-text-muted hover:text-text transition-colors inline-flex items-center gap-1 group"
                     >
-                      {label}
+                      {homeText(label)}
                       <ChevronRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                     </Link>
                   </li>
@@ -2055,7 +2064,7 @@ export default function HomePage() {
                     onClick={() => setLoginOpen(true)}
                     className="group inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text"
                   >
-                    Giriş Yap
+                    {homeText("Giriş Yap")}
                     <ChevronRight className="h-3 w-3 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
                   </button>
                 </li>
@@ -2069,11 +2078,11 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl px-6 py-5">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-xs text-text-muted order-2 sm:order-1">
-                © {new Date().getFullYear()} Flobrief. Tüm hakları saklıdır.
+                © {new Date().getFullYear()} Flobrief. {homeText("Tüm hakları saklıdır.")}
               </p>
               <div className="flex items-center gap-1.5 order-1 sm:order-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                <span className="text-xs text-text-muted">Tüm sistemler çalışıyor</span>
+                <span className="text-xs text-text-muted">{homeText("Tüm sistemler çalışıyor")}</span>
               </div>
             </div>
           </div>

@@ -9,7 +9,7 @@ test.describe("English and Turkish locale behavior", () => {
       await page.goto("/");
       await expect(page).toHaveURL(/\/$/);
       await expect(page.locator("html")).toHaveAttribute("lang", "en");
-      await expect(page.getByRole("heading", { level: 1 })).toContainText("Move every brief");
+      await expect(page.getByRole("heading", { level: 1 })).toContainText("Leave WhatsApp behind");
       await context.close();
     }
   });
@@ -40,6 +40,37 @@ test.describe("English and Turkish locale behavior", () => {
     await page.getByRole("group", { name: "Dil" }).getByRole("button", { name: "EN", exact: true }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  });
+
+  test("home keeps the exact composition and changes copy only", async ({ browser }) => {
+    const context = await browser.newContext({ locale: "en-US", viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    await page.route("**/api/v1/auth/refresh", (route) => route.fulfill({ status: 204 }));
+    await page.goto("/");
+
+    const selector = page.getByRole("group", { name: "Language" });
+    await expect(selector).toBeVisible();
+    await expect(selector.locator('svg[data-flag="tr"]')).toBeVisible();
+    await expect(selector.locator('svg[data-flag="en"]')).toBeVisible();
+    await expect(page.getByText("Smart Brief Templates", { exact: true })).toBeVisible();
+    await expect(page.getByText("From brief to publishing, the whole process follows one flow.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Akıllı Brief Şablonları", { exact: true })).toHaveCount(0);
+
+    const englishStructure = await page.locator("body").evaluate((body) => ({
+      tags: Array.from(body.querySelectorAll("*")).map((element) => element.tagName).join("|"),
+      landmarks: Array.from(body.querySelectorAll("nav, section, footer")).map((element) => element.className).join("|"),
+    }));
+    await selector.getByRole("button", { name: "TR", exact: true }).click();
+    await expect(page).toHaveURL(/\/tr\/?$/);
+    await expect(page.getByText("Akıllı Brief Şablonları", { exact: true })).toBeVisible();
+    const turkishStructure = await page.locator("body").evaluate((body) => ({
+      tags: Array.from(body.querySelectorAll("*")).map((element) => element.tagName).join("|"),
+      landmarks: Array.from(body.querySelectorAll("nav, section, footer")).map((element) => element.className).join("|"),
+    }));
+
+    expect(turkishStructure).toStrictEqual(englishStructure);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await context.close();
   });
 
   test("pricing copy and currency formatting follow the UI locale without changing plan currency", async ({ page }) => {
