@@ -72,10 +72,43 @@ test.describe("SEO landing pages", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/musteri-portali");
     await page.getByRole("button", { name: "Menüyü aç" }).click();
-    await expect(page.getByRole("navigation", { name: "Ana navigasyon" }).getByRole("link", { name: "Fiyatlandırma" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Giriş Yap" })).toBeVisible();
+    const mobileNavigation = page.getByRole("navigation", { name: "Ana navigasyon" });
+    await expect(mobileNavigation.getByRole("link", { name: "Fiyatlandırma" })).toBeVisible();
+    await expect(mobileNavigation.getByRole("button", { name: "Giriş Yap" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Demoyu İncele" }).first()).toBeVisible();
     await assertNoHorizontalOverflow(page);
+  });
+
+  test("public login actions open the shared modal without navigating", async ({ page }) => {
+    await page.route("**/api/v1/auth/refresh", (route) => route.fulfill({ status: 204 }));
+    await page.goto("/ajans-programi");
+    const landingUrl = page.url();
+
+    await page.locator("header").getByRole("button", { name: "Giriş Yap" }).click();
+    await expect(page.getByRole("dialog", { name: "PostPiloter’a Giriş Yap" })).toBeVisible();
+    expect(page.url()).toBe(landingUrl);
+    await expect(page.locator('a[href="/platform/login"]')).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Kapat" }).click();
+    await page.getByTestId("public-footer").getByRole("button", { name: "Giriş Yap" }).click();
+    await expect(page.getByRole("dialog", { name: "PostPiloter’a Giriş Yap" })).toBeVisible();
+    expect(page.url()).toBe(landingUrl);
+  });
+
+  test("public surfaces do not disclose the platform login route", async ({ request }) => {
+    for (const path of ["/", "/ajans-programi", "/auth/login"]) {
+      const response = await request.get(path);
+      expect(response.ok()).toBeTruthy();
+      expect(await response.text()).not.toContain("/platform/login");
+    }
+
+    const robotsResponse = await request.get("/robots.txt");
+    expect(await robotsResponse.text()).toContain("Disallow: /platform/");
+
+    const platformResponse = await request.get("/platform/login");
+    expect(platformResponse.headers()["x-robots-tag"]).toContain("noindex");
+    expect(platformResponse.headers()["cache-control"]).toContain("no-store");
+    expect(platformResponse.headers()["x-frame-options"]).toBe("DENY");
   });
 
   test("sitemap includes all five landing URLs", async ({ request }) => {
@@ -85,5 +118,6 @@ test.describe("SEO landing pages", () => {
     for (const landing of pages) {
       expect(sitemap).toContain(`https://postpiloter.com${landing.path}`);
     }
+    expect(sitemap).not.toContain("/platform/");
   });
 });

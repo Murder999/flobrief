@@ -2033,9 +2033,6 @@ export default function HomePage() {
               <ul className="space-y-3">
                 {[
                   { label: "Ücretsiz Kayıt",  href: "/auth/register"      },
-                  { label: "Ajans Girişi",    href: "/auth/agency-login"  },
-                  { label: "Marka Girişi",    href: "/brand/login"        },
-                  { label: "Yönetici Girişi", href: "/platform/login"     },
                 ].map(({ label, href }) => (
                   <li key={label}>
                     <Link
@@ -2047,6 +2044,17 @@ export default function HomePage() {
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <button
+                    type="button"
+                    aria-haspopup="dialog"
+                    onClick={() => setLoginOpen(true)}
+                    className="group inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text"
+                  >
+                    Giriş Yap
+                    <ChevronRight className="h-3 w-3 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                  </button>
+                </li>
               </ul>
             </div>
           </div>

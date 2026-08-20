@@ -56,9 +56,10 @@ const ROLE_COPY: Record<Role, RoleCopy> = {
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
+  returnTo?: string;
 }
 
-export function LoginModal({ open, onClose }: LoginModalProps) {
+export function LoginModal({ open, onClose, returnTo }: LoginModalProps) {
   const shouldReduceMotion = useReducedMotion() ?? false;
   const [view, setView] = useState<ModalView>("role-selection");
   const [role, setRole] = useState<Role | null>(null);
@@ -188,9 +189,9 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                     className="w-7 h-7 rounded-lg flex items-center justify-center"
                     style={{ background: "var(--gradient-accent)" }}
                   >
-                    <span className="text-white font-bold text-xs">F</span>
+                    <span className="text-white font-bold text-xs">P</span>
                   </div>
-                  <span className="text-sm font-semibold text-text tracking-tight">Flobrief</span>
+                  <span className="text-sm font-semibold text-text tracking-tight">PostPiloter</span>
                 </div>
                 <button
                   onClick={onClose}
@@ -222,6 +223,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                         onBack={backToRoleSelection}
                         onForgotPassword={openForgotPassword}
                         onLoginSuccess={onClose}
+                        returnTo={returnTo}
                       />
                     )}
                     {view === "forgot-password" && <ForgotPasswordView onBack={backToLoginForm} />}
@@ -248,7 +250,7 @@ function RoleSelection({ firstCardRef, onSelect }: RoleSelectionProps) {
     <div>
       <div className="mb-5">
         <h2 id="login-modal-title" className="text-base font-bold text-text mb-1">
-          Flobrief’e Giriş Yap
+          PostPiloter’a Giriş Yap
         </h2>
         <p className="text-xs text-text-muted">Devam etmek istediğiniz çalışma alanını seçin.</p>
       </div>
@@ -286,18 +288,9 @@ function RoleSelection({ firstCardRef, onSelect }: RoleSelectionProps) {
         </button>
       </div>
 
-      <div className="text-center mb-4">
+      <div className="text-center">
         <Link href="/auth/register" className="text-xs text-text-muted hover:text-text transition-colors">
           Hesabınız yok mu? <span className="font-medium text-accent">Ücretsiz başlayın</span>
-        </Link>
-      </div>
-
-      <div className="pt-3.5 border-t border-border/60 text-center">
-        <Link
-          href="/platform/login"
-          className="text-[11px] text-text-muted/50 hover:text-text-muted transition-colors"
-        >
-          Platform yöneticisi? <span className="underline underline-offset-2">Yönetici girişi</span>
         </Link>
       </div>
     </div>
@@ -311,9 +304,10 @@ interface LoginFormViewProps {
   onBack: () => void;
   onForgotPassword: () => void;
   onLoginSuccess: () => void;
+  returnTo?: string;
 }
 
-function LoginFormView({ role, onBack, onForgotPassword, onLoginSuccess }: LoginFormViewProps) {
+function LoginFormView({ role, onBack, onForgotPassword, onLoginSuccess, returnTo }: LoginFormViewProps) {
   const { login, isLoading } = useAuth();
   const copy = ROLE_COPY[role];
   const AccentIcon = copy.accentIcon;
@@ -329,7 +323,7 @@ function LoginFormView({ role, onBack, onForgotPassword, onLoginSuccess }: Login
     try {
       // Redirect target is resolved by useAuth().login() itself, based on the
       // authenticated user's actual user_type — the role card is UI copy only.
-      await login({ email, password });
+      await login({ email, password }, returnTo);
       onLoginSuccess();
     } catch (err) {
       if (err instanceof ApiError) {

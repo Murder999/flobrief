@@ -123,10 +123,9 @@ class AuthService:
             )
 
         if user.user_type == UserType.PLATFORM_ADMIN.value:
-            raise HTTPException(
-                status_code=_ERR_403,
-                detail="Platform yöneticileri için /platform/login sayfasını kullanın",
-            )
+            # Tenant login must not disclose that an account belongs to the
+            # hidden platform channel or reveal that channel's route.
+            raise _INVALID_CREDENTIALS
 
         await ensure_demo_user_access(self.db, user.id)
         expire_minutes = get_access_token_expire_minutes(user.user_type)

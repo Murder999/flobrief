@@ -7,7 +7,12 @@ The historical 15-part implementation plan is complete. Production release remai
 1. Confirm Alembic has one head and upgrade a clean staging database.
 2. Complete every applicable item in `docs/LAUNCH_CHECKLIST.md`.
 
-Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, five public SEO landing pages with shared responsive navigation/footer and sitemap integration, Ruff check/format, 1777 backend tests, TypeScript, lint, production build (90/90 static pages), 7/7 SEO landing Chromium checks, the Resend/realtime regression suite, commercial-metric exclusion checks, and the prior 42-test critical Playwright release matrix against the current API and live WebSocket.
+Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, five public SEO landing pages with shared responsive navigation/footer and sitemap integration, public login-modal and platform-route disclosure hardening, Ruff check/format, 1777 backend tests, TypeScript, lint, production build (90/90 static pages), 9/9 SEO/login/security Chromium checks, the Resend/realtime regression suite, commercial-metric exclusion checks, and the prior 42-test critical Playwright release matrix against the current API and live WebSocket.
+
+## Platform access hardening
+
+- Enroll MFA for both active platform administrators and verify recovery codes through a controlled login before enforcement.
+- After confirming a stable trusted source address, set `PLATFORM_ADMIN_IP_ALLOWLIST` to the narrowest required static IP/CIDR and test both allowed access and fail-closed rejection. Do not enable it from a changing residential/mobile IP without a recovery path.
 
 ## Provider verification
 

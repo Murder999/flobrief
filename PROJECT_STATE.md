@@ -131,9 +131,20 @@
 - All five reuse one responsive public header/footer and server-rendered landing system; only the
   mobile navigation toggle hydrates on the client. Product copy is limited to repo-verified brief,
   comment, revision, deliverable-version, approval, portal, file, and white-label capabilities.
-- A 7-test Chromium suite verifies render, public shell, metadata, canonical, indexability, console,
-  desktop/mobile overflow, mobile navigation, and sitemap inclusion. No API, dependency, auth, or
-  backend business-logic change was introduced.
+- A 9-test Chromium suite verifies render, public shell, metadata, canonical, indexability, console,
+  desktop/mobile overflow, mobile navigation, login-modal behavior, platform-route non-disclosure,
+  security headers, and sitemap inclusion.
+
+### Public login and platform-access hardening — 2026-08-20
+
+- Every public login trigger now opens the shared in-page dialog; direct visits to the public login
+  entry route also open that dialog and preserve a safe return destination.
+- Public headers, footers, auth copy, and tenant-login errors no longer disclose or link the platform
+  administration route. Tenant login returns the same generic 401 response for platform accounts.
+- Platform pages send `noindex`, `noarchive`, `no-store`, frame-denial, and no-referrer headers;
+  `robots.txt` always disallows the platform route even when backend SEO text is customized.
+- Live audit finding: both active platform admins still require MFA enrollment, and the production IP
+  allowlist is empty. Do not enable either control without tested recovery and a trusted static IP/CIDR.
 
 ## Verification Status
 
@@ -147,7 +158,7 @@
 | Frontend TypeScript | PASS |
 | Frontend lint | PASS — no errors; raw-image optimization warnings remain |
 | Frontend production build | PASS — 90/90 static pages generated; Node 20.x remains the release runtime contract |
-| SEO landing Playwright suite | PASS — 7/7 on Chromium production build |
+| SEO landing Playwright suite | PASS — 9/9 on Chromium production build |
 | Playwright critical release matrix | PASS — 42/42 on Node 20 production build, current API, PostgreSQL, Redis, and live WebSocket |
 
 ## Production Truths

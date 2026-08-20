@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { LoginModal } from "@/components/auth/LoginModal";
 
 const navigation = [
   { label: "Ürün", href: "/#features" },
@@ -13,9 +14,11 @@ const navigation = [
 
 export function PublicHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/90 backdrop-blur-xl">
+    <>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background/90 backdrop-blur-xl">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-text"
@@ -47,12 +50,14 @@ export function PublicHeader() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link
-              href="/auth/agency-login"
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setLoginOpen(true)}
               className="hidden min-h-11 items-center rounded-lg px-3 text-sm text-text-secondary transition-colors hover:bg-hover hover:text-text sm:flex"
             >
               Giriş Yap
-            </Link>
+            </button>
             <Link
               href="/demo"
               className="hidden min-h-11 items-center gap-1.5 rounded-xl bg-gradient-accent px-4 text-sm font-semibold text-white shadow-accent transition-transform hover:scale-[1.02] sm:flex"
@@ -88,13 +93,17 @@ export function PublicHeader() {
               ))}
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
-              <Link
-                href="/auth/agency-login"
+              <button
+                type="button"
+                aria-haspopup="dialog"
                 className="flex min-h-11 items-center justify-center rounded-xl border border-border bg-surface text-sm font-semibold text-text"
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setLoginOpen(true);
+                }}
               >
                 Giriş Yap
-              </Link>
+              </button>
               <Link
                 href="/demo"
                 className="flex min-h-11 items-center justify-center rounded-xl bg-gradient-accent text-sm font-semibold text-white"
@@ -106,6 +115,8 @@ export function PublicHeader() {
           </div>
         )}
       </nav>
-    </header>
+      </header>
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+    </>
   );
 }

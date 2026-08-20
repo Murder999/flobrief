@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8003";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://postpiloter.com";
 
 const FALLBACK_ROBOTS = `User-agent: *
 Allow: /
@@ -11,7 +11,14 @@ Disallow: /approve/
 Disallow: /report/
 Disallow: /api/
 
-Sitemap: https://flobrief.com/sitemap.xml`;
+Sitemap: https://postpiloter.com/sitemap.xml`;
+
+const PLATFORM_DISALLOW = "Disallow: /platform/";
+
+function enforcePrivateRoutes(body: string): string {
+  if (body.includes(PLATFORM_DISALLOW)) return body;
+  return `${body.trim()}\n\nUser-agent: *\n${PLATFORM_DISALLOW}`;
+}
 
 export async function GET() {
   let body = FALLBACK_ROBOTS;
@@ -28,7 +35,7 @@ export async function GET() {
     // Backend unreachable — serve the safe fallback rather than a broken response.
   }
 
-  return new NextResponse(body, {
+  return new NextResponse(enforcePrivateRoutes(body), {
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
 }

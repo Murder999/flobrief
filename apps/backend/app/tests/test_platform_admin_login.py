@@ -282,9 +282,9 @@ class TestAuthServicePlatformAdminLogin:
 
 
 class TestAuthServiceLoginRejectsPlatformAdmin:
-    """Regular login() must explicitly reject platform_admin accounts."""
+    """Regular login must reject admins without revealing the hidden channel."""
 
-    async def test_regular_login_rejects_platform_admin_with_403(self) -> None:
+    async def test_regular_login_rejects_platform_admin_without_route_disclosure(self) -> None:
         from fastapi import HTTPException
 
         db = AsyncMock()
@@ -297,8 +297,9 @@ class TestAuthServiceLoginRejectsPlatformAdmin:
             pytest.raises(HTTPException) as exc_info,
         ):
             await svc.login(LoginRequest(email="admin@flobrief.com", password=password))
-        assert exc_info.value.status_code == 403
-        assert "/platform/login" in exc_info.value.detail
+        assert exc_info.value.status_code == 401
+        assert exc_info.value.detail == "E-posta veya şifre hatalı"
+        assert "platform" not in str(exc_info.value.detail).lower()
 
     async def test_regular_login_succeeds_for_agency_user(self) -> None:
         """Agency user can login via regular endpoint without 403."""

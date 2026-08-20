@@ -10,6 +10,22 @@ const nextConfig = {
   images: {
     remotePatterns: [],
   },
+  async headers() {
+    return [
+      {
+        source: "/platform/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, noarchive, nosnippet, noimageindex",
+          },
+          { key: "Cache-Control", value: "private, no-store, max-age=0" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     if (process.env.NEXT_PUBLIC_API_URL) return [];
 

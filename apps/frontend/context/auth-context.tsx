@@ -100,20 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push(redirect);
       } catch (err) {
         setState((s) => ({ ...s, isLoading: false }));
-        // If backend explicitly tells us this is a platform admin,
-        // re-throw with a clearer message so the login page can guide the user.
-        if (
-          err instanceof ApiError &&
-          err.status === 403 &&
-          typeof err.message === "string" &&
-          err.message.includes("/platform/login")
-        ) {
-          throw new ApiError(
-            403,
-            "Platform yöneticileri için: flobrief.com/platform/login",
-            err.detail
-          );
-        }
         throw err;
       }
     },

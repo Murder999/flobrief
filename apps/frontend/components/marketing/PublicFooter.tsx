@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { LoginModal } from "@/components/auth/LoginModal";
 
 const solutionLinks = [
   { label: "Ajans Programı", href: "/ajans-programi" },
@@ -10,8 +14,11 @@ const solutionLinks = [
 ] as const;
 
 export function PublicFooter() {
+  const [loginOpen, setLoginOpen] = useState(false);
+
   return (
-    <footer className="border-t border-border bg-background" data-testid="public-footer">
+    <>
+      <footer className="border-t border-border bg-background" data-testid="public-footer">
       <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2">
           <Link href="/" className="group mb-4 inline-flex items-center gap-2.5">
@@ -52,8 +59,16 @@ export function PublicFooter() {
           <ul className="space-y-3">
             <li><Link href="/pricing" className="text-sm text-text-muted hover:text-text">Fiyatlandırma</Link></li>
             <li><Link href="/auth/register" className="text-sm text-text-muted hover:text-text">Ücretsiz Kayıt</Link></li>
-            <li><Link href="/auth/agency-login" className="text-sm text-text-muted hover:text-text">Ajans Girişi</Link></li>
-            <li><Link href="/brand/login" className="text-sm text-text-muted hover:text-text">Müşteri Girişi</Link></li>
+            <li>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                onClick={() => setLoginOpen(true)}
+                className="text-sm text-text-muted transition-colors hover:text-text"
+              >
+                Giriş Yap
+              </button>
+            </li>
           </ul>
         </div>
       </div>
@@ -63,6 +78,8 @@ export function PublicFooter() {
           <p className="text-xs text-text-muted">Ajans–müşteri kreatif operasyonları için.</p>
         </div>
       </div>
-    </footer>
+      </footer>
+      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+    </>
   );
 }
