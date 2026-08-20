@@ -101,13 +101,13 @@ test.describe("SEO landing pages", () => {
     await page.goto("/tr/ajans-programi");
     const landingUrl = page.url();
 
-    await page.locator("header").getByRole("button", { name: "Giriş Yap" }).click();
+    await page.locator("header").getByRole("button", { name: "Giriş yap" }).click();
     await expect(page.getByRole("dialog", { name: "PostPiloter’a Giriş Yap" })).toBeVisible();
     expect(page.url()).toBe(landingUrl);
     await expect(page.locator('a[href="/platform/login"]')).toHaveCount(0);
 
     await page.getByRole("button", { name: "Kapat" }).click();
-    await page.getByTestId("public-footer").getByRole("button", { name: "Giriş Yap" }).click();
+    await page.getByTestId("public-footer").getByRole("button", { name: "Giriş yap" }).click();
     await expect(page.getByRole("dialog", { name: "PostPiloter’a Giriş Yap" })).toBeVisible();
     expect(page.url()).toBe(landingUrl);
   });

@@ -17,8 +17,9 @@ export function LanguageSelector({ compact = false, className }: { compact?: boo
   async function changeLocale(nextLocale: Locale) {
     if (nextLocale === locale) return;
     setLocale(nextLocale);
-    const localizedPath = localizePublicPath(pathname, nextLocale);
-    if (localizedPath !== pathname) router.push(localizedPath);
+    const visiblePath = typeof window === "undefined" ? pathname : window.location.pathname;
+    const localizedPath = localizePublicPath(visiblePath, nextLocale);
+    if (localizedPath !== visiblePath) router.push(localizedPath);
 
     if (accessToken) {
       try {
