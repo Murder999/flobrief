@@ -203,6 +203,41 @@ export const demoApi = {
     }),
 };
 
+export interface ContactSubmissionRequest {
+  name: string;
+  email: string;
+  company?: string | null;
+  phone?: string | null;
+  subject: string;
+  message: string;
+  consent: boolean;
+  source_path?: string | null;
+  website?: string | null;
+}
+
+export interface ContactSubmissionRead {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+  phone: string | null;
+  subject: string;
+  message: string;
+  consent: boolean;
+  status: "new" | "in_progress" | "resolved" | "spam";
+  source_path: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const contactApi = {
+  submit: (data: ContactSubmissionRequest) =>
+    request<{ id: string; message: string }>("/api/v1/contact/submissions", {
+      method: "POST",
+      body: data,
+    }),
+};
+
 export interface AuthUser {
   id: string;
   email: string;
