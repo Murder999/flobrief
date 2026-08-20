@@ -21,7 +21,7 @@ test.describe("English and Turkish locale behavior", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/tr\/?$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "tr");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("WhatsApp'ı bırakın");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Her briefi, revizyonu ve onayı");
     await context.close();
   });
 
@@ -40,6 +40,30 @@ test.describe("English and Turkish locale behavior", () => {
     await page.getByRole("group", { name: "Dil" }).getByRole("button", { name: "EN", exact: true }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  });
+
+  test("the premium flag selector stays visible without changing the home composition", async ({ browser }) => {
+    const context = await browser.newContext({ locale: "en-US", viewport: { width: 360, height: 800 } });
+    const page = await context.newPage();
+    await page.route("**/api/v1/auth/refresh", (route) => route.fulfill({ status: 204 }));
+    await page.goto("/");
+
+    const selector = page.getByRole("group", { name: "Language" });
+    await expect(selector).toBeVisible();
+    await expect(selector.getByRole("button", { name: "TR", exact: true })).toContainText("🇹🇷");
+    await expect(selector.getByRole("button", { name: "EN", exact: true })).toContainText("🇬🇧");
+    const englishStructure = await page.locator("main").evaluate((main) =>
+      Array.from(main.querySelectorAll("*")).map((element) => `${element.tagName}:${element.className}`).join("|")
+    );
+
+    await selector.getByRole("button", { name: "TR", exact: true }).click();
+    await expect(page).toHaveURL(/\/tr\/?$/);
+    const turkishStructure = await page.locator("main").evaluate((main) =>
+      Array.from(main.querySelectorAll("*")).map((element) => `${element.tagName}:${element.className}`).join("|")
+    );
+    expect(turkishStructure).toBe(englishStructure);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await context.close();
   });
 
   test("pricing copy and currency formatting follow the UI locale without changing plan currency", async ({ page }) => {

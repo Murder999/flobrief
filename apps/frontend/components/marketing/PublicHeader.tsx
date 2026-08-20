@@ -38,7 +38,7 @@ export function PublicHeader() {
             >
               P
             </span>
-            <span className="text-sm font-bold tracking-tight text-text">PostPiloter</span>
+            <span className="hidden text-sm font-bold tracking-tight text-text min-[380px]:inline">PostPiloter</span>
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
@@ -54,7 +54,7 @@ export function PublicHeader() {
           </div>
 
           <div className="flex items-center gap-2">
-            <LanguageSelector compact className="hidden lg:inline-flex" />
+            <LanguageSelector compact />
             <button
               type="button"
               aria-haspopup="dialog"
@@ -96,9 +96,6 @@ export function PublicHeader() {
                   {item.label}
                 </Link>
               ))}
-            </div>
-            <div className="mt-3 border-t border-border pt-3">
-              <LanguageSelector className="w-full justify-center" />
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
               <button
