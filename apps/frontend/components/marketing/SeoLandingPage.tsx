@@ -19,6 +19,7 @@ import type { ComponentType, SVGProps } from "react";
 
 import { PublicFooter } from "./PublicFooter";
 import { PublicHeader } from "./PublicHeader";
+import { LandingTitleSync } from "./LandingTitleSync";
 import { SEO_LANDING_PAGES, type LandingFeature, type LandingPageConfig, type LandingSlug } from "./seo-landing-data";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
@@ -272,6 +273,7 @@ export function SeoLandingPage({ config }: { config: LandingPageConfig }) {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background">
+      <LandingTitleSync title={config.title} />
       <PublicHeader />
       <main id="main-content">
         <section className="relative overflow-hidden pb-16 pt-32 sm:pb-20 sm:pt-36">

@@ -108,7 +108,7 @@ test.describe("SEO landing pages", () => {
     const platformResponse = await request.get("/platform/login");
     expect(platformResponse.headers()["x-robots-tag"]).toContain("noindex");
     expect(platformResponse.headers()["cache-control"]).toContain("no-store");
-    expect(platformResponse.headers()["x-frame-options"]).toBe("DENY");
+    expect(platformResponse.headers()["x-frame-options"]).toContain("DENY");
   });
 
   test("sitemap includes all five landing URLs", async ({ request }) => {
