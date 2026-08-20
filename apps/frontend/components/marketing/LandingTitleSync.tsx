@@ -4,7 +4,19 @@ import { useEffect } from "react";
 
 export function LandingTitleSync({ title }: { title: string }) {
   useEffect(() => {
-    if (document.title !== title) document.title = title;
+    const syncTitle = () => {
+      if (document.title !== title) document.title = title;
+    };
+
+    syncTitle();
+    const observer = new MutationObserver(syncTitle);
+    observer.observe(document.head, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => observer.disconnect();
   }, [title]);
 
   return null;
