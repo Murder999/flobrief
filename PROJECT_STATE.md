@@ -40,9 +40,8 @@
 ### PostPiloter Turkish/English internationalization
 
 - English is the global default; Turkish is directly available under `/tr`, with cookie, manual choice, browser language, and country fallback precedence.
-- Public, authentication, agency, brand, notification, brief, pricing, profile, password, MFA, email, and shared API-error surfaces use one typed 800-key EN/TR catalog.
+- Public, authentication, agency, brand, notification, brief, pricing, profile, password, MFA, email, and shared API-error surfaces use one typed 771-key EN/TR catalog.
 - SEO pages publish localized canonical and hreflang metadata; users keep the equivalent public route when switching language.
-- The public home renders one shared component tree in both languages, so locale changes replace copy without changing layout; a persistent premium TR/EN flag control remains visible at mobile and desktop widths.
 - User locale is stored through an additive Alembic migration and drives transactional emails and notifications.
 
 ### Local development performance

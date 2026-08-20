@@ -1162,7 +1162,7 @@ export default function HomePage() {
     mouseY.set(0);
   }, [mouseX, mouseY]);
 
-  if (locale === "en" || locale === "tr") return <EnglishHomePage />;
+  if (locale === "en") return <EnglishHomePage />;
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
