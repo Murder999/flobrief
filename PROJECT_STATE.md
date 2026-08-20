@@ -5,7 +5,7 @@
 **Product**: Premium multi-tenant B2B SaaS for agency/brand brief operations
 **Current phase**: Production hardening and go-live verification
 **Release posture**: Not approved for production until `docs/LAUNCH_CHECKLIST.md` is completed
-**Last updated**: 2026-07-28
+**Last updated**: 2026-08-20
 
 ## Stack
 
@@ -22,7 +22,7 @@
 - 84 database tables.
 - 49 Alembic migration files; one head required before release.
 - 415 API route decorators after duplicate asset routes were removed.
-- 95 frontend pages, 107 components, 20 Playwright specs.
+- 100 frontend pages, 112 components, 25 Playwright specs.
 
 ## Security Boundaries
 
@@ -123,6 +123,18 @@
   sanitization, deep links, idempotency, rollback-safety, and the reminder schedulers. See
   `docs/DECISIONS.md` DECISION-082 through DECISION-087.
 
+### Public SEO landing pages — 2026-08-20
+
+- Added `/ajans-programi`, `/musteri-onay-sistemi`, `/revizyon-takip`, `/musteri-portali`, and
+  `/online-brief` as static App Router pages with unique metadata, canonical URLs, Open Graph copy,
+  one H1 per page, internal linking, and a sitemap fallback that does not depend on the backend.
+- All five reuse one responsive public header/footer and server-rendered landing system; only the
+  mobile navigation toggle hydrates on the client. Product copy is limited to repo-verified brief,
+  comment, revision, deliverable-version, approval, portal, file, and white-label capabilities.
+- A 7-test Chromium suite verifies render, public shell, metadata, canonical, indexability, console,
+  desktop/mobile overflow, mobile navigation, and sitemap inclusion. No API, dependency, auth, or
+  backend business-logic change was introduced.
+
 ## Verification Status
 
 | Gate | Current result |
@@ -131,10 +143,11 @@
 | Focused asset/route regression suite | PASS — 53 tests |
 | Demo sandbox and route regression suite | PASS — 9 tests |
 | Backend Ruff check + format | PASS — 384 files clean |
-| Backend Pytest | PASS — 1595 tests |
+| Backend Pytest | PASS — 1777 tests |
 | Frontend TypeScript | PASS |
 | Frontend lint | PASS — no errors; raw-image optimization warnings remain |
-| Frontend production build | PASS — Node 20.20.2, 85/85 static pages generated |
+| Frontend production build | PASS — 90/90 static pages generated; Node 20.x remains the release runtime contract |
+| SEO landing Playwright suite | PASS — 7/7 on Chromium production build |
 | Playwright critical release matrix | PASS — 42/42 on Node 20 production build, current API, PostgreSQL, Redis, and live WebSocket |
 
 ## Production Truths

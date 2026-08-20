@@ -7,7 +7,7 @@ The historical 15-part implementation plan is complete. Production release remai
 1. Confirm Alembic has one head and upgrade a clean staging database.
 2. Complete every applicable item in `docs/LAUNCH_CHECKLIST.md`.
 
-Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, Ruff check/format, 1595 backend tests, TypeScript, lint, Node 20 production build (85/85 static pages), the 9-test demo/route regression suite, commercial-metric exclusion checks, and the 42-test critical Playwright release matrix against the current API and live WebSocket.
+Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, five public SEO landing pages with shared responsive navigation/footer and sitemap integration, Ruff check/format, 1777 backend tests, TypeScript, lint, production build (90/90 static pages), 7/7 SEO landing Chromium checks, the Resend/realtime regression suite, commercial-metric exclusion checks, and the prior 42-test critical Playwright release matrix against the current API and live WebSocket.
 
 ## Provider verification
 

@@ -1,12 +1,20 @@
 import type { MetadataRoute } from "next";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8003";
-const DEFAULT_PUBLIC_URL = "https://flobrief.com";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://postpiloter.com";
+const DEFAULT_PUBLIC_URL = "https://postpiloter.com";
 
 interface PublicSitemapPage {
   path: string;
   updated_at: string | null;
 }
+
+const STATIC_SEO_PAGES: PublicSitemapPage[] = [
+  { path: "/ajans-programi", updated_at: null },
+  { path: "/musteri-onay-sistemi", updated_at: null },
+  { path: "/revizyon-takip", updated_at: null },
+  { path: "/musteri-portali", updated_at: null },
+  { path: "/online-brief", updated_at: null },
+];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let publicUrl = DEFAULT_PUBLIC_URL;
@@ -30,7 +38,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // never a fabricated/expanded page list.
   }
 
-  return pages.map((page) => ({
+  const pageMap = new Map<string, PublicSitemapPage>();
+  [...pages, ...STATIC_SEO_PAGES].forEach((page) => pageMap.set(page.path, page));
+
+  return Array.from(pageMap.values()).map((page) => ({
     url: `${publicUrl}${page.path === "/" ? "" : page.path}`,
     lastModified: page.updated_at ? new Date(page.updated_at) : new Date(),
     changeFrequency: page.path === "/" ? "weekly" : "monthly",

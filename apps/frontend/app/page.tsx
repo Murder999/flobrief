@@ -2007,10 +2007,12 @@ export default function HomePage() {
               <h4 className="text-xs font-bold text-text uppercase tracking-wider mb-4">Ürün</h4>
               <ul className="space-y-3">
                 {[
-                  { label: "Özellikler",       href: "#features" },
-                  { label: "İş Akışı",         href: "#workflow" },
-                  { label: "Sonuçlar",         href: "#stats"    },
-                  { label: "Fiyatlandırma",    href: "/pricing"  },
+                  { label: "Ajans Programı",         href: "/ajans-programi" },
+                  { label: "Müşteri Onay Sistemi",   href: "/musteri-onay-sistemi" },
+                  { label: "Revizyon Takibi",        href: "/revizyon-takip" },
+                  { label: "Müşteri Portalı",        href: "/musteri-portali" },
+                  { label: "Online Brief",           href: "/online-brief" },
+                  { label: "Fiyatlandırma",          href: "/pricing" },
                 ].map(({ label, href }) => (
                   <li key={label}>
                     <a
