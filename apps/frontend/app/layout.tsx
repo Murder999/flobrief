@@ -3,7 +3,9 @@ import { headers } from "next/headers";
 import { AuthProvider } from "@/context/auth-context";
 import { LocaleProvider } from "@/context/locale-context";
 import { WorkspaceProvider } from "@/context/workspace-context";
+import { BrandingProvider } from "@/context/branding-context";
 import { ToastProvider } from "@/components/ui/toast";
+import { PublicAnalytics } from "@/components/analytics/public-analytics";
 import { DEFAULT_LOCALE, LOCALE_HEADER_NAME, normalizeLocale } from "@/lib/i18n/config";
 import "../styles/globals.css";
 
@@ -131,10 +133,13 @@ export default function RootLayout({
         <LocaleProvider initialLocale={initialLocale}>
           <AuthProvider>
             <WorkspaceProvider>
-              <ToastProvider>{children}</ToastProvider>
+              <BrandingProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </BrandingProvider>
             </WorkspaceProvider>
           </AuthProvider>
         </LocaleProvider>
+        <PublicAnalytics />
       </body>
     </html>
   );
