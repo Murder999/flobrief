@@ -11,10 +11,13 @@ import {
   Check, Minus, ChevronDown, ArrowLeft, Zap,
   Building2, Sparkles, Shield, Users, FileText,
   BarChart3, Globe, MessageSquare, Star, ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { useLocale } from "@/context/locale-context";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
+import { usePaddlePricePreview } from "@/lib/billing/usePaddlePricePreview";
+import { openCheckout } from "@/lib/billing/paddle";
 import type { TranslationKey } from "@/messages";
 
 const ES = [0.16, 1, 0.3, 1] as const;
@@ -41,10 +44,29 @@ function PricingCard({
 }: {
   plan: PlanRead; yearly: boolean; onSelect: (p: PlanRead) => void; highlighted: boolean;
 }) {
-  const { intlLocale, t } = useLocale();
+  const { intlLocale, t, locale } = useLocale();
   const meta = PLAN_META[plan.code] ?? { icon: Star, color: "text-text" };
   const Icon = meta.icon;
   const isEnterprise = plan.monthly_price_cents === 0;
+  const period = yearly ? "yearly" : "monthly";
+
+  const { price, loading: priceLoading } = usePaddlePricePreview(
+    isEnterprise ? null : (plan.code as "brand_solo" | "starter_agency" | "pro_agency" | "agency_plus"),
+    period
+  );
+
+  const handleCheckout = async () => {
+    if (isEnterprise) {
+      window.location.href = "mailto:sales@postpiloter.com?subject=Enterprise Plan";
+      return;
+    }
+    await onSelect(plan);
+  };
+
+  const formatPrice = (cents: number) => {
+    return new Intl.NumberFormat(intlLocale, { style: "currency", currency: plan.currency, minimumFractionDigits: 0 }).format(cents / 100);
+  };
+
   const priceMonthly = yearly && plan.yearly_price_cents
     ? plan.yearly_price_cents / 12
     : plan.monthly_price_cents;
@@ -86,12 +108,32 @@ function PricingCard({
         ) : (
           <>
             <div className="flex items-end gap-1">
-              <p className="text-3xl font-bold text-text">{fmt(priceMonthly, plan.currency, intlLocale)}</p>
-              <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
+              {priceLoading ? (
+                <>
+                  <div className="text-3xl font-bold text-text animate-pulse">
+                    <span className="bg-surface-2 rounded w-24 h-10" />
+                  </div>
+                  <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
+                </>
+              ) : price ? (
+                <>
+                  <p className="text-3xl font-bold text-text">{price.formattedTotal}</p>
+                  <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-text">{formatPrice(priceMonthly)}</p>
+                  <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
+                </>
+              )}
             </div>
-            {yearly && plan.yearly_price_cents ? (
+            {yearly && plan.yearly_price_cents && !priceLoading && price ? (
               <p className="mt-1 text-xs text-success-text font-medium">
-                {t("marketing.pricing.yearlySavings", { price: fmt(plan.yearly_price_cents, plan.currency, intlLocale) })}
+                {t("marketing.pricing.yearlySavings", { price: price.formattedTotal })}
+              </p>
+            ) : yearly && plan.yearly_price_cents && !price ? (
+              <p className="mt-1 text-xs text-success-text font-medium">
+                {t("marketing.pricing.yearlySavings", { price: formatPrice(plan.yearly_price_cents) })}
               </p>
             ) : (
               <p className="mt-1 text-xs text-text-muted">{t("marketing.pricing.monthlyBilling")}</p>
@@ -150,18 +192,28 @@ function PricingCard({
       </ul>
 
       <button
-        onClick={() => onSelect(plan)}
+        onClick={handleCheckout}
+        disabled={priceLoading && !isEnterprise}
         className={`mt-auto w-full rounded-xl py-2.5 text-sm font-semibold transition-all ${
           highlighted
             ? "text-white hover:opacity-90"
             : isEnterprise
               ? "bg-surface-2 border border-border text-text hover:bg-surface-3"
               : "bg-surface-2 border border-border text-text hover:bg-accent hover:text-white hover:border-accent/0"
-        }`}
+        } ${priceLoading && !isEnterprise ? "opacity-50 cursor-wait" : ""}`}
         style={highlighted ? { background: "var(--gradient-accent)" } : undefined}
       >
-        {isEnterprise ? t("marketing.pricing.contactSales") : t("marketing.pricing.selectPlan")}
-        <ArrowRight className="inline w-3.5 h-3.5 ml-1.5 -mt-px" />
+        {isEnterprise
+          ? t("marketing.pricing.contactSales")
+          : priceLoading
+          ? (
+            <>
+              <Loader2 className="inline w-3.5 h-3.5 ml-1.5 -mt-px animate-spin" />
+              <span className="inline-block ml-1">{t("marketing.pricing.loading")}</span>
+            </>
+          )
+          : t("marketing.pricing.selectPlan")}
+        {!isEnterprise && !priceLoading && <ArrowRight className="inline w-3.5 h-3.5 ml-1.5 -mt-px" />}
       </button>
     </div>
   );
@@ -288,7 +340,7 @@ function FAQ() {
 const PLAN_ORDER = ["brand_solo", "starter_agency", "pro_agency", "agency_plus", "enterprise"];
 
 export default function PricingPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const { user } = useAuth();
   const [plans, setPlans] = useState<PlanRead[]>([]);
@@ -314,12 +366,18 @@ export default function PricingPage() {
       window.location.href = "mailto:sales@postpiloter.com?subject=Enterprise Plan";
       return;
     }
-    storePendingPlan({ planId: plan.id, yearly });
-    if (user) {
-      router.push(`/dashboard/settings/billing?upgrade=${plan.id}&yearly=${yearly}`);
-    } else {
-      router.push(`/auth/register?plan=${plan.code}&yearly=${yearly}`);
-    }
+
+    const planCode = plan.code as "brand_solo" | "starter_agency" | "pro_agency" | "agency_plus";
+    const period = yearly ? "yearly" : "monthly";
+
+    openCheckout({
+      planCode,
+      period,
+      locale: locale as "tr" | "en",
+      customerEmail: user?.email,
+      yearly,
+      planId: plan.id,
+    });
   }
 
   return (

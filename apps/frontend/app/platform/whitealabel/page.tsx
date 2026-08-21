@@ -480,13 +480,13 @@ export default function PlatformWhitelabelPage() {
                 <TextInput value={form.email_from_name ?? ""} onChange={(v) => setF("email_from_name", v || null)} placeholder="Flobrief Bildirimleri" />
               </Field>
               <Field label="Destek e-postası">
-                <TextInput value={form.support_email ?? ""} onChange={(v) => setF("support_email", v || null)} placeholder="destek@flobrief.com" type="email" />
+                <TextInput value={form.support_email ?? ""} onChange={(v) => setF("support_email", v || null)} placeholder="destek@postpiloter.com" type="email" />
               </Field>
               <Field label="Kullanım koşulları bağlantısı">
-                <TextInput value={form.terms_url ?? ""} onChange={(v) => setF("terms_url", v || null)} placeholder="https://flobrief.com/terms" />
+                <TextInput value={form.terms_url ?? ""} onChange={(v) => setF("terms_url", v || null)} placeholder="https://postpiloter.com/terms" />
               </Field>
               <Field label="Gizlilik politikası bağlantısı">
-                <TextInput value={form.privacy_url ?? ""} onChange={(v) => setF("privacy_url", v || null)} placeholder="https://flobrief.com/privacy" />
+                <TextInput value={form.privacy_url ?? ""} onChange={(v) => setF("privacy_url", v || null)} placeholder="https://postpiloter.com/privacy" />
               </Field>
               <div className="sm:col-span-2">
                 <Field label="Footer metni">

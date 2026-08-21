@@ -243,6 +243,9 @@ function EmailProviderSection() {
             !status.is_configured ? "Yapılandırılmamış" :
             !status.is_enabled ? "Devre Dışı" : "Aktif"
           } />
+          <span className="text-xs rounded-full border border-[#2a2a3e] px-2.5 py-1 text-gray-400">
+            Kaynak: {status.configuration_source === "database" ? "Veritabanı" : status.configuration_source === "environment" ? "Sunucu ortamı" : "Yok"}
+          </span>
           <div className="flex items-center gap-6 text-xs text-gray-500 flex-wrap">
             {status.from_email && <span>From: <code className="font-mono text-gray-300">{status.from_email}</code></span>}
             {status.email_api_key_masked && <span>API Key: <code className="font-mono text-gray-300">{status.email_api_key_masked}</code></span>}
@@ -288,16 +291,18 @@ function EmailProviderSection() {
                 <h2 className="text-sm font-semibold text-gray-100 mb-4">E-posta Provider Durumu</h2>
                 <div
                   className="flex items-center gap-3 p-3 bg-[#0c0c12] rounded-lg cursor-pointer"
-                  onClick={() => setIsEnabled(!isEnabled)}
+                  onClick={() => status?.configuration_source !== "environment" && setIsEnabled(!isEnabled)}
                 >
-                  <button type="button"
+                  <button type="button" disabled={status?.configuration_source === "environment"}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ${isEnabled ? "bg-indigo-500" : "bg-[#2a2a3e]"}`}>
                     <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${isEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
                   </button>
                   <div>
                     <p className="text-sm font-medium text-gray-200">E-posta Bildirimleri</p>
                     <p className="text-xs text-gray-500">
-                      {isEnabled ? "Aktif — e-postalar Resend üzerinden gönderilecek" : "Devre dışı — e-postalar gönderilmeyecek"}
+                      {status?.configuration_source === "environment"
+                        ? "Sunucu ortam değişkenleriyle aktif; kapatmak için RESEND_API_KEY kaldırılmalıdır"
+                        : isEnabled ? "Aktif — e-postalar Resend üzerinden gönderilecek" : "Devre dışı — e-postalar gönderilmeyecek"}
                     </p>
                   </div>
                 </div>
@@ -316,7 +321,7 @@ function EmailProviderSection() {
                     onEdit={() => setEditingKey(true)}
                     onCancel={() => { setEditingKey(false); setApiKey(""); }}
                     onChange={setApiKey}
-                    onClear={status?.api_key_set ? handleClearApiKey : undefined}
+                    onClear={status?.configuration_source === "database" ? handleClearApiKey : undefined}
                     placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                     hint="Resend Dashboard → API Keys → Create API Key"
                   />
@@ -331,21 +336,21 @@ function EmailProviderSection() {
                     label="From Name"
                     value={fromName}
                     onChange={setFromName}
-                    placeholder="Flobrief"
+                    placeholder="PostPiloter"
                     hint="E-posta gönderici adı"
                   />
                   <TextField
                     label="From Email"
                     value={fromEmail}
                     onChange={setFromEmail}
-                    placeholder="noreply@flobrief.com"
+                    placeholder="noreply@postpiloter.com"
                     hint="Resend tarafında doğrulanmış domain'den bir adres kullanın"
                   />
                   <TextField
                     label="Reply-To Email"
                     value={replyTo}
                     onChange={setReplyTo}
-                    placeholder="destek@flobrief.com"
+                    placeholder=""
                     hint="Opsiyonel. Kullanıcıların yanıtları bu adrese gider."
                     optional
                   />
@@ -384,7 +389,7 @@ function EmailProviderSection() {
                   <li>• API Key sadece şifreli olarak saklanır; hiçbir zaman geri döndürülmez.</li>
                 </ul>
                 <div className="mt-4 p-3 bg-[#0c0c12] rounded-lg border border-[#1e1e2e]">
-                  <p className="text-xs text-gray-500 mb-1">Gerekli env değişkeni (opsiyonel, DB ayarı öncelikli):</p>
+                  <p className="text-xs text-gray-500 mb-1">Production ortamında sunucu secret&apos;ı yetkilidir. Diğer ortamlarda geçerli ve aktif DB ayarı önceliklidir; DB kaydı kullanılamazsa ortam ayarı fallback olur:</p>
                   <code className="text-xs font-mono text-indigo-300">RESEND_API_KEY=re_xxxx</code>
                 </div>
               </div>
@@ -412,7 +417,7 @@ function EmailProviderSection() {
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1.5">Konu (opsiyonel)</label>
                   <input type="text" value={testSubject} onChange={(e) => setTestSubject(e.target.value)}
-                    placeholder="Flobrief — Test E-postası"
+                    placeholder="PostPiloter — Test E-postası"
                     className="w-full bg-[#0c0c12] border border-[#2a2a3e] rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-indigo-500/50" />
                 </div>
                 <div>

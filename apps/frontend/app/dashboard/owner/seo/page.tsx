@@ -190,7 +190,7 @@ export default function SeoPage() {
               </div>
             )}
             <div className="px-3 py-2.5">
-              <p className="text-xs text-text-muted mb-0.5">{activeAgency?.slug ?? "flobrief.com"}</p>
+              <p className="text-xs text-text-muted mb-0.5">{activeAgency?.slug ?? "postpiloter.com"}</p>
               <p className="text-sm font-semibold text-text line-clamp-1">
                 {seoTitle || settings?.brand_name_override || "Sayfa Başlığı"}
               </p>

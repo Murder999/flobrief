@@ -252,7 +252,7 @@ export default function PlatformLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder:text-text-placeholder focus:outline-none focus:border-accent focus:shadow-accent transition-all"
-                placeholder="admin@flobrief.com"
+                placeholder="admin@postpiloter.com"
               />
             </div>
 

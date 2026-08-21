@@ -18,6 +18,7 @@
     "e2e:critical": "playwright test e2e/annotation-flow.spec.ts e2e/brief-detail-workspace.spec.ts e2e/agency-calendar.spec.ts e2e/platform-admin.spec.ts e2e/mobile-brand-approval-flow.spec.ts"
   },
   "dependencies": {
+    "@paddle/paddle-js": "^1.6.4",
     "clsx": "^2.1.1",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.24.0",

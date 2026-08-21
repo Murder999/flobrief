@@ -167,7 +167,7 @@ function AuditIssueList({ issues }: { issues: PlatformSeoAuditIssue[] }) {
 // ── PageSpeed panel ───────────────────────────────────────────────────────────
 
 function PageSpeedPanel({ configured, requiredEnv }: { configured: boolean; requiredEnv: string | undefined }) {
-  const [url, setUrl] = useState("https://flobrief.com");
+  const [url, setUrl] = useState("https://postpiloter.com");
   const [strategy, setStrategy] = useState<"mobile" | "desktop">("mobile");
   const [result, setResult] = useState<PlatformPageSpeedResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -468,7 +468,7 @@ function SeoEditor({ pages, onSaved, onToast }: SeoEditorProps) {
             <p className="text-xs text-text-muted opacity-60 mt-1">{String(form.description ?? "").length}/160</p>
           </Field>
           <Field label="Canonical URL">
-            <TextInput value={String(form.canonical_url ?? "")} onChange={(v) => setF("canonical_url", v)} placeholder="https://flobrief.com/" mono />
+            <TextInput value={String(form.canonical_url ?? "")} onChange={(v) => setF("canonical_url", v)} placeholder="https://postpiloter.com/" mono />
           </Field>
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -505,7 +505,7 @@ function SeoEditor({ pages, onSaved, onToast }: SeoEditorProps) {
               className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-placeholder focus:outline-none focus:border-accent resize-none transition-colors"
             />
           </Field>
-          <Field label="OG Görsel URL"><TextInput value={String(form.og_image_url ?? "")} onChange={(v) => setF("og_image_url", v)} placeholder="https://flobrief.com/og-image.png" mono /></Field>
+          <Field label="OG Görsel URL"><TextInput value={String(form.og_image_url ?? "")} onChange={(v) => setF("og_image_url", v)} placeholder="https://postpiloter.com/og-image.png" mono /></Field>
         </div>
       </Card>
 
@@ -606,7 +606,7 @@ function TrackingEditor({ settings, onToast }: TrackingEditorProps) {
           <TextInput value={form.linkedin_partner_id} onChange={(v) => setF("linkedin_partner_id", v)} placeholder="1234567" mono />
         </Field>
         <Field label="Public App URL (sitemap & canonical için)">
-          <TextInput value={form.public_app_url} onChange={(v) => setF("public_app_url", v)} placeholder="https://flobrief.com" mono />
+          <TextInput value={form.public_app_url} onChange={(v) => setF("public_app_url", v)} placeholder="https://postpiloter.com" mono />
         </Field>
       </div>
     </Card>
@@ -626,7 +626,7 @@ Disallow: /platform/
 Disallow: /dashboard/
 Disallow: /api/
 
-Sitemap: https://flobrief.com/sitemap.xml`;
+Sitemap: https://postpiloter.com/sitemap.xml`;
 
 function RobotsEditor({ robotsTxt, onToast }: RobotsEditorProps) {
   const [content, setContent] = useState(robotsTxt ?? DEFAULT_ROBOTS);
@@ -754,7 +754,7 @@ function UtmBuilder() {
     <Card title="UTM Link Oluşturucu">
       <div className="grid grid-cols-1 gap-4">
         <Field label="Hedef URL">
-          <TextInput value={baseUrl} onChange={setBaseUrl} placeholder="https://flobrief.com/pricing" mono />
+          <TextInput value={baseUrl} onChange={setBaseUrl} placeholder="https://postpiloter.com/pricing" mono />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Kaynak (utm_source)">

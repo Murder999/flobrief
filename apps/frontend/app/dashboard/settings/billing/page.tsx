@@ -127,7 +127,7 @@ function BillingPageInner() {
   async function handleUpgrade(plan: PlanRead) {
     if (!accessToken || !agencyId) return;
     if (plan.monthly_price_cents === 0) {
-      window.location.href = "mailto:sales@flobrief.com?subject=Enterprise Plan";
+      window.location.href = "mailto:sales@postpiloter.com?subject=Enterprise Plan";
       return;
     }
     setActionLoading(true);

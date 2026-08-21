@@ -83,6 +83,7 @@ export const marketing = {
   "marketing.pricing.faq.4.a": "You can switch to monthly billing after the current yearly period ends.",
   "marketing.pricing.faq.5.q": "How does invoicing work?",
   "marketing.pricing.faq.5.a": "Payments are processed securely through Paddle (our Merchant of Record). Invoices are generated for each period and are available in your dashboard.",
+  "marketing.pricing.loading": "Loading price...",
 
   "marketing.legal.terms.title": "Terms of Service",
   "marketing.legal.terms.lastUpdated": "Last updated: August 21, 2026",
