@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { getRedirectAfterLogin } from "@/lib/auth";
 
@@ -27,10 +28,7 @@ function LoginPopupRoute() {
       <div className="pointer-events-none absolute -top-32 left-1/2 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-accent/6 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-1/4 h-[300px] w-[300px] rounded-full bg-purple/5 blur-3xl" />
       <div className="flex flex-col items-center gap-3" aria-hidden="true">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-accent shadow-glow">
-          <span className="text-xl font-bold text-white">P</span>
-        </div>
-        <span className="text-2xl font-semibold tracking-tight text-text">PostPiloter</span>
+        <PostPiloterLogo className="h-12 w-auto" priority alt="" />
       </div>
       <LoginModal
         open={open}

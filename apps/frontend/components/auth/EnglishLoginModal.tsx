@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AlertCircle, ArrowLeft, Building2, Mail, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { authApi, ApiError } from "@/lib/api-client";
 
@@ -63,7 +64,7 @@ export function EnglishLoginModal({ open, onClose, returnTo }: { open: boolean; 
       <div className="absolute inset-0 bg-background/80 backdrop-blur-md" />
       <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="english-login-title" onMouseDown={(event) => event.stopPropagation()} className="relative w-full max-w-sm rounded-2xl border border-border bg-surface shadow-modal outline-none">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <span className="text-sm font-bold text-text">PostPiloter</span>
+          <PostPiloterLogo className="h-7 w-auto" />
           <button type="button" onClick={onClose} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-xl text-text-muted hover:bg-hover hover:text-text"><X className="h-4 w-4" /></button>
         </div>
         <div className="p-6">

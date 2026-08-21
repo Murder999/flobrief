@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useLocale } from "@/context/locale-context";
 
 export function AuthCard({ children }: { children: ReactNode }) {
@@ -17,15 +18,7 @@ export function AuthCard({ children }: { children: ReactNode }) {
         {/* Logo */}
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-glow-sm"
-              style={{ background: "var(--gradient-accent)" }}
-            >
-              <span className="text-white font-bold text-sm">F</span>
-            </div>
-            <span className="text-xl font-semibold text-text group-hover:text-accent transition-colors tracking-tight">
-              Flobrief
-            </span>
+            <PostPiloterLogo className="h-10 w-auto transition-transform group-hover:scale-[1.02]" priority />
           </Link>
         </div>
 

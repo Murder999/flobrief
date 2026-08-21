@@ -7,7 +7,7 @@ The historical 15-part implementation plan is complete. Production release remai
 1. Confirm Alembic has one head and upgrade a clean staging database.
 2. Complete every applicable item in `docs/LAUNCH_CHECKLIST.md`.
 
-Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, five bilingual public SEO landing pages, complete typed EN/TR catalogs and persisted user locale, one shared premium TR/EN home composition with copy-only locale changes, consistent `P / PostPiloter` branding, and SVG flag controls, public login-modal and platform-route disclosure hardening, Ruff check/format, backend regression coverage, TypeScript, production build (90/90 static pages), SEO/login/security Chromium checks, the Resend/realtime regression suite, commercial-metric exclusion checks, and the prior critical Playwright release matrix against the current API and live WebSocket.
+Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, five bilingual public SEO landing pages, complete typed EN/TR catalogs and persisted user locale, one shared premium TR/EN home composition with copy-only locale changes, the supplied transparent PostPiloter master logo shared across public and login surfaces, and SVG flag controls, public login-modal and platform-route disclosure hardening, Ruff check/format, backend regression coverage, TypeScript, production build (90/90 static pages), SEO/login/security Chromium checks, the Resend/realtime regression suite, commercial-metric exclusion checks, and the prior critical Playwright release matrix against the current API and live WebSocket.
 
 ## Platform access hardening
 

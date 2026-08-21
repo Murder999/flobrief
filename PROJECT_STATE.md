@@ -42,7 +42,7 @@
 - English is the global default; Turkish is directly available under `/tr`, with cookie, manual choice, browser language, and country fallback precedence.
 - Public, authentication, agency, brand, notification, brief, pricing, profile, password, MFA, email, and shared API-error surfaces use one typed 771-key EN/TR catalog.
 - SEO pages publish localized canonical and hreflang metadata; users keep the equivalent public route when switching language.
-- The premium animated home composition is shared by English and Turkish; locale changes replace its copy without replacing, removing, or reordering any visual component. Its navigation, product preview, lifecycle scene, and footer consistently use the established `P / PostPiloter` brand mark. The compact language control uses deterministic inline SVG flags and retains the same route-preserving behavior.
+- The premium animated home composition is shared by English and Turkish; locale changes replace its copy without replacing, removing, or reordering any visual component. Its navigation, product preview, lifecycle scene, footer, shared public header/footer, pricing header, and login surfaces use the supplied transparent PostPiloter master PNG through one reusable logo component. The compact language control uses deterministic inline SVG flags and retains the same route-preserving behavior.
 - User locale is stored through an additive Alembic migration and drives transactional emails and notifications.
 
 ### Local development performance

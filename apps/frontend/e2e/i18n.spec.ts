@@ -52,7 +52,7 @@ test.describe("English and Turkish locale behavior", () => {
     await expect(selector).toBeVisible();
     await expect(selector.locator('svg[data-flag="tr"]')).toBeVisible();
     await expect(selector.locator('svg[data-flag="en"]')).toBeVisible();
-    await expect(page.getByRole("navigation").getByText("PostPiloter", { exact: true })).toBeVisible();
+    await expect(page.getByRole("navigation").locator('img[data-brand-logo="postpiloter"]')).toBeVisible();
     await expect(page.getByRole("navigation").getByText("Flobrief", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Smart Brief Templates", { exact: true })).toBeVisible();
     await expect(page.getByText("From brief to publishing, the whole process follows one flow.", { exact: true })).toBeVisible();

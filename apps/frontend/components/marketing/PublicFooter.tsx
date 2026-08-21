@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useLocale } from "@/context/locale-context";
 import { localizePublicPath } from "@/lib/i18n/config";
 
@@ -25,10 +26,7 @@ export function PublicFooter() {
       <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2">
           <Link href={localize("/")} className="group mb-4 inline-flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-accent text-sm font-black text-white" aria-hidden="true">
-              P
-            </span>
-            <span className="text-base font-bold tracking-tight text-text group-hover:text-accent">PostPiloter</span>
+            <PostPiloterLogo className="h-8 w-auto transition-transform group-hover:scale-[1.02]" />
           </Link>
           <p className="mb-6 max-w-sm text-sm leading-relaxed text-text-muted">
             {t("marketing.footer.description")}

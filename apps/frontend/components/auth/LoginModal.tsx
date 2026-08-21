@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { authApi, ApiError } from "@/lib/api-client";
 import { useLocale } from "@/context/locale-context";
 import { EnglishLoginModal } from "./EnglishLoginModal";
@@ -191,15 +192,7 @@ function TurkishLoginModal({ open, onClose, returnTo }: LoginModalProps) {
             <div className="bg-surface border border-border rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.2)]">
               {/* Header */}
               <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/60">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center"
-                    style={{ background: "var(--gradient-accent)" }}
-                  >
-                    <span className="text-white font-bold text-xs">P</span>
-                  </div>
-                  <span className="text-sm font-semibold text-text tracking-tight">PostPiloter</span>
-                </div>
+                <PostPiloterLogo className="h-7 w-auto" />
                 <button
                   onClick={onClose}
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text hover:bg-surface-2 transition-colors"

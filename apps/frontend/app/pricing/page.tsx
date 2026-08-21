@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useLocale } from "@/context/locale-context";
 import { LanguageSelector } from "@/components/i18n/language-selector";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import type { TranslationKey } from "@/messages";
 
 const ES = [0.16, 1, 0.3, 1] as const;
@@ -328,13 +329,7 @@ export default function PricingPage() {
       <nav className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ background: "var(--gradient-accent)" }}
-            >
-              <span className="text-white font-bold text-xs">F</span>
-            </div>
-            <span className="text-sm font-semibold text-text group-hover:text-accent transition-colors tracking-tight">Flobrief</span>
+            <PostPiloterLogo className="h-7 w-auto transition-transform group-hover:scale-[1.02]" priority />
           </Link>
           <div className="flex items-center gap-3">
             <LanguageSelector compact />

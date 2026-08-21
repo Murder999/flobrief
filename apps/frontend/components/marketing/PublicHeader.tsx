@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 import { useLocale } from "@/context/locale-context";
 import { localizePublicPath } from "@/lib/i18n/config";
@@ -32,13 +33,7 @@ export function PublicHeader() {
       <nav className="mx-auto max-w-7xl px-4 sm:px-6" aria-label={t("common.navigation.home")}>
         <div className="flex h-16 items-center justify-between">
           <Link href={localize("/")} className="group flex min-h-11 items-center gap-2.5" aria-label={t("marketing.navigation.homeLabel")}>
-            <span
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-accent text-xs font-black text-white shadow-accent transition-transform group-hover:scale-105"
-              aria-hidden="true"
-            >
-              P
-            </span>
-            <span className="text-sm font-bold tracking-tight text-text">PostPiloter</span>
+            <PostPiloterLogo className="h-8 w-auto transition-transform group-hover:scale-[1.02]" priority alt="" />
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">

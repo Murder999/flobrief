@@ -18,6 +18,7 @@ import {
   Building2, MessageSquare, Mail,
 } from "lucide-react";
 import { LoginModal } from "@/components/auth/LoginModal";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 import { useLocale } from "@/context/locale-context";
 import { homeEnglishCopy } from "@/messages/home";
@@ -1183,13 +1184,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex h-15 items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div
-                className="rounded-xl flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-105"
-                style={{ background: "var(--gradient-accent)", boxShadow: "0 2px 10px rgba(99,102,241,0.30)", width: "30px", height: "30px" }}
-              >
-                <span className="text-white font-bold text-xs leading-none">P</span>
-              </div>
-              <span className="text-sm font-semibold text-text tracking-tight">PostPiloter</span>
+              <PostPiloterLogo className="h-[30px] w-auto transition-transform group-hover:scale-[1.02]" priority />
             </Link>
 
             <div className="hidden items-center gap-1 md:flex">
@@ -1384,10 +1379,7 @@ export default function HomePage() {
                 <div className="flex h-[380px] overflow-hidden">
                   <div className="hidden w-48 shrink-0 border-r border-border bg-surface-2 p-4 md:flex flex-col">
                     <div className="mb-5 flex items-center gap-2.5">
-                      <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "var(--gradient-accent)" }}>
-                        <span className="text-white text-xs font-bold leading-none">P</span>
-                      </div>
-                      <span className="text-sm font-semibold text-text">PostPiloter</span>
+                      <PostPiloterLogo className="h-6 w-auto" alt="" />
                     </div>
                     <div className="space-y-0.5">
                       {[{ label: "Dashboard", active: true }, { label: "Brief'ler", active: false }, { label: "Takvim", active: false }, { label: "Markalar", active: false }, { label: "Raporlar", active: false }].map(item => (
@@ -1508,14 +1500,8 @@ export default function HomePage() {
               variants={vUp}
               className="flex items-center gap-3 rounded-xl border border-success-border bg-success-subtle px-4 py-3 w-full sm:w-auto"
             >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--gradient-accent)" }}
-              >
-                <span className="text-white text-xs font-bold">P</span>
-              </div>
               <div>
-                <div className="text-xs font-semibold text-text">PostPiloter</div>
+                <PostPiloterLogo className="h-6 w-auto" alt="" />
                 <div className="text-[10px] text-success-text">{homeText("Tek platform, tam kontrol")}</div>
               </div>
             </motion.div>
@@ -1989,10 +1975,7 @@ export default function HomePage() {
             {/* Brand */}
             <div className="lg:col-span-2">
               <Link href="/" className="inline-flex items-center gap-2.5 group mb-4">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--gradient-accent)" }}>
-                  <span className="text-white text-sm font-black">P</span>
-                </div>
-                <span className="text-base font-bold text-text group-hover:text-accent transition-colors tracking-tight">PostPiloter</span>
+                <PostPiloterLogo className="h-8 w-auto transition-transform group-hover:scale-[1.02]" />
               </Link>
               <p className="text-sm text-text-muted leading-relaxed max-w-xs mb-6">
                 {homeText("Ajanslar ve markalar için brief yönetimi, onay akışları ve içerik takvimi platformu. Uçtan uca süreç, tek ekrandan.")}
