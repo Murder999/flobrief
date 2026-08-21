@@ -18,6 +18,7 @@ export const common = {
   "common.navigation.pricing": "Fiyatlandırma",
   "common.navigation.resources": "Kaynaklar",
   "common.navigation.contact": "İletişim",
+  "common.navigation.legal": "Yasal",
   "common.navigation.dashboard": "Panele dön",
   "common.actions.goBack": "Geri git",
   "common.accessDenied.title": "Erişim reddedildi",

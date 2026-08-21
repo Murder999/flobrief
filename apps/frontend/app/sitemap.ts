@@ -14,6 +14,10 @@ const STATIC_SEO_PAGES: PublicSitemapPage[] = [
   { path: "/revizyon-takip", updated_at: null },
   { path: "/musteri-portali", updated_at: null },
   { path: "/online-brief", updated_at: null },
+  { path: "/terms", updated_at: null },
+  { path: "/privacy", updated_at: null },
+  { path: "/refund-policy", updated_at: null },
+  { path: "/contact", updated_at: null },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

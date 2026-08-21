@@ -22,7 +22,7 @@
 - 84 database tables.
 - 50 Alembic migration files; one head required before release.
 - 415 API route decorators after duplicate asset routes were removed.
-- 100 frontend pages, 112 components, 25 Playwright specs.
+- 104 frontend pages, 118 components, 27 Playwright specs.
 
 ## Security Boundaries
 
@@ -149,6 +149,10 @@
 - A 9-test Chromium suite verifies render, public shell, metadata, canonical, indexability, console,
   desktop/mobile overflow, mobile navigation, login-modal behavior, platform-route non-disclosure,
   security headers, and sitemap inclusion.
+- Added localized `/terms`, `/privacy`, `/refund-policy`, and `/contact` pages with unique EN/TR
+  metadata, canonical/hreflang URLs, sitemap entries, footer discovery, real contact mail links, and
+  Paddle Merchant of Record disclosures. Chromium coverage rejects placeholder metadata and checks
+  both locale routes, responsive overflow, contact channels, and sitemap alternates.
 
 ### Public login and platform-access hardening — 2026-08-20
 
@@ -172,7 +176,7 @@
 | Backend Pytest | PASS — 1777 tests |
 | Frontend TypeScript | PASS |
 | Frontend lint | PASS — no errors; raw-image optimization warnings remain |
-| Frontend production build | PASS — 90/90 static pages generated; Node 20.x remains the release runtime contract |
+| Frontend production build | PASS — 94/94 static pages generated; Node 20.x remains the release runtime contract |
 | SEO landing Playwright suite | PASS — 9/9 on Chromium production build |
 | Playwright critical release matrix | PASS — 42/42 on Node 20 production build, current API, PostgreSQL, Redis, and live WebSocket |
 

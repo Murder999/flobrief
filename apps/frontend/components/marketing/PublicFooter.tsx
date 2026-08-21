@@ -19,12 +19,18 @@ export function PublicFooter() {
     { label: t("marketing.solution.portal"), href: localize("/musteri-portali") },
     { label: t("marketing.solution.brief"), href: localize("/online-brief") },
   ];
+  const legalLinks = [
+    { label: t("marketing.legal.nav.terms"), href: localize("/terms") },
+    { label: t("marketing.legal.nav.privacy"), href: localize("/privacy") },
+    { label: t("marketing.legal.nav.refund"), href: localize("/refund-policy") },
+    { label: t("marketing.legal.nav.contact"), href: localize("/contact") },
+  ];
 
   return (
     <>
       <footer className="border-t border-border bg-background" data-testid="public-footer">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="sm:col-span-2">
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="lg:col-span-2">
           <Link href={localize("/")} className="group mb-4 inline-flex items-center gap-2.5">
             <PostPiloterLogo className="h-8 w-auto transition-transform group-hover:scale-[1.02]" />
           </Link>
@@ -70,6 +76,19 @@ export function PublicFooter() {
                 {t("auth.actions.login")}
               </button>
             </li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-text">{t("common.navigation.legal")}</h2>
+          <ul className="space-y-3">
+            {legalLinks.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className="text-sm text-text-muted transition-colors hover:text-text">
+                  {item.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
       </div>

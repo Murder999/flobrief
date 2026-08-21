@@ -18,6 +18,7 @@ export const common = {
   "common.navigation.pricing": "Pricing",
   "common.navigation.resources": "Resources",
   "common.navigation.contact": "Contact",
+  "common.navigation.legal": "Legal",
   "common.navigation.dashboard": "Back to dashboard",
   "common.actions.goBack": "Go back",
   "common.accessDenied.title": "Access denied",
