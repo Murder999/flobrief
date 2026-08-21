@@ -239,7 +239,7 @@ export const homeEnglishCopy: Readonly<Record<string, string>> = {
   "Tek platform, tam kontrol": "One platform, full control",
   "TEK PLATFORMDA DÜZENLİ OPERASYON": "ORGANIZED OPERATIONS ON ONE PLATFORM",
   "Brief, üretim, revizyon ve onay — hepsi aynı yerde.": "Briefs, production, revisions, and approvals — all in one place.",
-  "Soyut özellikler değil, gerçek iş akışları. Aşağıdaki her kart, canlı Flobrief arayüzünden bir kesit.": "Real workflows, not abstract features. Every card below is a view from the live Flobrief interface.",
+  "Soyut özellikler değil, gerçek iş akışları. Aşağıdaki her kart, canlı PostPiloter arayüzünden bir kesit.": "Real workflows, not abstract features. Every card below is a view from the live PostPiloter interface.",
   "Akıllı Brief Şablonları": "Smart Brief Templates",
   "Brief toplama sürecini standartlaştırın": "Standardize brief collection",
   "Sektöre özgü dinamik şablonlar, zorunlu alanlar ve onay öncesi otomatik doğrulama ile her marka için mükemmel brief yapısı oluşturun.": "Create a consistent brief structure for every brand with industry-specific templates, required fields, and pre-approval validation.",

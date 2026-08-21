@@ -888,7 +888,7 @@ function BriefLifecycleScene() {
                     transition={{ duration: 0.22, delay: 0.06 }}
                     className="bg-surface border border-border rounded-xl shadow-modal p-3"
                   >
-                    <div className="text-[9px] text-text-muted uppercase tracking-wider mb-1.5">Flobrief</div>
+                    <div className="text-[9px] text-text-muted uppercase tracking-wider mb-1.5">PostPiloter</div>
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] text-text-secondary">{homeText(botEv.label)}</span>
                       <span className="text-[10px] font-semibold text-text">{homeText(botEv.value)}</span>
@@ -1187,9 +1187,9 @@ export default function HomePage() {
                 className="rounded-xl flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-105"
                 style={{ background: "var(--gradient-accent)", boxShadow: "0 2px 10px rgba(99,102,241,0.30)", width: "30px", height: "30px" }}
               >
-                <span className="text-white font-bold text-xs leading-none">F</span>
+                <span className="text-white font-bold text-xs leading-none">P</span>
               </div>
-              <span className="text-sm font-semibold text-text tracking-tight">Flobrief</span>
+              <span className="text-sm font-semibold text-text tracking-tight">PostPiloter</span>
             </Link>
 
             <div className="hidden items-center gap-1 md:flex">
@@ -1385,9 +1385,9 @@ export default function HomePage() {
                   <div className="hidden w-48 shrink-0 border-r border-border bg-surface-2 p-4 md:flex flex-col">
                     <div className="mb-5 flex items-center gap-2.5">
                       <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "var(--gradient-accent)" }}>
-                        <span className="text-white text-xs font-bold leading-none">F</span>
+                        <span className="text-white text-xs font-bold leading-none">P</span>
                       </div>
-                      <span className="text-sm font-semibold text-text">Flobrief</span>
+                      <span className="text-sm font-semibold text-text">PostPiloter</span>
                     </div>
                     <div className="space-y-0.5">
                       {[{ label: "Dashboard", active: true }, { label: "Brief'ler", active: false }, { label: "Takvim", active: false }, { label: "Markalar", active: false }, { label: "Raporlar", active: false }].map(item => (
@@ -1512,10 +1512,10 @@ export default function HomePage() {
                 className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{ background: "var(--gradient-accent)" }}
               >
-                <span className="text-white text-xs font-bold">F</span>
+                <span className="text-white text-xs font-bold">P</span>
               </div>
               <div>
-                <div className="text-xs font-semibold text-text">Flobrief</div>
+                <div className="text-xs font-semibold text-text">PostPiloter</div>
                 <div className="text-[10px] text-success-text">{homeText("Tek platform, tam kontrol")}</div>
               </div>
             </motion.div>
@@ -1551,7 +1551,7 @@ export default function HomePage() {
               {homeText("Brief, üretim, revizyon ve onay — hepsi aynı yerde.")}
             </motion.h2>
             <motion.p variants={vUp} className="mx-auto max-w-xl text-base text-text-secondary leading-relaxed">
-              {homeText("Soyut özellikler değil, gerçek iş akışları. Aşağıdaki her kart, canlı Flobrief arayüzünden bir kesit.")}
+              {homeText("Soyut özellikler değil, gerçek iş akışları. Aşağıdaki her kart, canlı PostPiloter arayüzünden bir kesit.")}
             </motion.p>
           </motion.div>
 
@@ -1990,9 +1990,9 @@ export default function HomePage() {
             <div className="lg:col-span-2">
               <Link href="/" className="inline-flex items-center gap-2.5 group mb-4">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--gradient-accent)" }}>
-                  <span className="text-white text-sm font-black">F</span>
+                  <span className="text-white text-sm font-black">P</span>
                 </div>
-                <span className="text-base font-bold text-text group-hover:text-accent transition-colors tracking-tight">Flobrief</span>
+                <span className="text-base font-bold text-text group-hover:text-accent transition-colors tracking-tight">PostPiloter</span>
               </Link>
               <p className="text-sm text-text-muted leading-relaxed max-w-xs mb-6">
                 {homeText("Ajanslar ve markalar için brief yönetimi, onay akışları ve içerik takvimi platformu. Uçtan uca süreç, tek ekrandan.")}
@@ -2078,7 +2078,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl px-6 py-5">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-xs text-text-muted order-2 sm:order-1">
-                © {new Date().getFullYear()} Flobrief. {homeText("Tüm hakları saklıdır.")}
+                © {new Date().getFullYear()} PostPiloter. {homeText("Tüm hakları saklıdır.")}
               </p>
               <div className="flex items-center gap-1.5 order-1 sm:order-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
