@@ -25,6 +25,7 @@ Revision ID: r3s4t5u6v7w8
 Revises: q2r3s4t5u6v7
 Create Date: 2026-07-29 00:00:00.000000
 """
+
 from __future__ import annotations
 
 from typing import Sequence, Union
@@ -42,13 +43,16 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # ── notification_deliveries: state-machine + retry + template-snapshot columns ──
     op.add_column(
-        "notification_deliveries", sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=True)
+        "notification_deliveries",
+        sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.add_column(
-        "notification_deliveries", sa.Column("cancelled_at", sa.DateTime(timezone=True), nullable=True)
+        "notification_deliveries",
+        sa.Column("cancelled_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.add_column(
-        "notification_deliveries", sa.Column("expired_at", sa.DateTime(timezone=True), nullable=True)
+        "notification_deliveries",
+        sa.Column("expired_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.add_column(
         "notification_deliveries",

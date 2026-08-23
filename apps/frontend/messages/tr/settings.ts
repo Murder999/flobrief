@@ -87,4 +87,9 @@ export const settings = {
   "settings.mfa.done": "Tamamlandı",
   "settings.mfa.processing": "İşleniyor…",
   "settings.mfa.disableAction": "Devre dışı bırak",
+"brand.settings.notificationChannels": "Bildirim Kanalları",
+  "brand.settings.channel.inApp": "Uygulama içi",
+  "brand.settings.status.inactive": "Pasif",
+  "brand.settings.status.setupRequired": "Kurulum gerekli",
+  "brand.settings.status.offline": "Kapalı",
 } as const;

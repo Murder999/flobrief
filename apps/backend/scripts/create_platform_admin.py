@@ -12,6 +12,7 @@ SECURITY WARNING:
   - Production use: run via deploy pipeline only, not from a developer terminal.
   - MFA will be enforced in Part 13 before this account can be used in production.
 """
+
 import argparse
 import asyncio
 import getpass
@@ -30,9 +31,7 @@ from app.models.user import User  # noqa: E402
 
 async def _create(email: str, full_name: str, password: str) -> None:
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(User).where(User.email == email.lower())
-        )
+        result = await session.execute(select(User).where(User.email == email.lower()))
         existing = result.scalar_one_or_none()
 
         if existing is not None:

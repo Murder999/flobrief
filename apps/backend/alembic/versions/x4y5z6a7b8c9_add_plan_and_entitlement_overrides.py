@@ -4,6 +4,7 @@ Revision ID: x4y5z6a7b8c9
 Revises: w3x4y5z6a7b8
 Create Date: 2026-07-14
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -18,12 +19,8 @@ depends_on = None
 
 def upgrade() -> None:
     op.add_column("plans", sa.Column("max_brand_users", sa.Integer(), nullable=True))
-    op.add_column(
-        "plans", sa.Column("max_pending_agency_invites", sa.Integer(), nullable=True)
-    )
-    op.add_column(
-        "plans", sa.Column("max_pending_brand_invites", sa.Integer(), nullable=True)
-    )
+    op.add_column("plans", sa.Column("max_pending_agency_invites", sa.Integer(), nullable=True))
+    op.add_column("plans", sa.Column("max_pending_brand_invites", sa.Integer(), nullable=True))
 
     op.create_table(
         "entitlement_overrides",

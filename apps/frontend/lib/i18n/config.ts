@@ -39,6 +39,8 @@ export function localeToIntl(locale: Locale): "en-US" | "tr-TR" {
 
 const PUBLIC_ROUTE_PREFIXES = [
   "/",
+  "/auth/register",
+  "/auth/login",
   "/pricing",
   "/contact",
   "/terms",
@@ -52,6 +54,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/revizyon-takip",
   "/musteri-portali",
   "/online-brief",
+  "/demo",
   "/hakkimizda",
   "/gizlilik",
   "/kullanim-kosullari",

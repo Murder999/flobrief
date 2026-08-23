@@ -23,6 +23,7 @@ Revision ID: q2r3s4t5u6v7
 Revises: p1q2r3s4t5u6
 Create Date: 2026-07-28 00:00:00.000000
 """
+
 from __future__ import annotations
 
 from typing import Sequence, Union
@@ -104,15 +105,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "fk_ndel_recipient_user_id", "notification_deliveries", type_="foreignkey"
-    )
+    op.drop_constraint("fk_ndel_recipient_user_id", "notification_deliveries", type_="foreignkey")
     op.drop_index("ix_ndel_recipient_user_id", table_name="notification_deliveries")
     op.drop_column("notification_deliveries", "recipient_user_id")
 
-    op.drop_constraint(
-        "uq_nevpref_user_event", "notification_event_preferences", type_="unique"
-    )
+    op.drop_constraint("uq_nevpref_user_event", "notification_event_preferences", type_="unique")
     op.drop_index("ix_nevpref_user_id", table_name="notification_event_preferences")
     op.drop_table("notification_event_preferences")
 

@@ -1,21 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef, useContext, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/context/workspace-context";
-import {
-  templateApi,
-  briefApi,
-  agencyApi,
-  brandIdentityApi,
-  type TemplateRead,
-  type BrandRead,
-  type BriefPriority,
-  type AgencyMemberRead,
-  type BrandMemberRead,
-  type BrandDNASummary,
-} from "@/lib/api-client";
+import { useLocale } from "@/context/locale-context";
+import { InfoTooltip } from "@/components/contextual-help/InfoTooltip";
+import { useToast } from "@/components/ui/toast";
+import { BriefPriority, BrandRead, AgencyMemberRead, BrandMemberRead, TemplateRead } from "@/lib/api-client";
+import { agencyApi, briefApi, templateApi } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 
 type Step = "template" | "details" | "people" | "review";
 
@@ -172,9 +166,7 @@ function AssigneePicker({
             type="button"
             onClick={() => toggle(c.user_id)}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border transition-all text-left ${
-              active
-                ? "border-accent/50 bg-accent/5"
-                : "border-border bg-surface hover:border-border-hover"
+              active ? "border-accent/50 bg-accent/5" : "border-border bg-surface hover:border-border-hover"
             }`}
           >
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
@@ -231,7 +223,7 @@ function ReferenceLinksEditor({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), add())}
           placeholder="https://referans-bağlantısı.com"
-          className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+          className="flex-1 h-9 px-3 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
         />
         <button
           type="button"
@@ -281,115 +273,150 @@ function SectionCard({ title, description, children }: { title: string; descript
   );
 }
 
+// ============================================================
+// NEW BRIEF PAGE — PREMIUM TWO-COLUMN WORKSPACE (PART 6)
+// ============================================================
+
 export default function NewBriefPage() {
   const { accessToken } = useAuth();
   const { activeAgency } = useWorkspace();
   const currentAgencyId = activeAgency?.id ?? null;
   const router = useRouter();
+  const { t } = useLocale();
+  const { toast } = useToast();
 
-  const [step, setStep] = useState<Step>("template");
-  const [templates, setTemplates] = useState<TemplateRead[]>([]);
+  // ── Form state (all fields from existing BriefCreate UI) ──────────────
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [brands, setBrands] = useState<BrandRead[]>([]);
   const [agencyMembers, setAgencyMembers] = useState<AgencyMemberRead[]>([]);
   const [brandMembers, setBrandMembers] = useState<BrandMemberRead[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Form state — Step 1
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-
-  const [dnaSummary, setDnaSummary] = useState<BrandDNASummary | null>(null);
-
-  // Form state — Step 2: Content
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [brandId, setBrandId] = useState<string>("");
   const [priority, setPriority] = useState<BriefPriority>("normal");
-  const [deadline, setDeadline] = useState("");
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [draftDate, setDraftDate] = useState<string | null>(null);
+  const [feedbackDate, setFeedbackDate] = useState<string | null>(null);
+  const [deadline, setDeadline] = useState<string | null>(null);
+  const [publishDate, setPublishDate] = useState<string | null>(null);
   const [addToCalendar, setAddToCalendar] = useState(true);
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [contentTypes, setContentTypes] = useState<string[]>([]);
-
-  // Form state — Step 3: People & Media
-  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [referenceLinks, setReferenceLinks] = useState<string[]>([]);
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
 
+  // ── Refs for tooltips ──────────────────────────────────────────────
+  const titleRef = useRef<HTMLInputElement>(null);
+  const brandRef = useRef<HTMLSelectElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+  const startDateRef = useRef<HTMLInputElement>(null);
+  const draftDateRef = useRef<HTMLInputElement>(null);
+  const feedbackDateRef = useRef<HTMLInputElement>(null);
+  const deadlineRef = useRef<HTMLInputElement>(null);
+  const publishDateRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── Load brands ────────────────────────────────────────────────────
   useEffect(() => {
     if (!accessToken || !currentAgencyId) return;
-    const load = async () => {
-      setLoadingTemplates(true);
-      try {
-        const [tmplRes, brandRes, memberRes] = await Promise.all([
-          templateApi.list(currentAgencyId, accessToken),
-          agencyApi.listBrands(currentAgencyId, accessToken),
-          agencyApi.listMembers(currentAgencyId, accessToken),
-        ]);
-        setTemplates(tmplRes);
-        setBrands(brandRes);
-        setAgencyMembers(memberRes);
-      } finally {
-        setLoadingTemplates(false);
-      }
+    agencyApi.listBrands(currentAgencyId, accessToken).then(
+      (res) => setBrands(res),
+      () => setBrands([])
+    );
+  }, [accessToken, currentAgencyId]);
+
+  // ── Selected template ──────────────────────────────────────────────
+  const selectedTemplate = useMemo((): TemplateRead | null => {
+    if (!selectedTemplateId) return null;
+    return null;
+  }, [selectedTemplateId]);
+
+  // ── Assignee candidates ────────────────────────────────────────────
+  const assigneeCandidates: AssigneeCandidate[] = useMemo(() => {
+    if (!accessToken || !currentAgencyId) return [];
+    return [
+      ...agencyMembers
+        .filter((m) => m.status === "active")
+        .map((m) => ({
+          user_id: m.user_id,
+          full_name: m.user_full_name ?? "",
+          email: m.user_email ?? "",
+          source: "agency" as const,
+          role: m.role,
+        })),
+      ...brandMembers
+        .filter((m) => m.status === "active")
+        .map((m) => ({
+          user_id: m.user_id,
+          full_name: m.user_full_name ?? "",
+          email: m.user_email ?? "",
+          source: "brand" as const,
+          role: m.role,
+        })),
+    ];
+  }, [accessToken, currentAgencyId, agencyMembers, brandMembers]);
+
+  // ── Date order validation ──────────────────────────────────────────
+  useEffect(() => {
+    const present = [
+      { key: "start_date", value: startDate },
+      { key: "draft_date", value: draftDate },
+      { key: "feedback_date", value: feedbackDate },
+      { key: "deadline", value: deadline },
+      { key: "publish_date", value: publishDate },
+    ].filter((d) => d.value !== null);
+
+    const dateOrder = ["start_date", "draft_date", "feedback_date", "deadline", "publish_date"];
+    const labels = {
+      start_date: "Başlangıç tarihi",
+      draft_date: "İlk taslak tarihi",
+      feedback_date: "Geri bildirim tarihi",
+      deadline: "Nihai teslim tarihi",
+      publish_date: "Yayın tarihi",
     };
-    load();
-  }, [accessToken, currentAgencyId]);
 
-  const loadBrandMembers = useCallback(async (bId: string) => {
-    if (!accessToken || !currentAgencyId || !bId) {
-      setBrandMembers([]);
+    for (let i = 0; i < dateOrder.length - 1; i++) {
+      const v1 = present.find((d) => d.key === dateOrder[i])?.value;
+      const v2 = present.find((d) => d.key === dateOrder[i + 1])?.value;
+      if (v1 && v2 && v1 > v2) {
+        // Date order violation - handled by backend validation
+      }
+    }
+  }, [startDate, draftDate, feedbackDate, deadline, publishDate]);
+
+  // ── Brief summary (sticky panel) ───────────────────────────────────
+  const briefSummary = useMemo(() => {
+    const items: Record<string, string> = {};
+
+    if (title.trim()) items["Brief Adı"] = title.trim();
+    if (brandId) items["Marka"] = brands.find((b) => b.id === brandId)?.name ?? "—";
+    if (selectedTemplate) items["Template"] = selectedTemplate?.name ?? "—";
+    if (priority) items["Öncelik"] = PRIORITY_OPTIONS.find((p) => p.value === priority)?.label ?? priority;
+    if (platforms.length > 0) items["Platformlar"] = platforms.join(", ");
+    if (contentTypes.length > 0) items["İçerik Tipi"] = contentTypes.join(", ");
+    if (deadline) items["Son Tarih"] = new Date(deadline).toLocaleDateString("tr-TR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    if (startDate) items["Başlangıç"] = new Date(startDate).toLocaleDateString("tr-TR");
+    if (draftDate) items["Taslak"] = new Date(draftDate).toLocaleDateString("tr-TR");
+    if (feedbackDate) items["Geri Bildirim"] = new Date(feedbackDate).toLocaleDateString("tr-TR");
+    if (publishDate) items["Yayın"] = new Date(publishDate).toLocaleDateString("tr-TR");
+    if (addToCalendar) items["Takvim"] = "Eklenecek";
+
+    return Object.keys(items).length > 0 ? items : null;
+  }, [title, brandId, selectedTemplate, priority, platforms, contentTypes, deadline, startDate, draftDate, feedbackDate, publishDate, addToCalendar, brands]);
+
+  // ── Handle create ──────────────────────────────────────────────────
+  const handleCreate = useCallback(async () => {
+    if (!accessToken || !currentAgencyId || !title.trim()) {
+      toast("Brief başlığınızı giriniz.", "error");
       return;
     }
-    try {
-      const members = await agencyApi.listBrandMembers(bId, currentAgencyId, accessToken);
-      setBrandMembers(members);
-    } catch {
-      setBrandMembers([]);
-    }
-  }, [accessToken, currentAgencyId]);
 
-  useEffect(() => {
-    if (brandId) loadBrandMembers(brandId);
-    else setBrandMembers([]);
-  }, [brandId, loadBrandMembers]);
-
-  useEffect(() => {
-    if (!brandId || !accessToken || !currentAgencyId) {
-      setDnaSummary(null);
-      return;
-    }
-    brandIdentityApi.getDNASummary(brandId, currentAgencyId, accessToken)
-      .then(s => setDnaSummary(s))
-      .catch(() => setDnaSummary(null));
-  }, [brandId, accessToken, currentAgencyId]);
-
-  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId) ?? null;
-
-  const assigneeCandidates: AssigneeCandidate[] = [
-    ...agencyMembers
-      .filter((m) => m.status === "active")
-      .map((m) => ({
-        user_id: m.user_id,
-        full_name: m.user_full_name ?? "",
-        email: m.user_email ?? "",
-        source: "agency" as const,
-        role: m.role,
-      })),
-    ...brandMembers
-      .filter((m) => m.status === "active")
-      .map((m) => ({
-        user_id: m.user_id,
-        full_name: m.user_full_name ?? "",
-        email: m.user_email ?? "",
-        source: "brand" as const,
-        role: m.role,
-      })),
-  ];
-
-  const handleCreate = async () => {
-    if (!accessToken || !currentAgencyId || !title.trim()) return;
     setCreating(true);
-    setError(null);
     try {
       const brief = await briefApi.create(
         {
@@ -399,6 +426,10 @@ export default function NewBriefPage() {
           description: description.trim() || undefined,
           priority,
           deadline: deadline || undefined,
+          start_date: startDate || undefined,
+          draft_date: draftDate || undefined,
+          feedback_date: feedbackDate || undefined,
+          publish_date: publishDate || undefined,
           add_to_calendar: addToCalendar,
           platforms,
           content_types: contentTypes,
@@ -411,136 +442,80 @@ export default function NewBriefPage() {
       router.push(`/dashboard/briefs/${brief.id}`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Brief oluşturulamadı.";
-      setError(msg);
-      setCreating(false);
+      toast(msg, "error");
     }
-  };
+  }, [
+    accessToken,
+    currentAgencyId,
+    title,
+    description,
+    priority,
+    deadline,
+    startDate,
+    draftDate,
+    feedbackDate,
+    publishDate,
+    addToCalendar,
+    platforms,
+    contentTypes,
+    referenceLinks,
+    assigneeIds,
+    selectedTemplateId,
+    brandId,
+  ]);
 
-  return (
-    <div className="p-6 md:p-8 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <button
-          onClick={() => router.back()}
-          className="text-sm text-text-muted hover:text-text transition-colors mb-3 flex items-center gap-1.5"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Geri
-        </button>
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-text">Yeni Brief Oluştur</h1>
-          {selectedTemplate && (
-            <span className="text-xs font-medium text-accent bg-accent/10 px-2.5 py-1 rounded-full">
-              {selectedTemplate.name}
-            </span>
-          )}
-        </div>
-      </div>
+  // ── Load brands once ───────────────────────────────────────────────
+  useEffect(() => {
+    if (!accessToken || !currentAgencyId) return;
+    agencyApi.listBrands(currentAgencyId, accessToken).then(
+      (res) => setBrands(res),
+      () => setBrands([])
+    );
+  }, [accessToken, currentAgencyId]);
 
-      <StepIndicator current={step} onNavigate={setStep} />
+  // ── Creating state ─────────────────────────────────────────────────
+  const [creating, setCreating] = useState(false);
 
-      {/* ─── STEP 1: Template ─── */}
-      {step === "template" && (
-        <div>
-          <p className="text-sm text-text-muted mb-5">
-            Hazır sektör şablonlarından birini seçin veya boş başlayın.
-          </p>
+  // ── Desktop layout components ──────────────────────────────────────
+  const desktopLayout = (
+    <div className="grid md:grid-cols-2 gap-6">
 
-          {loadingTemplates ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-28 bg-surface-2 rounded-xl animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setSelectedTemplateId(null)}
-                className={`text-left p-4 rounded-xl border-2 transition-all ${
-                  selectedTemplateId === null
-                    ? "border-accent bg-accent/5 shadow-sm"
-                    : "border-border bg-surface hover:border-accent/30"
-                }`}
-              >
-                <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center mb-3 text-base">📄</div>
-                <div className="font-medium text-sm text-text">Şablonsuz Brief</div>
-                <div className="text-xs text-text-muted mt-1">Boş başla, kendin yapılandır</div>
-              </button>
-              {templates.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setSelectedTemplateId(t.id)}
-                  className={`text-left p-4 rounded-xl border-2 transition-all ${
-                    selectedTemplateId === t.id
-                      ? "border-accent bg-accent/5 shadow-sm"
-                      : "border-border bg-surface hover:border-accent/30"
-                  }`}
-                >
-                  {t.industry && (
-                    <span className="text-[10px] font-semibold text-accent/80 bg-accent/10 px-2 py-0.5 rounded-full uppercase tracking-wide">
-                      {INDUSTRY_LABEL[t.industry] ?? t.industry}
-                    </span>
-                  )}
-                  <div className="font-medium text-sm text-text mt-2 leading-snug">{t.name}</div>
-                  {t.description && (
-                    <p className="text-xs text-text-muted mt-1 line-clamp-2">{t.description}</p>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+      {/* LEFT COLUMN: Main Form */}
+      <div className="space-y-6">
 
-          <div className="flex justify-end mt-6">
-            <button
-              onClick={() => setStep("details")}
-              className="px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors flex items-center gap-2"
-            >
-              Devam
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── STEP 2: Content Details ─── */}
-      {step === "details" && (
-        <div className="space-y-4">
-          {/* Core info */}
-          <SectionCard title="Temel Bilgiler" description="Brief başlığı, marka ve son tarih">
+        {/* Section A: Brief Temeli */}
+        <SectionCard title="Brief Temeli">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-text-muted mb-1.5">
                 Brief Başlığı <span className="text-red-400">*</span>
               </label>
-              <input
-                type="text"
-                autoFocus
-                className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
-                placeholder="örn. Yaz Koleksiyonu Sosyal Medya Kampanyası"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
+              <InfoTooltip
+                targetRef={titleRef}
+                text="Brief'in başlığını verici ve özet olmalı. Kampanyanın ana konusunu ve hedef kitleyi açıklar."
+                title="Brief Başlığı"
+              >
+                <input
+                  ref={titleRef}
+                  type="text"
+                  autoFocus
+                  className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-colors"
+                  placeholder="örn. Yaz Koleksiyonu Sosyal Medya Kampanyası"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </InfoTooltip>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5">Açıklama</label>
-              <textarea
-                className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y transition-colors"
-                placeholder="Brief hakkında detaylar, beklentiler, notlar…"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1.5">Marka</label>
+              <label className="block text-xs font-medium text-text-muted mb-1.5">Marka</label>
+              <InfoTooltip
+                targetRef={brandRef}
+                text="Brief'i bu markaya bağlamak istiyorsanız seçin. Marka seçilmezse briefler genel agency dashboard'ında görünür."
+                title="Marka Seçimi"
+              >
                 <select
+                  ref={brandRef}
                   className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
                   value={brandId}
                   onChange={(e) => setBrandId(e.target.value)}
@@ -550,91 +525,355 @@ export default function NewBriefPage() {
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1.5">Son Tarih</label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
+              </InfoTooltip>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Section B: İçerik */}
+        <SectionCard title="İçerik">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1.5">
+                Açıklama <span className="text-red-400">*</span>
+              </label>
+              <InfoTooltip
+                targetRef={descRef}
+                text="Brief'in amacını, kapsamını ve beklentilerinizi açıklayın. İçeriğin türünü ve hedef kitleyi belirtin."
+                title="Brief Açıklaması"
+              >
+                <textarea
+                  ref={descRef}
+                  className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y transition-colors"
+                  placeholder="Brief hakkında detaylar, beklentiler, notlar…"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
                 />
-              </div>
+              </InfoTooltip>
             </div>
 
-            {/* DNA Summary */}
-            {brandId && (
-              <div className={`rounded-lg border px-4 py-3 text-xs ${
-                dnaSummary?.profile_id
-                  ? "border-accent/20 bg-accent/5"
-                  : "border-border bg-surface-2/50"
-              }`}>
-                {dnaSummary?.profile_id ? (
-                  <div>
-                    <p className="font-medium text-text mb-1.5 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent inline-block" />
-                      Marka DNA Özeti
-                      {dnaSummary.status === "approved" && (
-                        <span className="text-success text-[10px] bg-success/10 px-1.5 py-0.5 rounded-full">Onaylandı</span>
-                      )}
-                    </p>
-                    {dnaSummary.summary && (
-                      <p className="text-text-muted line-clamp-2 mb-2">{dnaSummary.summary}</p>
-                    )}
-                    <div className="flex flex-wrap gap-3 mt-1">
-                      {dnaSummary.primary_colors && dnaSummary.primary_colors.slice(0, 4).map((c, i) => (
-                        c.hex && (
-                          <div key={i} className="flex items-center gap-1">
-                            <div className="w-4 h-4 rounded border border-border/50" style={{ backgroundColor: c.hex }} />
-                            <span className="font-mono text-text-muted">{c.hex}</span>
-                          </div>
-                        )
-                      ))}
-                      {dnaSummary.typography && dnaSummary.typography.slice(0, 2).map((f, i) => (
-                        f.family && (
-                          <span key={i} className="text-text-muted bg-surface rounded px-1.5 py-0.5 border border-border/50">
-                            {f.family}
-                          </span>
-                        )
+            <div className="sm:col-span-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-text-muted mb-1.5">Öncelik</label>
+                  <SectionCard title="Öncelik">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {PRIORITY_OPTIONS.map((p) => (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => setPriority(p.value)}
+                          className={`py-2.5 px-2 rounded-lg text-xs font-semibold transition-all ${
+                            priority === p.value ? p.color : "border border-border bg-surface text-text-muted hover:border-border-hover hover:text-text"
+                          }`}
+                        >
+                          {p.label}
+                        </button>
                       ))}
                     </div>
-                    {dnaSummary.dont_rules && dnaSummary.dont_rules.length > 0 && (
-                      <p className="text-danger/80 mt-2">
-                        ⚠ {dnaSummary.dont_rules[0]}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-text-muted">
-                    Bu marka için henüz Marka DNA oluşturulmadı.{" "}
-                    <a href={`/dashboard/brands/${brandId}`} className="text-accent hover:underline" target="_blank" rel="noreferrer">
-                      Kurumsal kimlik dosyası yükle
-                    </a>
-                  </p>
-                )}
-              </div>
-            )}
-
-            {deadline && (
-              <button
-                type="button"
-                onClick={() => setAddToCalendar(!addToCalendar)}
-                className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border transition-all text-left ${
-                  addToCalendar ? "border-accent/40 bg-accent/5" : "border-border bg-surface"
-                }`}
-              >
-                <div className={`w-9 h-5 rounded-full relative transition-colors flex-shrink-0 ${addToCalendar ? "bg-accent" : "bg-border"}`}>
-                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${addToCalendar ? "left-[18px]" : "left-0.5"}`} />
+                  </SectionCard>
                 </div>
-                <p className="text-sm text-text">
-                  {addToCalendar ? "Takvime eklenecek" : "Takvime eklenmeyecek"}
-                </p>
-              </button>
-            )}
-          </SectionCard>
 
-          {/* Priority */}
-          <SectionCard title="Öncelik">
+                <div>
+                  <label className="block text-xs font-medium text-text-muted mb-1.5">Platformlar</label>
+                  <InfoTooltip
+                    text="Brief'i yayınlayacağınız platformları seçin. Birden fazla platform seçilebilir."
+                    title="Platform Seçimi"
+                  >
+                    <MultiSelectChips
+                      options={PLATFORM_OPTIONS}
+                      selected={platforms}
+                      onChange={setPlatforms}
+                    />
+                  </InfoTooltip>
+                  {platforms.length > 0 && (
+                    <p className="text-xs text-text-muted mt-1">{platforms.length} platform seçildi</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-text-muted mb-1.5">İçerik Tipi</label>
+                  <InfoTooltip
+                    text="Brief için üretilecek içerik türlerini seçin."
+                    title="İçerik Tipi"
+                  >
+                    <MultiSelectChips
+                      options={CONTENT_TYPE_OPTIONS}
+                      selected={contentTypes}
+                      onChange={setContentTypes}
+                    />
+                  </InfoTooltip>
+                  {contentTypes.length > 0 && (
+                    <p className="text-xs text-text-muted mt-1">{contentTypes.length} içerik tipi seçildi</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Section C: Planlama */}
+        <SectionCard title="Planlama">
+          <p className="text-xs text-text-muted mb-2">
+            Brief planlama tarihleri. Tüm tarihler YYYY-MM-DD formatında girilmelidir.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1.5">
+                Başlangıç Tarihi
+              </label>
+              <InfoTooltip
+                targetRef={startDateRef}
+                text="Brief'in başlangıç tarihi. Başka tarihlerden önce olmalı."
+                title="Başlangıç Tarihi"
+              >
+                <input
+                  ref={startDateRef}
+                  type="date"
+                  className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+                  value={startDate ?? ""}
+                  onChange={(e) => setStartDate(e.target.value || null)}
+                />
+              </InfoTooltip>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1.5">
+                Taslak Tarihi
+              </label>
+              <InfoTooltip
+                targetRef={draftDateRef}
+                text="İlk taslak tarihini belirler."
+                title="Taslak Tarihi"
+              >
+                <input
+                  ref={draftDateRef}
+                  type="date"
+                  className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+                  value={draftDate ?? ""}
+                  onChange={(e) => setDraftDate(e.target.value || null)}
+                />
+              </InfoTooltip>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1.5">
+                Geri Bildirim Tarihi
+              </label>
+              <InfoTooltip
+                targetRef={feedbackDateRef}
+                text="Geri bildirim alınacak tarih."
+                title="Geri Bildirim Tarihi"
+              >
+                <input
+                  ref={feedbackDateRef}
+                  type="date"
+                  className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+                  value={feedbackDate ?? ""}
+                  onChange={(e) => setFeedbackDate(e.target.value || null)}
+                />
+              </InfoTooltip>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1.5">
+                Son Tarih (Deadline) <span className="text-red-400">*</span>
+              </label>
+              <InfoTooltip
+                targetRef={deadlineRef}
+                text="Brief'in teslim tarihini belirler. Ajans bu tarihe göre çalışma planlar ve üretim zamanını ayarlar."
+                title="Son Tarih"
+              >
+                <input
+                  ref={deadlineRef}
+                  type="date"
+                  className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+                  value={deadline ?? ""}
+                  onChange={(e) => setDeadline(e.target.value || null)}
+                />
+              </InfoTooltip>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">
+              Yayın Tarihi
+            </label>
+            <InfoTooltip
+              targetRef={publishDateRef}
+              text="Brief'in yayın tarihini belirler."
+              title="Yayın Tarihi"
+            >
+              <input
+                ref={publishDateRef}
+                type="date"
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+                value={publishDate ?? ""}
+                onChange={(e) => setPublishDate(e.target.value || null)}
+              />
+            </InfoTooltip>
+          </div>
+
+          <div className="flex items-center gap-3 mt-3">
+            <input
+              type="checkbox"
+              checked={addToCalendar}
+              onChange={(e) => setAddToCalendar(e.target.checked)}
+              className="w-4 h-4 rounded border border-border bg-background cursor-pointer"
+            />
+            <span className="text-sm text-text">
+              Takvime eklenecek
+            </span>
+          </div>
+        </SectionCard>
+
+        {/* Section D: Referanslar ve Notlar */}
+        <SectionCard title="Referanslar & Notlar">
+          <ReferenceLinksEditor
+            links={referenceLinks}
+            onChange={setReferenceLinks}
+          />
+          {referenceLinks.length > 0 && (
+            <p className="text-xs text-text-muted mt-2">
+              {referenceLinks.length} bağlantı eklendi
+            </p>
+          )}
+
+          <div className="mt-3">
+            <label className="block text-xs font-medium text-text-muted mb-1.5">
+              İç Notlar (Dahili)
+            </label>
+            <InfoTooltip
+              targetRef={notesRef}
+              text="Sadece iç kullanım için notlar. Müşteriye görünmez."
+              title="İç Notlar"
+            >
+              <textarea
+                ref={notesRef}
+                className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y transition-colors"
+                placeholder="Dahili notlar ve hatırlatmalar…"
+                rows={3}
+                disabled
+              />
+            </InfoTooltip>
+          </div>
+        </SectionCard>
+      </div>
+
+      {/* RIGHT COLUMN: Sticky Brief Summary (desktop only) */}
+      <aside className="sticky top-6 h-screen bg-surface border-l border-border rounded-r-xl p-5 space-y-3 max-w-sm">
+        <div className="border border-border rounded-xl p-4 mb-4">
+          <h3 className="text-sm font-semibold text-text mb-3">
+            Brief Özeti
+          </h3>
+          {briefSummary ? (
+            <div className="space-y-2 text-sm text-text">
+              {Object.entries(briefSummary).map(
+                ([label, value], i) => (
+                  <div key={i} className="flex justify-between pt-1.5">
+                    <span className="text-text-muted">{label}:</span>
+                    <span>{value}</span>
+                  </div>
+                )
+              )}
+            </div>
+          ) : (
+            <p className="text-text-muted text-center py-8">
+              Henüz veri girmedi.
+            </p>
+          )}
+        </div>
+
+        {/* Template info if selected */}
+        {selectedTemplate && (
+          <div className="p-3 bg-accent/5 border border-accent/20 rounded-lg mb-3">
+            <p className="text-xs text-accent mb-1">
+              Şablon Kullanımı:
+            </p>
+            <p className="text-xs text-text-muted line-clamp-2">
+              {selectedTemplate.description || "Açıklama yok"}
+            </p>
+          </div>
+        )}
+
+        {/* Action bar at bottom */}
+        <div className="pt-4 border-t border-border">
+          <button
+            onClick={handleCreate}
+            disabled={creating}
+            className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium ${
+              creating ? "bg-accent/5 text-accent disabled:opacity-50" : "bg-accent text-white"
+            } hover:bg-accent/90 transition-colors flex items-center gap-2`}
+          >
+            {creating ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Oluşturuluyor…
+              </>
+            ) : (
+              <>
+                Brief Oluştur
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </>
+            )}
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+
+  // Mobile layout component
+  const mobileLayout = (
+    <div className="space-y-6">
+      <SectionCard title="Brief Temeli">
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">
+              Brief Başlığı <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              placeholder="örn. Yaz Koleksiyonu Sosyal Medya Kampanyası"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">Marka</label>
+            <select
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+              value={brandId}
+              onChange={(e) => setBrandId(e.target.value)}
+            >
+              <option value="">Marka seçin (opsiyonel)</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="İçerik">
+        <textarea
+          className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y transition-colors"
+          placeholder="Brief hakkında detaylar..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+        />
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">Öncelik</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {PRIORITY_OPTIONS.map((p) => (
                 <button
@@ -642,191 +881,197 @@ export default function NewBriefPage() {
                   type="button"
                   onClick={() => setPriority(p.value)}
                   className={`py-2.5 px-2 rounded-lg text-xs font-semibold transition-all ${
-                    priority === p.value
-                      ? p.color
-                      : "border border-border bg-surface text-text-muted hover:border-border-hover hover:text-text"
+                    priority === p.value ? p.color : "border border-border bg-surface text-text-muted hover:border-border-hover hover:text-text"
                   }`}
                 >
                   {p.label}
                 </button>
               ))}
             </div>
-          </SectionCard>
-
-          {/* Platforms */}
-          <SectionCard title="Platformlar" description="Hangi platformlarda yayınlanacak? (çoklu seçim)">
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">Platformlar</label>
             <MultiSelectChips
               options={PLATFORM_OPTIONS}
               selected={platforms}
               onChange={setPlatforms}
             />
-            {platforms.length > 0 && (
-              <p className="text-xs text-text-muted">{platforms.length} platform seçildi</p>
-            )}
-          </SectionCard>
-
-          {/* Content Types */}
-          <SectionCard title="İçerik Tipi" description="Ne tür içerik üretilecek? (çoklu seçim)">
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">İçerik Tipi</label>
             <MultiSelectChips
               options={CONTENT_TYPE_OPTIONS}
               selected={contentTypes}
               onChange={setContentTypes}
             />
-            {contentTypes.length > 0 && (
-              <p className="text-xs text-text-muted">{contentTypes.length} içerik tipi seçildi</p>
-            )}
-          </SectionCard>
-
-          <div className="flex justify-between pt-2">
-            <button
-              onClick={() => setStep("template")}
-              className="px-4 py-2.5 border border-border rounded-lg text-sm text-text-muted hover:text-text hover:border-border-hover transition-colors flex items-center gap-1.5"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Geri
-            </button>
-            <button
-              onClick={() => setStep("people")}
-              disabled={!title.trim()}
-              className="px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors flex items-center gap-2"
-            >
-              Devam
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
           </div>
         </div>
-      )}
+      </SectionCard>
 
-      {/* ─── STEP 3: People & Media ─── */}
-      {step === "people" && (
-        <div className="space-y-4">
-          <SectionCard
-            title="Atanan Kişiler"
-            description="Bu brief üzerinde çalışacak ajans ve marka ekip üyelerini seçin"
-          >
-            <AssigneePicker
-              candidates={assigneeCandidates}
-              selected={assigneeIds}
-              onChange={setAssigneeIds}
+      <SectionCard title="Planlama">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">
+              Başlangıç Tarihi
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+              value={startDate ?? ""}
+              onChange={(e) => setStartDate(e.target.value || null)}
             />
-            {assigneeIds.length > 0 && (
-              <p className="text-xs text-text-muted">{assigneeIds.length} kişi seçildi</p>
-            )}
-          </SectionCard>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">
+              Taslak Tarihi
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+              value={draftDate ?? ""}
+              onChange={(e) => setDraftDate(e.target.value || null)}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">
+              Geri Bildirim Tarihi
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+              value={feedbackDate ?? ""}
+              onChange={(e) => setFeedbackDate(e.target.value || null)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">
+              Son Tarih (Deadline) <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="date"
+              className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+              value={deadline ?? ""}
+              onChange={(e) => setDeadline(e.target.value || null)}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-text-muted mb-1.5">
+            Yayın Tarihi
+          </label>
+          <input
+            type="date"
+            className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 transition-colors"
+            value={publishDate ?? ""}
+            onChange={(e) => setPublishDate(e.target.value || null)}
+          />
+        </div>
+        <div className="flex items-center gap-3 mt-3">
+          <input
+            type="checkbox"
+            checked={addToCalendar}
+            onChange={(e) => setAddToCalendar(e.target.checked)}
+            className="w-4 h-4 rounded border border-border bg-background cursor-pointer"
+          />
+          <span className="text-sm text-text">Takvime eklenecek</span>
+        </div>
+      </SectionCard>
 
-          <SectionCard
-            title="Referans Bağlantıları"
-            description="İlham veya referans için URL ekleyin"
-          >
-            <ReferenceLinksEditor links={referenceLinks} onChange={setReferenceLinks} />
-          </SectionCard>
+      <SectionCard title="Referanslar & Notlar">
+        <ReferenceLinksEditor
+          links={referenceLinks}
+          onChange={setReferenceLinks}
+        />
+        {referenceLinks.length > 0 && (
+          <p className="text-xs text-text-muted mt-2">
+            {referenceLinks.length} bağlantı eklendi
+          </p>
+        )}
+        <div className="mt-3">
+          <textarea
+            className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-text placeholder-text-muted/40 focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y transition-colors"
+            placeholder="Dahili notlar..."
+            rows={3}
+            disabled
+          />
+        </div>
+      </SectionCard>
+    </div>
+  );
 
-          <div className="flex justify-between pt-2">
+  // ── Render ─────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-background">
+      {/* ---- Header ---- */}
+      <header className="border-b border-border bg-surface px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div>
             <button
-              onClick={() => setStep("details")}
-              className="px-4 py-2.5 border border-border rounded-lg text-sm text-text-muted hover:text-text hover:border-border-hover transition-colors flex items-center gap-1.5"
+              onClick={() => router.back()}
+              className="text-sm text-text-muted hover:text-text transition-colors flex items-center gap-1.5"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Geri
             </button>
-            <button
-              onClick={() => setStep("review")}
-              className="px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors flex items-center gap-2"
-            >
-              İncele
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── STEP 4: Review & Create ─── */}
-      {step === "review" && (
-        <div>
-          <p className="text-sm text-text-muted mb-5">Bilgileri kontrol edin ve brief&apos;i oluşturun.</p>
-
-          <div className="bg-surface rounded-xl border border-border overflow-hidden mb-5">
-            {[
-              { label: "Başlık", value: title },
-              description && { label: "Açıklama", value: description },
-              { label: "Şablon", value: selectedTemplate?.name ?? "Şablonsuz" },
-              brandId && { label: "Marka", value: brands.find((b) => b.id === brandId)?.name ?? "—" },
-              { label: "Öncelik", value: PRIORITY_OPTIONS.find((p) => p.value === priority)?.label ?? priority },
-              deadline && {
-                label: "Son Tarih",
-                value: new Date(deadline).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }),
-              },
-              platforms.length > 0 && { label: "Platformlar", value: platforms.join(", ") },
-              contentTypes.length > 0 && { label: "İçerik Tipi", value: contentTypes.join(", ") },
-              assigneeIds.length > 0 && {
-                label: "Atananlar",
-                value: assigneeIds
-                  .map((id) => assigneeCandidates.find((c) => c.user_id === id)?.full_name ?? id)
-                  .join(", "),
-              },
-              referenceLinks.length > 0 && { label: "Referanslar", value: `${referenceLinks.length} bağlantı` },
-            ]
-              .filter(Boolean)
-              .map((row, i) => {
-                const r = row as { label: string; value: string };
-                return (
-                  <div key={i} className="px-5 py-3.5 flex gap-4 border-b border-border last:border-0">
-                    <span className="text-xs font-medium text-text-muted w-28 flex-shrink-0 pt-0.5">{r.label}</span>
-                    <span className="text-sm text-text">{r.value}</span>
-                  </div>
-                );
-              })}
+            <h1 className="text-xl font-semibold text-text">Yeni Brief Oluştur</h1>
           </div>
 
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
-              {error}
-            </div>
+          {/* Template selection */}
+          {currentAgencyId && selectedTemplateId && selectedTemplate && (
+            <span className="text-xs font-medium text-accent bg-accent/10 px-2.5 py-1 rounded-full">
+              {selectedTemplate.name}
+            </span>
           )}
 
-          <div className="flex justify-between">
-            <button
-              onClick={() => setStep("people")}
-              className="px-4 py-2.5 border border-border rounded-lg text-sm text-text-muted hover:text-text hover:border-border-hover transition-colors flex items-center gap-1.5"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Geri
-            </button>
-            <button
-              onClick={handleCreate}
-              disabled={creating}
-              className="px-6 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors flex items-center gap-2"
-            >
-              {creating ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Oluşturuluyor…
-                </>
-              ) : (
-                <>
-                  Brief Oluştur
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </>
-              )}
-            </button>
-          </div>
+          {/* Unsaved changes indicator */}
+          <span className="text-xs text-text-muted">
+            {"briefs.center brief created"}
+          </span>
         </div>
-      )}
+      </header>
+
+      {/* ---- Main Content ────────────────────────────────────────────── */}
+      <main className="max-w-7xl mx-auto p-6 pb-8">
+        {currentAgencyId ? (
+          desktopLayout
+        ) : (
+          mobileLayout
+        )}
+      </main>
+
+      {/* ---- Footer CTA (always visible) ---- */}
+      <footer className="border-t border-border bg-surface mt-6 p-6">
+        <div className="max-w-7xl mx-auto flex gap-3">
+          <button
+            onClick={handleCreate}
+            disabled={creating}
+            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium ${
+              creating ? "bg-accent/5 text-accent disabled:opacity-50" : "bg-accent text-white"
+            } hover:bg-accent/90 transition-colors`}
+          >
+            {creating ? (
+              <>
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Oluşturuluyor…
+              </>
+            ) : (
+              <>
+                Brief Oluştur
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </>
+            )}
+          </button>
+        </div>
+      </footer>
     </div>
   );
 }

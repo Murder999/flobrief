@@ -1107,7 +1107,11 @@ export interface BriefCreate {
   title: string;
   description?: string | null;
   priority?: BriefPriority;
+  start_date?: string | null;
+  draft_date?: string | null;
+  feedback_date?: string | null;
   deadline?: string | null;
+  publish_date?: string | null;
   add_to_calendar?: boolean;
   platforms?: string[];
   content_types?: string[];
@@ -2217,6 +2221,26 @@ export const activityApi = {
 export type ReportType = "monthly_brand" | "agency_overview" | "campaign_summary";
 export type ReportStatus = "draft" | "generated" | "shared" | "archived";
 
+export interface ReportMetrics {
+  scope_version?: number;
+  created_briefs_count?: number;
+  approved_briefs_count?: number;
+  revision_requested_count?: number;
+  pending_approvals_count?: number;
+  published_calendar_items_count?: number;
+  planned_calendar_items_count?: number;
+  average_approval_time_hours?: number | null;
+  most_revised_briefs?: Array<{
+    brief_id: string;
+    brief_title?: string;
+    revision_count: number;
+  }>;
+  calendar_status_distribution?: Record<string, number>;
+  platform_distribution?: Record<string, number>;
+  period_start?: string;
+  period_end?: string;
+}
+
 export interface ReportRead {
   id: string;
   agency_id: string;
@@ -2234,7 +2258,7 @@ export interface ReportRead {
 export interface ReportSnapshotRead {
   id: string;
   report_id: string;
-  metrics: Record<string, unknown>;
+  metrics: ReportMetrics;
   narrative: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -2264,7 +2288,7 @@ export interface PublicReportView {
   period_start: string;
   period_end: string;
   title: string;
-  metrics: Record<string, unknown>;
+  metrics: ReportMetrics;
   narrative: Record<string, unknown> | null;
   generated_at: string;
   allow_pdf_download: boolean;
@@ -2275,6 +2299,21 @@ export interface ReportListResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface BrandReportWithSnapshot {
+  id: string;
+  report_type: ReportType;
+  period_start: string;
+  period_end: string;
+  status: ReportStatus;
+  title: string;
+  created_at: string;
+  snapshot: {
+    metrics: ReportMetrics;
+    narrative: Record<string, unknown> | null;
+    created_at: string;
+  } | null;
 }
 
 export interface ReportCreate {
@@ -2358,6 +2397,18 @@ export const reportApi = {
     ),
 
   pdfUrl: (reportId: string) => `${API_BASE}/api/v1/reports/${reportId}/pdf`,
+
+  downloadPdf: async (reportId: string, agencyId: string, accessToken: string): Promise<Blob> => {
+    const response = await fetch(`${API_BASE}/api/v1/reports/${reportId}/pdf`, {
+      headers: { Authorization: `Bearer ${accessToken}`, "X-Agency-ID": agencyId },
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new ApiError(response.status, err?.detail || `HTTP ${response.status}`, err);
+    }
+    return response.blob();
+  },
 };
 
 export const publicReportApi = {
@@ -4028,6 +4079,9 @@ export const brandPortalApi = {
 
   listReports: (accessToken: string) =>
     request<ReportRead[]>("/api/v1/brand-portal/reports", {}, accessToken),
+
+  getReport: (reportId: string, accessToken: string) =>
+    request<BrandReportWithSnapshot>(`/api/v1/brand-portal/reports/${reportId}`, {}, accessToken),
 
   getProfile: (accessToken: string) =>
     request<UserProfileRead>("/api/v1/brand-portal/profile", {}, accessToken),

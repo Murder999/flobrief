@@ -29,6 +29,7 @@ Two modes:
 Safety: refuses to run unless DATABASE_URL resolves to a local host and
 APP_ENV is not "production" -- mirrors e2e_seed_time_tracking.py.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -96,16 +97,18 @@ async def cleanup_by_email() -> None:
             user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is None:
                 continue
-            member = (await db.execute(
-                select(AgencyMember).where(AgencyMember.user_id == user.id)
-            )).scalar_one_or_none()
+            member = (
+                await db.execute(select(AgencyMember).where(AgencyMember.user_id == user.id))
+            ).scalar_one_or_none()
             if member is not None:
                 agency = await db.get(Agency, member.agency_id)
                 if agency is not None:
                     await db.delete(agency)
-                brands = (await db.execute(
-                    select(Brand).where(Brand.agency_id == member.agency_id)
-                )).scalars().all()
+                brands = (
+                    (await db.execute(select(Brand).where(Brand.agency_id == member.agency_id)))
+                    .scalars()
+                    .all()
+                )
                 for brand in brands:
                     await db.delete(brand)
         await db.commit()
@@ -122,9 +125,9 @@ async def cleanup_by_agency_id(agency_id: uuid.UUID) -> None:
         agency = await db.get(Agency, agency_id)
         if agency is not None:
             await db.delete(agency)  # cascades agency_members/time_entries/client_invoices/...
-        brands = (await db.execute(
-            select(Brand).where(Brand.agency_id == agency_id)
-        )).scalars().all()
+        brands = (
+            (await db.execute(select(Brand).where(Brand.agency_id == agency_id))).scalars().all()
+        )
         for brand in brands:
             await db.delete(brand)
         await db.commit()
@@ -141,120 +144,221 @@ async def seed_db() -> dict[str, uuid.UUID]:
     today = now.date()
     async with AsyncSessionLocal() as db:
         agency = Agency(
-            id=uuid.uuid4(), name="E2E Finance Agency",
+            id=uuid.uuid4(),
+            name="E2E Finance Agency",
             slug=f"e2e-finance-agency-{uuid.uuid4().hex[:8]}",
             status=AgencyStatus.ACTIVE.value,
         )
         brand_a = Brand(
-            id=uuid.uuid4(), agency_id=agency.id, name="E2E Finance Brand A",
-            slug=f"e2e-finance-brand-a-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            name="E2E Finance Brand A",
+            slug=f"e2e-finance-brand-a-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
             currency="TRY",
         )
         brand_b = Brand(
-            id=uuid.uuid4(), agency_id=agency.id, name="E2E Finance Brand B",
-            slug=f"e2e-finance-brand-b-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            name="E2E Finance Brand B",
+            slug=f"e2e-finance-brand-b-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
             currency="TRY",
         )
         db.add_all([agency, brand_a, brand_b])
 
         owner = User(
-            id=uuid.uuid4(), email=OWNER_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Finance Owner", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=OWNER_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Finance Owner",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         brand_a_user = User(
-            id=uuid.uuid4(), email=BRAND_A_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Finance Brand A Owner", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=BRAND_A_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Finance Brand A Owner",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         brand_b_user = User(
-            id=uuid.uuid4(), email=BRAND_B_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Finance Brand B Owner", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=BRAND_B_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Finance Brand B Owner",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         db.add_all([owner, brand_a_user, brand_b_user])
         await db.flush()
 
-        db.add_all([
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=owner.id,
-                role=AgencyMemberRole.OWNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=brand_a.id, user_id=brand_a_user.id,
-                role=BrandMemberRole.BRAND_OWNER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=brand_b.id, user_id=brand_b_user.id,
-                role=BrandMemberRole.BRAND_OWNER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-        ])
+        db.add_all(
+            [
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=owner.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=brand_a.id,
+                    user_id=brand_a_user.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=brand_b.id,
+                    user_id=brand_b_user.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+            ]
+        )
 
         commercial_terms = CommercialTerms(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand_a.id,
-            billing_model="hourly", currency="TRY", hourly_rate_cents=HOURLY_RATE_CENTS,
-            payment_terms_days=30, tax_rate_bps=2000,
-            valid_from=today - timedelta(days=60), active=True, created_by_id=owner.id,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand_a.id,
+            billing_model="hourly",
+            currency="TRY",
+            hourly_rate_cents=HOURLY_RATE_CENTS,
+            payment_terms_days=30,
+            tax_rate_bps=2000,
+            valid_from=today - timedelta(days=60),
+            active=True,
+            created_by_id=owner.id,
         )
         cost_rate = MemberCostRate(
-            id=uuid.uuid4(), agency_id=agency.id, user_id=owner.id,
-            currency="TRY", hourly_cost_cents=DISTINCTIVE_COST_RATE_CENTS,
-            valid_from=today - timedelta(days=60), active=True, created_by_id=owner.id,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            user_id=owner.id,
+            currency="TRY",
+            hourly_cost_cents=DISTINCTIVE_COST_RATE_CENTS,
+            valid_from=today - timedelta(days=60),
+            active=True,
+            created_by_id=owner.id,
         )
         db.add_all([commercial_terms, cost_rate])
         await db.flush()
 
         entry_1 = TimeEntry(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand_a.id, user_id=owner.id,
-            category="design", description="E2E billable work block 1",
-            started_at=now - timedelta(hours=3), ended_at=now - timedelta(hours=1),
-            duration_seconds=7200, billable=True, source="manual", locked=True,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand_a.id,
+            user_id=owner.id,
+            category="design",
+            description="E2E billable work block 1",
+            started_at=now - timedelta(hours=3),
+            ended_at=now - timedelta(hours=1),
+            duration_seconds=7200,
+            billable=True,
+            source="manual",
+            locked=True,
         )
         entry_2 = TimeEntry(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand_a.id, user_id=owner.id,
-            category="design", description="E2E billable work block 2",
-            started_at=now - timedelta(hours=1), ended_at=now,
-            duration_seconds=3600, billable=True, source="manual", locked=True,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand_a.id,
+            user_id=owner.id,
+            category="design",
+            description="E2E billable work block 2",
+            started_at=now - timedelta(hours=1),
+            ended_at=now,
+            duration_seconds=3600,
+            billable=True,
+            source="manual",
+            locked=True,
         )
         db.add_all([entry_1, entry_2])
 
         sent_invoice_a = ClientInvoice(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand_a.id,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand_a.id,
             commercial_terms_id=commercial_terms.id,
             invoice_number=f"E2E-SENT-A-{uuid.uuid4().hex[:6]}",
-            document_type="draft_invoice", issue_date=today, due_date=today + timedelta(days=30),
-            currency="TRY", subtotal_cents=300_000, discount_cents=0, tax_cents=60_000,
-            total_cents=360_000, amount_paid_cents=0, status="sent",
-            created_by_id=owner.id, approved_by_id=owner.id, approved_at=now, sent_at=now,
+            document_type="draft_invoice",
+            issue_date=today,
+            due_date=today + timedelta(days=30),
+            currency="TRY",
+            subtotal_cents=300_000,
+            discount_cents=0,
+            tax_cents=60_000,
+            total_cents=360_000,
+            amount_paid_cents=0,
+            status="sent",
+            created_by_id=owner.id,
+            approved_by_id=owner.id,
+            approved_at=now,
+            sent_at=now,
         )
         draft_invoice_a = ClientInvoice(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand_a.id,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand_a.id,
             commercial_terms_id=commercial_terms.id,
             invoice_number=f"E2E-DRAFT-A-{uuid.uuid4().hex[:6]}",
-            document_type="draft_invoice", issue_date=today, due_date=today + timedelta(days=30),
-            currency="TRY", subtotal_cents=100_000, discount_cents=0, tax_cents=20_000,
-            total_cents=120_000, amount_paid_cents=0, status="draft",
+            document_type="draft_invoice",
+            issue_date=today,
+            due_date=today + timedelta(days=30),
+            currency="TRY",
+            subtotal_cents=100_000,
+            discount_cents=0,
+            tax_cents=20_000,
+            total_cents=120_000,
+            amount_paid_cents=0,
+            status="draft",
             created_by_id=owner.id,
         )
         sent_invoice_b = ClientInvoice(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand_b.id,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand_b.id,
             invoice_number=f"E2E-SENT-B-{uuid.uuid4().hex[:6]}",
-            document_type="draft_invoice", issue_date=today, due_date=today + timedelta(days=30),
-            currency="TRY", subtotal_cents=200_000, discount_cents=0, tax_cents=40_000,
-            total_cents=240_000, amount_paid_cents=0, status="sent",
-            created_by_id=owner.id, approved_by_id=owner.id, approved_at=now, sent_at=now,
+            document_type="draft_invoice",
+            issue_date=today,
+            due_date=today + timedelta(days=30),
+            currency="TRY",
+            subtotal_cents=200_000,
+            discount_cents=0,
+            tax_cents=40_000,
+            total_cents=240_000,
+            amount_paid_cents=0,
+            status="sent",
+            created_by_id=owner.id,
+            approved_by_id=owner.id,
+            approved_at=now,
+            sent_at=now,
         )
         db.add_all([sent_invoice_a, draft_invoice_a, sent_invoice_b])
         await db.flush()
 
-        db.add(ClientInvoiceLine(
-            id=uuid.uuid4(), invoice_id=sent_invoice_a.id, source_type="manual",
-            description="E2E sent invoice line", quantity=3, unit="saat",
-            unit_price_cents=HOURLY_RATE_CENTS, tax_rate_bps=2000, discount_cents=0,
-            subtotal_cents=300_000, tax_cents=60_000, total_cents=360_000,
-            billing_rate_snapshot_cents=HOURLY_RATE_CENTS,
-            cost_rate_snapshot_cents=DISTINCTIVE_COST_RATE_CENTS,
-        ))
+        db.add(
+            ClientInvoiceLine(
+                id=uuid.uuid4(),
+                invoice_id=sent_invoice_a.id,
+                source_type="manual",
+                description="E2E sent invoice line",
+                quantity=3,
+                unit="saat",
+                unit_price_cents=HOURLY_RATE_CENTS,
+                tax_rate_bps=2000,
+                discount_cents=0,
+                subtotal_cents=300_000,
+                tax_cents=60_000,
+                total_cents=360_000,
+                billing_rate_snapshot_cents=HOURLY_RATE_CENTS,
+                cost_rate_snapshot_cents=DISTINCTIVE_COST_RATE_CENTS,
+            )
+        )
         await db.commit()
 
         return {

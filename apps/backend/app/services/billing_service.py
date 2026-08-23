@@ -54,6 +54,7 @@ class BillingService:
         buyer_email: str,
         buyer_name: str,
         buyer_id: str,
+        buyer_ip: str,
         yearly: bool = False,
     ) -> dict:
         """Returns checkout token and payment page URL for iyzico checkout form."""
@@ -87,6 +88,7 @@ class BillingService:
                 buyer_email=buyer_email,
                 buyer_name=buyer_name,
                 buyer_id=buyer_id,
+                buyer_ip=buyer_ip,
                 basket_item_name=plan.name,
                 basket_item_id=str(plan_id),
                 callback_url=callback_url,

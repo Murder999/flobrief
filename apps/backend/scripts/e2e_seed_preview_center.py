@@ -15,6 +15,7 @@ Two modes:
 Safety: refuses to run unless DATABASE_URL resolves to a local host and
 APP_ENV is not "production" — mirrors e2e_seed_brief_workspace.py.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -87,16 +88,18 @@ async def cleanup_by_email() -> None:
             user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is None:
                 continue
-            member = (await db.execute(
-                select(AgencyMember).where(AgencyMember.user_id == user.id)
-            )).scalar_one_or_none()
+            member = (
+                await db.execute(select(AgencyMember).where(AgencyMember.user_id == user.id))
+            ).scalar_one_or_none()
             if member is not None:
                 agency = await db.get(Agency, member.agency_id)
                 if agency is not None:
                     await db.delete(agency)
-                brands = (await db.execute(
-                    select(Brand).where(Brand.agency_id == member.agency_id)
-                )).scalars().all()
+                brands = (
+                    (await db.execute(select(Brand).where(Brand.agency_id == member.agency_id)))
+                    .scalars()
+                    .all()
+                )
                 for brand in brands:
                     await db.delete(brand)
         await db.commit()
@@ -113,9 +116,9 @@ async def cleanup_by_agency_id(agency_id: uuid.UUID) -> None:
         agency = await db.get(Agency, agency_id)
         if agency is not None:
             await db.delete(agency)
-        brands = (await db.execute(
-            select(Brand).where(Brand.agency_id == agency_id)
-        )).scalars().all()
+        brands = (
+            (await db.execute(select(Brand).where(Brand.agency_id == agency_id))).scalars().all()
+        )
         for brand in brands:
             await db.delete(brand)
         await db.commit()
@@ -130,42 +133,66 @@ async def cleanup_by_agency_id(agency_id: uuid.UUID) -> None:
 async def seed_db() -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID]:
     async with AsyncSessionLocal() as db:
         agency = Agency(
-            id=uuid.uuid4(), name="E2E Preview Agency",
-            slug=f"e2e-preview-agency-{uuid.uuid4().hex[:8]}", status=AgencyStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            name="E2E Preview Agency",
+            slug=f"e2e-preview-agency-{uuid.uuid4().hex[:8]}",
+            status=AgencyStatus.ACTIVE.value,
         )
         brand = Brand(
-            id=uuid.uuid4(), agency_id=agency.id, name="E2E Preview Brand",
-            slug=f"e2e-preview-brand-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            name="E2E Preview Brand",
+            slug=f"e2e-preview-brand-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
         )
         db.add_all([agency, brand])
 
         agency_user = User(
-            id=uuid.uuid4(), email=AGENCY_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Preview Agency Owner", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=AGENCY_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Preview Agency Owner",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         brand_user = User(
-            id=uuid.uuid4(), email=BRAND_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Preview Brand Owner", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=BRAND_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Preview Brand Owner",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         db.add_all([agency_user, brand_user])
         await db.flush()
 
-        db.add_all([
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=agency_user.id,
-                role=AgencyMemberRole.OWNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=brand.id, user_id=brand_user.id,
-                role=BrandMemberRole.BRAND_OWNER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-        ])
+        db.add_all(
+            [
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=agency_user.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=brand.id,
+                    user_id=brand_user.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+            ]
+        )
 
         brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Preview Center Brief", status="in_production",
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Preview Center Brief",
+            status="in_production",
             created_by_id=agency_user.id,
         )
         db.add(brief)
@@ -174,7 +201,9 @@ async def seed_db() -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UU
         return agency.id, brand.id, brief.id, agency_user.id, brand_user.id
 
 
-async def dismiss_onboarding(agency_id: uuid.UUID, agency_user_id: uuid.UUID, brand_user_id: uuid.UUID) -> None:
+async def dismiss_onboarding(
+    agency_id: uuid.UUID, agency_user_id: uuid.UUID, brand_user_id: uuid.UUID
+) -> None:
     """Seeds both fixture users' onboarding as already dismissed via the real
     dismiss endpoints (not a raw DB write) — this spec exercises the Preview
     Center, not onboarding, so its actors must start in a realistic
@@ -188,7 +217,9 @@ async def dismiss_onboarding(agency_id: uuid.UUID, agency_user_id: uuid.UUID, br
     async with httpx.AsyncClient(base_url=API_BASE, timeout=30.0) as client:
         agency_progress = await client.get("/api/v1/onboarding/progress", headers=agency_headers)
         agency_progress.raise_for_status()
-        agency_dismiss = await client.post("/api/v1/onboarding/progress/dismiss", headers=agency_headers)
+        agency_dismiss = await client.post(
+            "/api/v1/onboarding/progress/dismiss", headers=agency_headers
+        )
         agency_dismiss.raise_for_status()
 
         brand_progress = await client.get(

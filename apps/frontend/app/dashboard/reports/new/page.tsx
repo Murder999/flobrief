@@ -1,41 +1,42 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { ReportsSectionHeading } from "@/components/reports/reporting";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { useLocale } from "@/context/locale-context";
 import { useWorkspace } from "@/context/workspace-context";
-import { reportApi, agencyApi, type ReportType, type BrandRead } from "@/lib/api-client";
+import { useAuth } from "@/hooks/useAuth";
+import { agencyApi, reportApi, type BrandRead, type ReportType } from "@/lib/api-client";
+import type { TranslationKey } from "@/messages";
+import { ArrowLeft, Check, Database, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-const REPORT_TYPES: { value: ReportType; label: string; description: string }[] = [
-  {
-    value: "monthly_brand",
-    label: "Aylık Marka Raporu",
-    description: "Bir markanın aylık brief ve içerik performansını özetler.",
-  },
-  {
-    value: "agency_overview",
-    label: "Ajans Genel Özeti",
-    description: "Tüm markalar için ajans genelinde performans analizi.",
-  },
-  {
-    value: "campaign_summary",
-    label: "Kampanya Özeti",
-    description: "Belirli bir dönem için kampanya performans raporu.",
-  },
+const REPORT_TYPES: Array<{
+  value: ReportType;
+  label: TranslationKey;
+  description: TranslationKey;
+}> = [
+  { value: "monthly_brand", label: "reports.type.monthlyBrand", description: "reports.new.type.monthlyDescription" },
+  { value: "agency_overview", label: "reports.type.agencyOverview", description: "reports.new.type.agencyDescription" },
+  { value: "campaign_summary", label: "reports.type.campaignSummary", description: "reports.new.type.campaignDescription" },
 ];
 
-function today() {
+function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function firstOfMonth() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+function firstOfMonth(): string {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
 export default function NewReportPage() {
   const { accessToken } = useAuth();
   const { activeAgency } = useWorkspace();
+  const { t } = useLocale();
   const agencyId = activeAgency?.id ?? null;
   const router = useRouter();
 
@@ -43,29 +44,43 @@ export default function NewReportPage() {
   const [periodStart, setPeriodStart] = useState(firstOfMonth());
   const [periodEnd, setPeriodEnd] = useState(today());
   const [title, setTitle] = useState("");
-  const [brandId, setBrandId] = useState<string>("");
+  const [brandId, setBrandId] = useState("");
   const [brands, setBrands] = useState<BrandRead[]>([]);
+  const [brandsLoading, setBrandsLoading] = useState(true);
+  const [brandsError, setBrandsError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadBrands = useCallback(async () => {
     if (!accessToken || !agencyId) return;
-    agencyApi.listBrands(agencyId, accessToken).then(setBrands).catch(() => {});
+    setBrandsLoading(true);
+    setBrandsError(false);
+    try {
+      setBrands(await agencyApi.listBrands(agencyId, accessToken));
+    } catch {
+      setBrands([]);
+      setBrandsError(true);
+    } finally {
+      setBrandsLoading(false);
+    }
   }, [accessToken, agencyId]);
 
-  const selectedTypeDef = REPORT_TYPES.find((t) => t.value === reportType)!;
+  useEffect(() => {
+    loadBrands();
+  }, [loadBrands]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     if (!accessToken || !agencyId) return;
     if (!title.trim()) {
-      setError("Rapor başlığı gerekli.");
+      setError(t("reports.new.titleRequired"));
       return;
     }
     if (periodStart > periodEnd) {
-      setError("Başlangıç tarihi bitiş tarihinden sonra olamaz.");
+      setError(t("reports.new.invalidPeriod"));
       return;
     }
+
     setSubmitting(true);
     setError(null);
     try {
@@ -81,152 +96,142 @@ export default function NewReportPage() {
         accessToken
       );
       router.push(`/dashboard/reports/${report.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Rapor oluşturulamadı.");
+    } catch {
+      setError(t("reports.new.createError"));
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <div className="mb-8">
+    <main className="mx-auto w-full max-w-3xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+      <header className="mb-6">
         <button
-          onClick={() => router.back()}
-          className="text-sm text-text-muted hover:text-text transition-colors mb-4 flex items-center gap-1"
+          type="button"
+          onClick={() => router.push("/dashboard/reports")}
+          className="mb-4 inline-flex min-h-9 items-center gap-2 rounded-lg text-sm text-text-muted transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
         >
-          ← Geri
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          {t("reports.new.back")}
         </button>
-        <h1 className="text-2xl font-semibold text-text">Yeni Rapor Oluştur</h1>
-        <p className="text-sm text-text-muted mt-1">
-          Gerçek verilerden otomatik rapor üretilir.
-        </p>
-      </div>
+        <h1 className="text-2xl font-semibold tracking-tight text-text">{t("reports.new.title")}</h1>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-text-muted">{t("reports.new.subtitle")}</p>
+      </header>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Report type */}
-        <div>
-          <label className="block text-sm font-medium text-text mb-3">Rapor Türü</label>
-          <div className="space-y-2">
-            {REPORT_TYPES.map((rt) => (
-              <label
-                key={rt.value}
-                className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                  reportType === rt.value
-                    ? "border-accent bg-accent/5"
-                    : "border-border bg-surface hover:border-border/80"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="reportType"
-                  value={rt.value}
-                  checked={reportType === rt.value}
-                  onChange={() => setReportType(rt.value)}
-                  className="mt-0.5 accent-indigo-500"
-                />
-                <div>
-                  <p className="text-sm font-medium text-text">{rt.label}</p>
-                  <p className="text-xs text-text-muted mt-0.5">{rt.description}</p>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Card className="p-4 shadow-none sm:p-6">
+          <ReportsSectionHeading title={t("reports.new.scopeTitle")} description={t("reports.new.scopeDescription")} />
 
-        {/* Period */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-text-muted mb-1.5">
-              Dönem Başlangıcı
-            </label>
-            <input
+          <fieldset className="mt-6">
+            <legend className="text-xs font-medium tracking-wide text-text-muted">{t("reports.new.typeLabel")}</legend>
+            <div className="mt-2 grid grid-cols-1 gap-2">
+              {REPORT_TYPES.map((type) => {
+                const selected = reportType === type.value;
+                return (
+                  <label
+                    key={type.value}
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3.5 transition-colors ${selected ? "border-accent/60 bg-accent/5" : "border-border bg-surface hover:border-border-hover"}`}
+                  >
+                    <input
+                      type="radio"
+                      name="reportType"
+                      value={type.value}
+                      checked={selected}
+                      onChange={() => setReportType(type.value)}
+                      className="sr-only"
+                    />
+                    <span className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${selected ? "border-accent bg-accent text-white" : "border-border bg-surface-2"}`}>
+                      {selected ? <Check className="h-3 w-3" aria-hidden="true" /> : null}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-text">{t(type.label)}</span>
+                      <span className="mt-0.5 block text-xs leading-5 text-text-muted">{t(type.description)}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
               type="date"
+              label={t("reports.new.startDate")}
               value={periodStart}
-              onChange={(e) => setPeriodStart(e.target.value)}
-              className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors"
+              onChange={(event) => setPeriodStart(event.target.value)}
+              required
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-text-muted mb-1.5">
-              Dönem Bitişi
-            </label>
-            <input
+            <Input
               type="date"
+              label={t("reports.new.endDate")}
               value={periodEnd}
-              onChange={(e) => setPeriodEnd(e.target.value)}
-              className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors"
+              onChange={(event) => setPeriodEnd(event.target.value)}
+              required
             />
           </div>
-        </div>
 
-        {/* Title */}
-        <div>
-          <label className="block text-xs font-medium text-text-muted mb-1.5">
-            Rapor Başlığı
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={`${selectedTypeDef.label} – ${periodStart.slice(0, 7)}`}
-            className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-          />
-        </div>
-
-        {/* Brand (optional) */}
-        {brands.length > 0 && (
-          <div>
-            <label className="block text-xs font-medium text-text-muted mb-1.5">
-              Marka (isteğe bağlı)
-            </label>
-            <select
+          <div className="mt-4">
+            <Select
+              id="report-brand-scope"
+              label={t("reports.new.brandLabel")}
+              aria-label={t("reports.new.brandLabel")}
               value={brandId}
-              onChange={(e) => setBrandId(e.target.value)}
-              className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent transition-colors"
-            >
-              <option value="">Tüm markalar</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+              onChange={(event) => setBrandId(event.target.value)}
+              disabled={brandsLoading || brandsError}
+              options={[
+                { value: "", label: brandsLoading ? `${t("reports.common.allBrands")}...` : t("reports.common.allBrands") },
+                ...brands.map((brand) => ({ value: brand.id, label: brand.name })),
+              ]}
+            />
+            <p className="mt-1.5 text-xs leading-5 text-text-muted">{t("reports.new.brandHint")}</p>
+            {brandsError ? (
+              <div role="alert" className="mt-2 flex flex-wrap items-center gap-2 text-xs text-danger">
+                <span>{t("reports.new.brandsError")}</span>
+                <button type="button" onClick={loadBrands} className="inline-flex items-center gap-1 font-medium text-accent hover:underline">
+                  <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                  {t("reports.new.retryBrands")}
+                </button>
+              </div>
+            ) : null}
           </div>
-        )}
 
-        {error && (
-          <div className="bg-danger/10 border border-danger/30 rounded-lg p-3 text-sm text-danger">
+          <div className="mt-4">
+            <Input
+              type="text"
+              label={t("reports.new.titleLabel")}
+              placeholder={t("reports.new.titlePlaceholder")}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              maxLength={500}
+              required
+            />
+          </div>
+        </Card>
+
+        <Card className="flex items-start gap-3 p-4 shadow-none sm:p-5">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
+            <Database className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-text">{t("reports.new.includedTitle")}</h2>
+            <p className="mt-1 text-xs leading-5 text-text-muted">{t("reports.new.includedDescription")}</p>
+          </div>
+        </Card>
+
+        {error ? (
+          <div role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
             {error}
           </div>
-        )}
+        ) : null}
 
-        <div className="flex items-center gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-60 transition-colors"
-          >
-            {submitting ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Oluşturuluyor…
-              </>
-            ) : (
-              "Rapor Oluştur"
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-4 py-2.5 text-sm text-text-muted hover:text-text transition-colors"
-          >
-            İptal
-          </button>
+        <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+          <Button type="button" variant="ghost" onClick={() => router.push("/dashboard/reports")}>
+            {t("reports.new.cancel")}
+          </Button>
+          <Button type="submit" isLoading={submitting} disabled={!agencyId}>
+            {submitting ? t("reports.new.submitting") : t("reports.new.submit")}
+          </Button>
         </div>
       </form>
-    </div>
+    </main>
   );
 }

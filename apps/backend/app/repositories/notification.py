@@ -614,17 +614,25 @@ class NotificationDeliveryRepository:
         permanently exhausted. Uses the denormalized `agency_id` column so
         this never needs a JOIN against notification_events."""
         table = NotificationDelivery.__table__
-        queue_stmt = select(func.count()).select_from(table).where(
-            table.c.agency_id == agency_id,
-            table.c.channel == channel,
-            table.c.status == "failed",
-            table.c.next_retry_at.is_not(None),
-            table.c.retry_exhausted_at.is_(None),
+        queue_stmt = (
+            select(func.count())
+            .select_from(table)
+            .where(
+                table.c.agency_id == agency_id,
+                table.c.channel == channel,
+                table.c.status == "failed",
+                table.c.next_retry_at.is_not(None),
+                table.c.retry_exhausted_at.is_(None),
+            )
         )
-        exhausted_stmt = select(func.count()).select_from(table).where(
-            table.c.agency_id == agency_id,
-            table.c.channel == channel,
-            table.c.retry_exhausted_at.is_not(None),
+        exhausted_stmt = (
+            select(func.count())
+            .select_from(table)
+            .where(
+                table.c.agency_id == agency_id,
+                table.c.channel == channel,
+                table.c.retry_exhausted_at.is_not(None),
+            )
         )
         retry_queue = await self.session.scalar(queue_stmt) or 0
         retry_exhausted = await self.session.scalar(exhausted_stmt) or 0

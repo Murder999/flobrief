@@ -75,9 +75,7 @@ async def run_retry_batch(*, now: datetime | None = None, batch_size: int = _BAT
     return len(claimed_ids)
 
 
-async def _process_one_retry(
-    db: AsyncSession, delivery_id: uuid.UUID, now: datetime
-) -> None:
+async def _process_one_retry(db: AsyncSession, delivery_id: uuid.UUID, now: datetime) -> None:
     delivery_repo = NotificationDeliveryRepository(db)
     delivery = await db.get(NotificationDelivery, delivery_id)
     if delivery is None:

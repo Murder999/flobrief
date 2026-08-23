@@ -86,3 +86,15 @@ apps/backend/media/
 
 .vercel
 .env*
+
+# Keep sanitised environment contracts in git while every populated env stays local.
+!.env.example
+!**/.env.example
+
+# Production deploy state and secrets are host-local, never repository content.
+.deploy/
+backups/
+infra/nginx/certs/
+
+.codex-*/
+.pnpm-store/

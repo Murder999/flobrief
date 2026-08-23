@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.approval import Approval
+from app.models.brand import Brand
 from app.models.brief import Brief
 from app.models.calendar import CalendarItem
 from app.models.report import Report, ReportShareToken, ReportSnapshot
@@ -41,6 +42,22 @@ class ReportService:
         created_by_id: uuid.UUID,
         brand_id: uuid.UUID | None = None,
     ) -> tuple[Report, ReportSnapshot]:
+        if brand_id is not None:
+            brand_result = await self._db.execute(
+                select(Brand.id).where(
+                    Brand.id == brand_id,
+                    Brand.agency_id == agency_id,
+                    Brand.deleted_at.is_(None),
+                )
+            )
+            if brand_result.scalar_one_or_none() is None:
+                from fastapi import HTTPException, status
+
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Brand not found in this agency",
+                )
+
         report = await self._repo.create(
             {
                 "agency_id": agency_id,
@@ -115,13 +132,15 @@ class ReportService:
         revision_requested_count: int = revision_q.scalar_one() or 0
 
         in_review_q = await self._db.execute(
-            select(func.count()).select_from(Brief).where(*brief_base, Brief.status == "in_review")
+            select(func.count())
+            .select_from(Brief)
+            .where(*brief_base, Brief.status.in_(("in_review", "ready_for_review")))
         )
         pending_approvals_count: int = in_review_q.scalar_one() or 0
 
         # ── Most revised briefs (count of revision_requested approvals per brief) ─
         revision_sub = (
-            select(Approval.brief_id, func.count().label("rev_count"))
+            select(Approval.brief_id, Brief.title, func.count().label("rev_count"))
             .join(Brief, Brief.id == Approval.brief_id)
             .where(
                 Brief.agency_id == agency_id,
@@ -131,7 +150,7 @@ class ReportService:
                 Approval.created_at >= start_dt,
                 Approval.created_at <= end_dt,
             )
-            .group_by(Approval.brief_id)
+            .group_by(Approval.brief_id, Brief.title)
             .order_by(func.count().desc())
             .limit(5)
         )
@@ -140,11 +159,16 @@ class ReportService:
 
         rev_rows = await self._db.execute(revision_sub)
         most_revised_briefs = [
-            {"brief_id": str(row.brief_id), "revision_count": row.rev_count} for row in rev_rows
+            {
+                "brief_id": str(row.brief_id),
+                "brief_title": row.title,
+                "revision_count": row.rev_count,
+            }
+            for row in rev_rows
         ]
 
         # ── Average approval time (created → decided_at for approved) ─────────
-        avg_q = await self._db.execute(
+        avg_stmt = (
             select(
                 func.avg(
                     func.extract(
@@ -164,6 +188,9 @@ class ReportService:
                 Approval.created_at <= end_dt,
             )
         )
+        if brand_id is not None:
+            avg_stmt = avg_stmt.where(Brief.brand_id == brand_id)
+        avg_q = await self._db.execute(avg_stmt)
         avg_seconds: float | None = avg_q.scalar_one()
         average_approval_time_hours: float | None = (
             round(avg_seconds / 3600, 2) if avg_seconds is not None else None
@@ -173,6 +200,8 @@ class ReportService:
         cal_base = [
             CalendarItem.agency_id == agency_id,
             CalendarItem.deleted_at.is_(None),
+            CalendarItem.publish_at >= start_dt,
+            CalendarItem.publish_at <= end_dt,
         ]
         if brand_id is not None:
             cal_base.append(CalendarItem.brand_id == brand_id)
@@ -209,6 +238,7 @@ class ReportService:
         platform_distribution = {row.platform: row.cnt for row in platform_dist_q}
 
         return {
+            "scope_version": 2,
             "created_briefs_count": created_briefs_count,
             "approved_briefs_count": approved_briefs_count,
             "revision_requested_count": revision_requested_count,
@@ -224,6 +254,7 @@ class ReportService:
         }
 
     async def archive(self, report: Report) -> Report:
+        await self._token_repo.revoke_all_for_report(report.id)
         await self._repo.update_status(report, "archived")
         await self._db.commit()
         await self._db.refresh(report)
@@ -325,6 +356,28 @@ class ReportService:
         snapshot = await self._snap_repo.get_latest_for_report(report.id)
         tokens = await self._token_repo.list_for_report(report.id)
         return report, snapshot, tokens
+
+    async def get_for_brand(
+        self, report_id: uuid.UUID, brand_id: uuid.UUID
+    ) -> tuple[Report, ReportSnapshot | None]:
+        from fastapi import HTTPException, status
+
+        result = await self._db.execute(
+            select(Report)
+            .join(Brand, Brand.id == Report.brand_id)
+            .where(
+                Report.id == report_id,
+                Report.brand_id == brand_id,
+                Report.agency_id == Brand.agency_id,
+                Brand.deleted_at.is_(None),
+                Report.deleted_at.is_(None),
+            )
+        )
+        report = result.scalar_one_or_none()
+        if report is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+        snapshot = await self._snap_repo.get_latest_for_report(report.id)
+        return report, snapshot
 
     async def list_for_agency(
         self,

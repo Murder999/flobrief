@@ -17,6 +17,7 @@ Two modes:
 Safety: refuses to run unless DATABASE_URL resolves to a local host and
 APP_ENV is not "production".
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -244,13 +245,22 @@ async def seed() -> None:
 
         # A representative spread of lifecycle outcomes for owner's agency.
         await _seed_delivery(
-            session, agency_id=agency.id, recipient_id=owner.id, status=NotificationDeliveryStatus.SENT.value
+            session,
+            agency_id=agency.id,
+            recipient_id=owner.id,
+            status=NotificationDeliveryStatus.SENT.value,
         )
         await _seed_delivery(
-            session, agency_id=agency.id, recipient_id=owner.id, status=NotificationDeliveryStatus.DELIVERED.value
+            session,
+            agency_id=agency.id,
+            recipient_id=owner.id,
+            status=NotificationDeliveryStatus.DELIVERED.value,
         )
         await _seed_delivery(
-            session, agency_id=agency.id, recipient_id=owner.id, status=NotificationDeliveryStatus.READ.value
+            session,
+            agency_id=agency.id,
+            recipient_id=owner.id,
+            status=NotificationDeliveryStatus.READ.value,
         )
         await _seed_delivery(
             session,

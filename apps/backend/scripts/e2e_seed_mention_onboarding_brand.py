@@ -35,6 +35,7 @@ APP_ENV is not "production". API calls target E2E_API_BASE (default
 http://127.0.0.1:8003, matching the frontend's E2E_REWRITE_API_PORT
 dev-rewrite target — see apps/frontend/.env.local and next.config.mjs).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -136,9 +137,7 @@ async def _delete_agency_and_brands(db, agency_id: uuid.UUID) -> None:
     agency = await db.get(Agency, agency_id)
     if agency is not None:
         await db.delete(agency)
-    brands = (
-        await db.execute(select(Brand).where(Brand.agency_id == agency_id))
-    ).scalars().all()
+    brands = (await db.execute(select(Brand).where(Brand.agency_id == agency_id))).scalars().all()
     for brand in brands:
         await db.delete(brand)
 
@@ -148,9 +147,7 @@ async def cleanup(run_id: str | None = None) -> None:
     async with AsyncSessionLocal() as db:
         agency_ids: set[uuid.UUID] = set()
         for email in all_emails:
-            user = (
-                await db.execute(select(User).where(User.email == email))
-            ).scalar_one_or_none()
+            user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is None:
                 continue
             member = (
@@ -163,9 +160,7 @@ async def cleanup(run_id: str | None = None) -> None:
         await db.commit()
 
         for email in all_emails:
-            user = (
-                await db.execute(select(User).where(User.email == email))
-            ).scalar_one_or_none()
+            user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is not None:
                 await db.delete(user)
         await db.commit()
@@ -183,102 +178,176 @@ async def seed_db(run_id: str | None = None) -> dict[str, uuid.UUID]:
     ) = _emails_for(run_id)
     async with AsyncSessionLocal() as db:
         agency = Agency(
-            id=uuid.uuid4(), name="E2E MO Brand Agency",
-            slug=f"e2e-mo-brand-agency-{uuid.uuid4().hex[:8]}", status=AgencyStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            name="E2E MO Brand Agency",
+            slug=f"e2e-mo-brand-agency-{uuid.uuid4().hex[:8]}",
+            status=AgencyStatus.ACTIVE.value,
         )
         brand = Brand(
-            id=uuid.uuid4(), agency_id=agency.id, name="E2E MO Primary Brand",
-            slug=f"e2e-mo-primary-brand-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            name="E2E MO Primary Brand",
+            slug=f"e2e-mo-primary-brand-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
         )
         sibling_brand = Brand(
-            id=uuid.uuid4(), agency_id=agency.id, name="E2E MO Sibling Brand",
-            slug=f"e2e-mo-sibling-brand-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            name="E2E MO Sibling Brand",
+            slug=f"e2e-mo-sibling-brand-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
         )
         other_agency = Agency(
-            id=uuid.uuid4(), name="E2E MO Brand Other Tenant",
-            slug=f"e2e-mo-brand-other-agency-{uuid.uuid4().hex[:8]}", status=AgencyStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            name="E2E MO Brand Other Tenant",
+            slug=f"e2e-mo-brand-other-agency-{uuid.uuid4().hex[:8]}",
+            status=AgencyStatus.ACTIVE.value,
         )
         other_brand = Brand(
-            id=uuid.uuid4(), agency_id=other_agency.id, name="E2E MO Other Tenant Brand",
-            slug=f"e2e-mo-other-tenant-brand-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=other_agency.id,
+            name="E2E MO Other Tenant Brand",
+            slug=f"e2e-mo-other-tenant-brand-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
         )
         db.add_all([agency, brand, sibling_brand, other_agency, other_brand])
 
         owner_user = User(
-            id=uuid.uuid4(), email=owner_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E MO Brand Agency Owner", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=owner_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E MO Brand Agency Owner",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         assigned_designer = User(
-            id=uuid.uuid4(), email=assigned_designer_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E Assigned Designer", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=assigned_designer_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Assigned Designer",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         unassigned_designer = User(
-            id=uuid.uuid4(), email=unassigned_designer_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E Unassigned Designer", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=unassigned_designer_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Unassigned Designer",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         brand_owner_user = User(
-            id=uuid.uuid4(), email=brand_owner_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E Brand Owner", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=brand_owner_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Brand Owner",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         brand_viewer_user = User(
-            id=uuid.uuid4(), email=brand_viewer_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E Brand Viewer", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=brand_viewer_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Brand Viewer",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         sibling_brand_owner = User(
-            id=uuid.uuid4(), email=sibling_brand_owner_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E Sibling Brand Owner", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=sibling_brand_owner_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Sibling Brand Owner",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         other_tenant_brand_user = User(
-            id=uuid.uuid4(), email=other_tenant_brand_user_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E Other Tenant Brand User", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=other_tenant_brand_user_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Other Tenant Brand User",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
-        db.add_all([
-            owner_user, assigned_designer, unassigned_designer,
-            brand_owner_user, brand_viewer_user, sibling_brand_owner, other_tenant_brand_user,
-        ])
+        db.add_all(
+            [
+                owner_user,
+                assigned_designer,
+                unassigned_designer,
+                brand_owner_user,
+                brand_viewer_user,
+                sibling_brand_owner,
+                other_tenant_brand_user,
+            ]
+        )
         await db.flush()
 
-        db.add_all([
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=owner_user.id,
-                role=AgencyMemberRole.OWNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=assigned_designer.id,
-                role=AgencyMemberRole.DESIGNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=unassigned_designer.id,
-                role=AgencyMemberRole.DESIGNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=brand.id, user_id=brand_owner_user.id,
-                role=BrandMemberRole.BRAND_OWNER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=brand.id, user_id=brand_viewer_user.id,
-                role=BrandMemberRole.BRAND_VIEWER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=sibling_brand.id, user_id=sibling_brand_owner.id,
-                role=BrandMemberRole.BRAND_OWNER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=other_brand.id, user_id=other_tenant_brand_user.id,
-                role=BrandMemberRole.BRAND_OWNER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-        ])
+        db.add_all(
+            [
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=owner_user.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=assigned_designer.id,
+                    role=AgencyMemberRole.DESIGNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=unassigned_designer.id,
+                    role=AgencyMemberRole.DESIGNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=brand.id,
+                    user_id=brand_owner_user.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=brand.id,
+                    user_id=brand_viewer_user.id,
+                    role=BrandMemberRole.BRAND_VIEWER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=sibling_brand.id,
+                    user_id=sibling_brand_owner.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=other_brand.id,
+                    user_id=other_tenant_brand_user.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+            ]
+        )
 
         brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E MO Brand Brief", status="in_production",
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E MO Brand Brief",
+            status="in_production",
             created_by_id=owner_user.id,
         )
         db.add(brief)
@@ -286,7 +355,9 @@ async def seed_db(run_id: str | None = None) -> dict[str, uuid.UUID]:
 
         db.add(
             BriefAssignee(
-                id=uuid.uuid4(), brief_id=brief.id, user_id=assigned_designer.id,
+                id=uuid.uuid4(),
+                brief_id=brief.id,
+                user_id=assigned_designer.id,
                 participant_role="designer",
             )
         )
@@ -307,7 +378,9 @@ async def seed_db(run_id: str | None = None) -> dict[str, uuid.UUID]:
         }
 
 
-async def seed_content(ids: dict[str, uuid.UUID], dismiss_onboarding: bool = True) -> dict[str, str]:
+async def seed_content(
+    ids: dict[str, uuid.UUID], dismiss_onboarding: bool = True
+) -> dict[str, str]:
     token = create_access_token(str(ids["owner_user_id"]))
     headers = {"Authorization": f"Bearer {token}", "X-Agency-ID": str(ids["agency_id"])}
     brief_id = ids["brief_id"]

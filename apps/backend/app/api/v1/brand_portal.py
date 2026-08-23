@@ -53,7 +53,11 @@ from app.schemas.notification import (
     NotificationRealtimeTicketRead,
 )
 from app.schemas.onboarding import OnboardingProgressRead, OnboardingStepRead
-from app.schemas.report import ReportRead
+from app.schemas.report import (
+    BrandReportSnapshotRead,
+    BrandReportWithSnapshot,
+    ReportRead,
+)
 from app.schemas.whatsapp_test_send import WhatsAppTestSendResponse
 from app.services.asset_service import AssetService
 from app.services.brand_approval_service import BrandApprovalDecisionService
@@ -73,6 +77,7 @@ from app.services.onboarding_service import (
     ProgressView,
     default_onboarding_type_for_brand_role,
 )
+from app.services.report_service import ReportService
 
 brand_portal_router = APIRouter(prefix="/brand-portal", tags=["brand-portal"])
 logger = logging.getLogger(__name__)
@@ -973,7 +978,11 @@ async def _to_brand_reads(items: list[Notification], db: AsyncSession) -> list[N
             else None
         )
         base = NotificationRead.model_validate(n)
-        reads.append(base.model_copy(update={"action_url": action_url}))
+        reads.append(
+            base.model_copy(
+                update={"action_url": action_url, "payload": event.payload if event else {}}
+            )
+        )
     return reads
 
 
@@ -1279,12 +1288,16 @@ async def list_reports(
     ctx: BrandPortalContext = Depends(get_brand_portal_context),
     db: AsyncSession = Depends(get_db),
 ) -> list[ReportRead]:
+    if not ctx.has_permission(Permission.REPORT_VIEW):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+
     rows = (
         (
             await db.execute(
                 select(Report)
                 .where(
                     Report.brand_id == ctx.brand.id,
+                    Report.agency_id == ctx.brand.agency_id,
                     Report.deleted_at.is_(None),
                 )
                 .order_by(Report.created_at.desc())
@@ -1295,6 +1308,43 @@ async def list_reports(
         .all()
     )
     return [ReportRead.model_validate(r) for r in rows]
+
+
+@brand_portal_router.get("/reports/{report_id}", response_model=BrandReportWithSnapshot)
+async def get_report(
+    report_id: uuid.UUID,
+    ctx: BrandPortalContext = Depends(get_brand_portal_context),
+    db: AsyncSession = Depends(get_db),
+) -> BrandReportWithSnapshot:
+    if not ctx.has_permission(Permission.REPORT_VIEW):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+
+    report, snapshot = await ReportService(db).get_for_brand(report_id, ctx.brand.id)
+    return BrandReportWithSnapshot(
+        id=report.id,
+        report_type=report.report_type,
+        period_start=report.period_start,
+        period_end=report.period_end,
+        status=report.status,
+        title=report.title,
+        created_at=report.created_at,
+        snapshot=(
+            BrandReportSnapshotRead(
+                metrics={
+                    **snapshot.metrics,
+                    "average_approval_time_hours": (
+                        snapshot.metrics.get("average_approval_time_hours")
+                        if snapshot.metrics.get("scope_version") == 2
+                        else None
+                    ),
+                },
+                narrative=snapshot.narrative,
+                created_at=snapshot.created_at,
+            )
+            if snapshot
+            else None
+        ),
+    )
 
 
 @brand_portal_router.get("/profile", response_model=UserProfileRead)

@@ -1,13 +1,16 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { User, Bell, Palette, CreditCard } from "lucide-react";
 import { agencyApi, type AgencyRead, ApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/context/workspace-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
+import { SettingsLayout } from "@/components/settings/SettingsLayout";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -38,36 +41,32 @@ const STATUS_COLORS: Record<string, string> = {
 
 const SETTINGS_SECTIONS = [
   {
-    href: "/dashboard/settings/branding",
-    label: "White-label & Marka Ayarları",
-    description: "Logo, renkler ve özel alan adı ayarları.",
-    iconPath:
-      "M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01",
-    iconColor: "bg-purple-500/10 text-purple-500",
+    href: "/dashboard/settings/profile",
+    label: "Profil & Güvenlik",
+    description: "Ad, unvan, şifre, 2FA, tema, WhatsApp",
+    icon: User,
+    iconColor: "bg-indigo-500/10 text-indigo-500",
   },
   {
     href: "/dashboard/settings/notifications",
-    label: "Bildirim Tercihleri",
-    description: "E-posta ve uygulama içi bildirim ayarları.",
-    iconPath:
-      "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
+    label: "Bildirimler",
+    description: "E-posta ve uygulama içi bildirim ayarları",
+    icon: Bell,
     iconColor: "bg-amber-500/10 text-amber-500",
   },
   {
-    href: "/dashboard/settings/members",
-    label: "Ekip Üyeleri",
-    description: "Üyeleri yönetin ve yeni davetler gönderin.",
-    iconPath:
-      "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
-    iconColor: "bg-emerald-500/10 text-emerald-500",
+    href: "/dashboard/settings/branding",
+    label: "White-label & Marka",
+    description: "Logo, renkler, özel alan adı",
+    icon: Palette,
+    iconColor: "bg-purple-500/10 text-purple-500",
   },
   {
     href: "/dashboard/settings/billing",
     label: "Abonelik & Faturalama",
-    description: "Plan bilgileri, kullanım limitleri ve faturalar.",
-    iconPath:
-      "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
-    iconColor: "bg-indigo-500/10 text-indigo-500",
+    description: "Plan bilgileri, kullanım limitleri, faturalar",
+    icon: CreditCard,
+    iconColor: "bg-emerald-500/10 text-emerald-500",
   },
 ];
 
@@ -100,14 +99,14 @@ function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
   }
 
   return (
-    <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-6">
-      <div className="px-6 py-5 border-b border-border">
+    <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-5">
+      <div className="px-5 py-4 border-b border-border">
         <h2 className="text-sm font-semibold text-text">Ajans Logosu</h2>
-        <p className="text-xs text-text-muted mt-0.5">PNG, JPEG, WebP veya SVG · Maks. 5 MB · Sidebar ve raporlarda görünür</p>
+        <p className="text-xs text-text-muted mt-0.5">PNG, JPEG, WebP veya SVG · Maks. 5 MB</p>
       </div>
-      <div className="px-6 py-6 flex items-center gap-6">
+      <div className="px-5 py-6 flex items-center gap-5">
         <div className="relative group/logo">
-          <div className="w-20 h-20 rounded-2xl border-2 border-border bg-surface-2 flex items-center justify-center overflow-hidden">
+          <div className="w-16 h-16 rounded-2xl border-2 border-border bg-surface-2 flex items-center justify-center overflow-hidden">
             {logoSrc ? (
               <img src={logoSrc} alt={agency.name} className="w-full h-full object-contain p-2" />
             ) : (
@@ -115,9 +114,9 @@ function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
             )}
             {uploading && (
               <div className="absolute inset-0 bg-surface/70 rounded-2xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-accent animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                <svg className="w-4 h-4 text-accent animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="3"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4"/>
                 </svg>
               </div>
             )}
@@ -132,12 +131,12 @@ function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
         </div>
         <div className="flex flex-col gap-2">
           <button onClick={() => inputRef.current?.click()} disabled={uploading}
-            className="px-4 py-2 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50">
+            className="px-3 py-1.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50">
             {logoSrc ? "Logoyu Değiştir" : "Logo Yükle"}
           </button>
           {logoSrc && (
             <button onClick={handleDelete} disabled={uploading}
-              className="px-4 py-2 text-danger border border-danger/30 text-sm font-medium rounded-lg hover:bg-danger/5 transition-colors disabled:opacity-50">
+              className="px-3 py-1.5 text-danger border border-danger/30 text-sm font-medium rounded-lg hover:bg-danger/5 transition-colors disabled:opacity-50">
               Logoyu Sil
             </button>
           )}
@@ -150,17 +149,16 @@ function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
 export default function AgencySettingsPage() {
   const { accessToken } = useAuth();
   const { activeAgency, refreshWorkspaces } = useWorkspace();
+  const router = useRouter();
 
   const [agency, setAgency] = useState<AgencyRead | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [name, setName] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [pendingUpgrade, setPendingUpgrade] = useState(false);
 
   useEffect(() => {
     if (!activeAgency || !accessToken) return;
-
-    setIsLoading(true);
     agencyApi
       .get(activeAgency.id, accessToken)
       .then((data) => {
@@ -170,7 +168,7 @@ export default function AgencySettingsPage() {
       .catch(() => {
         setErrorMsg("Ajans bilgileri yüklenemedi.");
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {});
   }, [activeAgency, accessToken]);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -199,14 +197,7 @@ export default function AgencySettingsPage() {
   const isDirty = agency && name !== agency.name;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-text">Ajans Ayarları</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          Ajansınızın genel bilgilerini düzenleyin.
-        </p>
-      </div>
-
+    <SettingsLayout portal="agency" title="Ajans Ayarları">
       {/* Logo upload */}
       {agency && activeAgency && accessToken && (
         <AgencyLogoCard
@@ -218,19 +209,12 @@ export default function AgencySettingsPage() {
       )}
 
       {/* Agency name form */}
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-6">
-        <div className="px-6 py-5 border-b border-border">
+      <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-4">
+        <div className="px-5 py-4 border-b border-border">
           <h2 className="text-sm font-semibold text-text">Genel Bilgiler</h2>
         </div>
 
-        <form onSubmit={handleSave} className="px-6 py-6 space-y-5">
-          {isLoading ? (
-            <>
-              <SkeletonField />
-              <SkeletonField />
-            </>
-          ) : (
-            <>
+        <form onSubmit={handleSave} className="px-5 py-4 space-y-3">
               <Input
                 label="Ajans Adı"
                 value={name}
@@ -241,21 +225,17 @@ export default function AgencySettingsPage() {
                 <label className="text-xs font-medium text-text-muted uppercase tracking-wide">
                   Slug
                 </label>
-                <div className="h-10 px-3 flex items-center bg-surface-2 border border-border rounded-lg">
+                <div className="h-9 px-3 flex items-center bg-surface-2 border border-border rounded-lg">
                   <span className="text-sm text-text-muted">{agency?.slug}</span>
                 </div>
                 <p className="text-xs text-text-muted">Slug değiştirilemez.</p>
               </div>
-            </>
-          )}
-
-          {errorMsg && (
-            <div className="px-3 py-2 bg-danger/10 border border-danger/20 rounded-lg">
+            </form>
+            <div className="px-2 py-1.5 bg-danger/10 border border-danger/20 rounded-lg">
               <p className="text-sm text-danger">{errorMsg}</p>
             </div>
-          )}
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between">
             {saveState === "saved" ? (
               <p className="text-sm text-success">Değişiklikler kaydedildi.</p>
             ) : (
@@ -263,21 +243,20 @@ export default function AgencySettingsPage() {
             )}
             <Button
               type="submit"
-              disabled={isLoading || !isDirty || saveState === "saving"}
+              disabled={!isDirty || saveState === "saving"}
             >
               {saveState === "saving" ? "Kaydediliyor…" : "Değişiklikleri Kaydet"}
             </Button>
           </div>
-        </form>
-      </div>
+        </div>
 
       {/* Agency info card */}
       {agency && (
-        <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-6">
-          <div className="px-6 py-5 border-b border-border">
+        <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-4">
+          <div className="px-5 py-4 border-b border-border">
             <h2 className="text-sm font-semibold text-text">Ajans Bilgileri</h2>
           </div>
-          <div className="px-6 py-5 grid grid-cols-2 gap-4">
+          <div className="px-5 py-4 grid grid-cols-2 gap-3">
             <div>
               <p className="text-xs text-text-muted mb-0.5">Oluşturulma</p>
               <p className="text-sm text-text">
@@ -297,33 +276,6 @@ export default function AgencySettingsPage() {
           </div>
         </div>
       )}
-
-      {/* Settings Sections hub */}
-      <div>
-        <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-3">Diğer Ayarlar</h2>
-        <div className="grid grid-cols-1 gap-3">
-          {SETTINGS_SECTIONS.map((section) => (
-            <Link
-              key={section.href}
-              href={section.href}
-              className="flex items-center gap-4 bg-surface border border-border rounded-xl p-4 hover:border-border-hover transition-colors group"
-            >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${section.iconColor}`}>
-                <svg className="w-4.5 h-4.5 w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={section.iconPath} />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text">{section.label}</p>
-                <p className="text-xs text-text-muted mt-0.5">{section.description}</p>
-              </div>
-              <svg className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </div>
+    </SettingsLayout>
   );
 }

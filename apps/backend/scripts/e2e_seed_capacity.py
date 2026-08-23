@@ -28,6 +28,7 @@ Two modes:
 Safety: refuses to run unless DATABASE_URL resolves to a local host and
 APP_ENV is not "production" -- mirrors e2e_seed_time_tracking.py.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -81,16 +82,18 @@ async def cleanup_by_email() -> None:
             user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is None:
                 continue
-            member = (await db.execute(
-                select(AgencyMember).where(AgencyMember.user_id == user.id)
-            )).scalar_one_or_none()
+            member = (
+                await db.execute(select(AgencyMember).where(AgencyMember.user_id == user.id))
+            ).scalar_one_or_none()
             if member is not None:
                 agency = await db.get(Agency, member.agency_id)
                 if agency is not None:
                     await db.delete(agency)
-                brands = (await db.execute(
-                    select(Brand).where(Brand.agency_id == member.agency_id)
-                )).scalars().all()
+                brands = (
+                    (await db.execute(select(Brand).where(Brand.agency_id == member.agency_id)))
+                    .scalars()
+                    .all()
+                )
                 for brand in brands:
                     await db.delete(brand)
         await db.commit()
@@ -107,9 +110,9 @@ async def cleanup_by_agency_id(agency_id: uuid.UUID) -> None:
         agency = await db.get(Agency, agency_id)
         if agency is not None:
             await db.delete(agency)  # cascades agency_members/briefs/work_schedules/...
-        brands = (await db.execute(
-            select(Brand).where(Brand.agency_id == agency_id)
-        )).scalars().all()
+        brands = (
+            (await db.execute(select(Brand).where(Brand.agency_id == agency_id))).scalars().all()
+        )
         for brand in brands:
             await db.delete(brand)
         await db.commit()
@@ -137,54 +140,84 @@ def _uniform_week(schedule_id: uuid.UUID) -> list[WorkScheduleDay]:
 async def seed_db() -> dict[str, uuid.UUID]:
     async with AsyncSessionLocal() as db:
         agency = Agency(
-            id=uuid.uuid4(), name="E2E Capacity Agency",
+            id=uuid.uuid4(),
+            name="E2E Capacity Agency",
             slug=f"e2e-capacity-agency-{uuid.uuid4().hex[:8]}",
             status=AgencyStatus.ACTIVE.value,
         )
         brand = Brand(
-            id=uuid.uuid4(), agency_id=agency.id, name="E2E Capacity Brand",
-            slug=f"e2e-capacity-brand-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            name="E2E Capacity Brand",
+            slug=f"e2e-capacity-brand-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
         )
         db.add_all([agency, brand])
 
         owner = User(
-            id=uuid.uuid4(), email=OWNER_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Capacity Owner", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=OWNER_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Capacity Owner",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         designer = User(
-            id=uuid.uuid4(), email=DESIGNER_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Capacity Designer", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=DESIGNER_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Capacity Designer",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         db.add_all([owner, designer])
         await db.flush()
 
-        db.add_all([
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=owner.id,
-                role=AgencyMemberRole.OWNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=designer.id,
-                role=AgencyMemberRole.DESIGNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-        ])
+        db.add_all(
+            [
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=owner.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=designer.id,
+                    role=AgencyMemberRole.DESIGNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+            ]
+        )
 
         owner_schedule = WorkSchedule(
-            id=uuid.uuid4(), agency_id=agency.id, user_id=owner.id, timezone="Europe/Istanbul",
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            user_id=owner.id,
+            timezone="Europe/Istanbul",
         )
         designer_schedule = WorkSchedule(
-            id=uuid.uuid4(), agency_id=agency.id, user_id=designer.id, timezone="Europe/Istanbul",
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            user_id=designer.id,
+            timezone="Europe/Istanbul",
         )
         db.add_all([owner_schedule, designer_schedule])
         await db.flush()
         db.add_all(_uniform_week(owner_schedule.id) + _uniform_week(designer_schedule.id))
 
         unassigned_brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Unassigned Capacity Brief", status="in_production",
-            created_by_id=owner.id, estimated_hours=8.0,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Unassigned Capacity Brief",
+            status="in_production",
+            created_by_id=owner.id,
+            estimated_hours=8.0,
         )
         db.add(unassigned_brief)
         await db.commit()

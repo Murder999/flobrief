@@ -3,6 +3,7 @@ Seed script: upserts Resend and Twilio provider credentials into platform_provid
 Run from apps/backend directory:
   python scripts/seed_provider_settings.py
 """
+
 from __future__ import annotations
 
 import asyncio

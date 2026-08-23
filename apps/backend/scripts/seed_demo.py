@@ -7,6 +7,7 @@ Idempotent: if demo agency already exists, script exits cleanly.
 Usage (run from apps/backend/):
     python scripts/seed_demo.py
 """
+
 import asyncio
 import sys
 import uuid
@@ -84,8 +85,19 @@ SYSTEM_TEMPLATES = [
                 "Kampanya Genel Bilgileri",
                 [
                     ("campaign_name", "Kampanya Adı", FieldType.TEXT.value, True, None),
-                    ("campaign_objective", "Kampanya Hedefi", FieldType.SELECT.value, True,
-                     ["Farkındalık", "Etkileşim", "Satış", "Takipçi Kazanımı", "Web Sitesi Trafiği"]),
+                    (
+                        "campaign_objective",
+                        "Kampanya Hedefi",
+                        FieldType.SELECT.value,
+                        True,
+                        [
+                            "Farkındalık",
+                            "Etkileşim",
+                            "Satış",
+                            "Takipçi Kazanımı",
+                            "Web Sitesi Trafiği",
+                        ],
+                    ),
                     ("target_audience", "Hedef Kitle", FieldType.TEXTAREA.value, True, None),
                     ("age_range", "Yaş Aralığı", FieldType.TEXT.value, False, None),
                     ("platforms", "Platformlar", FieldType.TEXT.value, True, None),
@@ -97,16 +109,26 @@ SYSTEM_TEMPLATES = [
                     ("start_date", "Başlangıç Tarihi", FieldType.DATE.value, True, None),
                     ("end_date", "Bitiş Tarihi", FieldType.DATE.value, True, None),
                     ("budget_try", "Toplam Bütçe (TL)", FieldType.NUMBER.value, True, None),
-                    ("post_frequency", "Paylaşım Sıklığı", FieldType.SELECT.value, False,
-                     ["Günlük", "Haftada 3", "Haftada 1", "2 Haftada 1"]),
+                    (
+                        "post_frequency",
+                        "Paylaşım Sıklığı",
+                        FieldType.SELECT.value,
+                        False,
+                        ["Günlük", "Haftada 3", "Haftada 1", "2 Haftada 1"],
+                    ),
                 ],
             ),
             (
                 "İçerik ve Mesaj",
                 [
                     ("key_message", "Ana Mesaj", FieldType.TEXTAREA.value, True, None),
-                    ("tone_of_voice", "Ton", FieldType.SELECT.value, True,
-                     ["Profesyonel", "Eğlenceli", "İlham Verici", "Bilgilendirici", "Samimi"]),
+                    (
+                        "tone_of_voice",
+                        "Ton",
+                        FieldType.SELECT.value,
+                        True,
+                        ["Profesyonel", "Eğlenceli", "İlham Verici", "Bilgilendirici", "Samimi"],
+                    ),
                     ("hashtags", "Hashtag Önerileri", FieldType.TEXT.value, False, None),
                     ("forbidden_topics", "Yasak Konular", FieldType.TEXTAREA.value, False, None),
                     ("cta", "Call to Action", FieldType.TEXT.value, True, None),
@@ -124,8 +146,13 @@ SYSTEM_TEMPLATES = [
                     ("video_title", "Video Başlığı", FieldType.TEXT.value, True, None),
                     ("concept", "Konsept / Senaryo Özeti", FieldType.TEXTAREA.value, True, None),
                     ("duration_sec", "Süre (saniye)", FieldType.NUMBER.value, True, None),
-                    ("video_format", "Format", FieldType.SELECT.value, True,
-                     ["Reels", "TikTok", "YouTube Shorts", "Story"]),
+                    (
+                        "video_format",
+                        "Format",
+                        FieldType.SELECT.value,
+                        True,
+                        ["Reels", "TikTok", "YouTube Shorts", "Story"],
+                    ),
                     ("hook", "İlk 3 Saniye Hook", FieldType.TEXTAREA.value, True, None),
                 ],
             ),
@@ -149,11 +176,27 @@ SYSTEM_TEMPLATES = [
                 "Ürün Bilgileri",
                 [
                     ("product_name", "Ürün Adı", FieldType.TEXT.value, True, None),
-                    ("product_category", "Kategori", FieldType.SELECT.value, True,
-                     ["Cilt Bakımı", "Makyaj", "Saç Bakımı", "Parfüm", "Vücut Bakımı"]),
-                    ("key_ingredients", "Öne Çıkan İçerikler", FieldType.TEXTAREA.value, False, None),
-                    ("price_point", "Fiyat Segmenti", FieldType.SELECT.value, False,
-                     ["Lüks", "Premium", "Orta Segment", "Ekonomik"]),
+                    (
+                        "product_category",
+                        "Kategori",
+                        FieldType.SELECT.value,
+                        True,
+                        ["Cilt Bakımı", "Makyaj", "Saç Bakımı", "Parfüm", "Vücut Bakımı"],
+                    ),
+                    (
+                        "key_ingredients",
+                        "Öne Çıkan İçerikler",
+                        FieldType.TEXTAREA.value,
+                        False,
+                        None,
+                    ),
+                    (
+                        "price_point",
+                        "Fiyat Segmenti",
+                        FieldType.SELECT.value,
+                        False,
+                        ["Lüks", "Premium", "Orta Segment", "Ekonomik"],
+                    ),
                     ("usp", "Ürün Farklılaşması (USP)", FieldType.TEXTAREA.value, True, None),
                 ],
             ),
@@ -163,10 +206,20 @@ SYSTEM_TEMPLATES = [
                     ("target_demo", "Demografik", FieldType.TEXT.value, True, None),
                     ("skin_concern", "Cilt/Güzellik Sorunu", FieldType.TEXTAREA.value, False, None),
                     ("campaign_claim", "Kampanya İddiası", FieldType.TEXT.value, True, None),
-                    ("before_after", "Before/After İçerik", FieldType.SELECT.value, False,
-                     ["Evet", "Hayır"]),
-                    ("influencer_type", "Influencer Tipi", FieldType.SELECT.value, False,
-                     ["Mega (1M+)", "Macro (100K-1M)", "Micro (10K-100K)", "Nano (<10K)"]),
+                    (
+                        "before_after",
+                        "Before/After İçerik",
+                        FieldType.SELECT.value,
+                        False,
+                        ["Evet", "Hayır"],
+                    ),
+                    (
+                        "influencer_type",
+                        "Influencer Tipi",
+                        FieldType.SELECT.value,
+                        False,
+                        ["Mega (1M+)", "Macro (100K-1M)", "Micro (10K-100K)", "Nano (<10K)"],
+                    ),
                 ],
             ),
         ],
@@ -181,19 +234,52 @@ SYSTEM_TEMPLATES = [
                     ("institution_name", "Kurum Adı", FieldType.TEXT.value, True, None),
                     ("service_type", "Hizmet / Uzmanlık Alanı", FieldType.TEXT.value, True, None),
                     ("target_patient", "Hedef Hasta Profili", FieldType.TEXTAREA.value, True, None),
-                    ("accreditations", "Akreditasyon / Sertifikalar", FieldType.TEXT.value, False, None),
+                    (
+                        "accreditations",
+                        "Akreditasyon / Sertifikalar",
+                        FieldType.TEXT.value,
+                        False,
+                        None,
+                    ),
                     ("legal_disclaimer", "Yasal Uyarı Metni", FieldType.TEXTAREA.value, True, None),
                 ],
             ),
             (
                 "İçerik Kısıtlamaları",
                 [
-                    ("forbidden_claims", "Yapılamayacak İddialar", FieldType.TEXTAREA.value, True, None),
-                    ("approved_visuals", "Onaylanan Görsel Tipleri", FieldType.TEXT.value, False, None),
-                    ("tone", "İletişim Tonu", FieldType.SELECT.value, True,
-                     ["Bilimsel/Akademik", "Sıcak/Güven Verici", "Bilgilendirici", "Motivasyonel"]),
-                    ("cta", "Yönlendirme (CTA)", FieldType.SELECT.value, True,
-                     ["Randevu Al", "Bizi Ara", "Daha Fazla Bilgi", "Ücretsiz Danışma"]),
+                    (
+                        "forbidden_claims",
+                        "Yapılamayacak İddialar",
+                        FieldType.TEXTAREA.value,
+                        True,
+                        None,
+                    ),
+                    (
+                        "approved_visuals",
+                        "Onaylanan Görsel Tipleri",
+                        FieldType.TEXT.value,
+                        False,
+                        None,
+                    ),
+                    (
+                        "tone",
+                        "İletişim Tonu",
+                        FieldType.SELECT.value,
+                        True,
+                        [
+                            "Bilimsel/Akademik",
+                            "Sıcak/Güven Verici",
+                            "Bilgilendirici",
+                            "Motivasyonel",
+                        ],
+                    ),
+                    (
+                        "cta",
+                        "Yönlendirme (CTA)",
+                        FieldType.SELECT.value,
+                        True,
+                        ["Randevu Al", "Bizi Ara", "Daha Fazla Bilgi", "Ücretsiz Danışma"],
+                    ),
                 ],
             ),
         ],
@@ -207,8 +293,13 @@ SYSTEM_TEMPLATES = [
                 [
                     ("product_name", "Ürün / Koleksiyon Adı", FieldType.TEXT.value, True, None),
                     ("launch_date", "Lansman Tarihi", FieldType.DATE.value, True, None),
-                    ("campaign_type", "Kampanya Tipi", FieldType.SELECT.value, True,
-                     ["Yeni Ürün", "Sezon Sonu", "Flash Satış", "Bundle Teklifi", "Abonelik"]),
+                    (
+                        "campaign_type",
+                        "Kampanya Tipi",
+                        FieldType.SELECT.value,
+                        True,
+                        ["Yeni Ürün", "Sezon Sonu", "Flash Satış", "Bundle Teklifi", "Abonelik"],
+                    ),
                     ("discount_rate", "İndirim Oranı (%)", FieldType.NUMBER.value, False, None),
                     ("stock_limit", "Stok Kısıtlaması", FieldType.TEXT.value, False, None),
                 ],
@@ -216,11 +307,27 @@ SYSTEM_TEMPLATES = [
             (
                 "Pazarlama Kanalları",
                 [
-                    ("primary_channel", "Ana Kanal", FieldType.SELECT.value, True,
-                     ["Instagram", "TikTok", "Google Ads", "Email", "Meta Ads", "YouTube"]),
-                    ("secondary_channels", "Destekleyici Kanallar", FieldType.TEXT.value, False, None),
-                    ("retargeting", "Retargeting", FieldType.SELECT.value, False,
-                     ["Evet", "Hayır"]),
+                    (
+                        "primary_channel",
+                        "Ana Kanal",
+                        FieldType.SELECT.value,
+                        True,
+                        ["Instagram", "TikTok", "Google Ads", "Email", "Meta Ads", "YouTube"],
+                    ),
+                    (
+                        "secondary_channels",
+                        "Destekleyici Kanallar",
+                        FieldType.TEXT.value,
+                        False,
+                        None,
+                    ),
+                    (
+                        "retargeting",
+                        "Retargeting",
+                        FieldType.SELECT.value,
+                        False,
+                        ["Evet", "Hayır"],
+                    ),
                     ("landing_page_url", "Landing Page URL", FieldType.TEXT.value, False, None),
                     ("conversion_goal", "Dönüşüm Hedefi", FieldType.TEXTAREA.value, True, None),
                 ],
@@ -235,8 +342,13 @@ SYSTEM_TEMPLATES = [
                 "Proje Kapsamı",
                 [
                     ("project_name", "Proje Adı", FieldType.TEXT.value, True, None),
-                    ("project_type", "Proje Tipi", FieldType.SELECT.value, True,
-                     ["Yeni Web Sitesi", "Yenileme", "Landing Page", "E-ticaret", "Web App"]),
+                    (
+                        "project_type",
+                        "Proje Tipi",
+                        FieldType.SELECT.value,
+                        True,
+                        ["Yeni Web Sitesi", "Yenileme", "Landing Page", "E-ticaret", "Web App"],
+                    ),
                     ("page_count", "Sayfa Sayısı (Tahmini)", FieldType.NUMBER.value, False, None),
                     ("deadline", "Teslim Tarihi", FieldType.DATE.value, True, None),
                     ("budget_try", "Bütçe (TL)", FieldType.NUMBER.value, True, None),
@@ -245,14 +357,35 @@ SYSTEM_TEMPLATES = [
             (
                 "Teknik Gereksinimler",
                 [
-                    ("cms", "CMS / Platform", FieldType.SELECT.value, False,
-                     ["WordPress", "Webflow", "Next.js", "Shopify", "Özel Geliştirme"]),
+                    (
+                        "cms",
+                        "CMS / Platform",
+                        FieldType.SELECT.value,
+                        False,
+                        ["WordPress", "Webflow", "Next.js", "Shopify", "Özel Geliştirme"],
+                    ),
                     ("integrations", "Entegrasyonlar", FieldType.TEXTAREA.value, False, None),
-                    ("seo_required", "SEO Optimizasyonu", FieldType.SELECT.value, False,
-                     ["Evet", "Hayır"]),
-                    ("mobile_priority", "Mobil Öncelik", FieldType.SELECT.value, True,
-                     ["Evet, önce mobil", "Desktop öncelikli", "Her ikisi eşit"]),
-                    ("reference_sites", "Referans Web Siteleri", FieldType.TEXTAREA.value, False, None),
+                    (
+                        "seo_required",
+                        "SEO Optimizasyonu",
+                        FieldType.SELECT.value,
+                        False,
+                        ["Evet", "Hayır"],
+                    ),
+                    (
+                        "mobile_priority",
+                        "Mobil Öncelik",
+                        FieldType.SELECT.value,
+                        True,
+                        ["Evet, önce mobil", "Desktop öncelikli", "Her ikisi eşit"],
+                    ),
+                    (
+                        "reference_sites",
+                        "Referans Web Siteleri",
+                        FieldType.TEXTAREA.value,
+                        False,
+                        None,
+                    ),
                 ],
             ),
         ],
@@ -274,10 +407,28 @@ SYSTEM_TEMPLATES = [
             (
                 "Tasarım Yönü",
                 [
-                    ("style_direction", "Tasarım Yönü", FieldType.SELECT.value, True,
-                     ["Minimal", "Modern", "Klasik", "Canlı/Renkli", "Kurumsal", "Sıcak/Organik"]),
+                    (
+                        "style_direction",
+                        "Tasarım Yönü",
+                        FieldType.SELECT.value,
+                        True,
+                        [
+                            "Minimal",
+                            "Modern",
+                            "Klasik",
+                            "Canlı/Renkli",
+                            "Kurumsal",
+                            "Sıcak/Organik",
+                        ],
+                    ),
                     ("color_preferences", "Renk Tercihleri", FieldType.TEXTAREA.value, False, None),
-                    ("fonts_to_avoid", "Kaçınılacak Font/Renk", FieldType.TEXTAREA.value, False, None),
+                    (
+                        "fonts_to_avoid",
+                        "Kaçınılacak Font/Renk",
+                        FieldType.TEXTAREA.value,
+                        False,
+                        None,
+                    ),
                     ("deliverables", "Teslim Edilecekler", FieldType.TEXTAREA.value, True, None),
                     ("deadline", "Teslim Tarihi", FieldType.DATE.value, True, None),
                 ],
@@ -292,22 +443,59 @@ SYSTEM_TEMPLATES = [
                 "İş Birliği Detayları",
                 [
                     ("brand_name", "Marka Adı", FieldType.TEXT.value, True, None),
-                    ("campaign_name", "Kampanya / Kolaborasyon Adı", FieldType.TEXT.value, True, None),
+                    (
+                        "campaign_name",
+                        "Kampanya / Kolaborasyon Adı",
+                        FieldType.TEXT.value,
+                        True,
+                        None,
+                    ),
                     ("influencer_name", "Influencer Adı / Hesap", FieldType.TEXT.value, True, None),
-                    ("collaboration_type", "İş Birliği Tipi", FieldType.SELECT.value, True,
-                     ["Sponsored Post", "Uzun Vadeli Elçi", "Ürün Gönderimi", "Barter", "Paid Partnership"]),
-                    ("deliverables", "Teslim Edilecek İçerikler", FieldType.TEXTAREA.value, True, None),
+                    (
+                        "collaboration_type",
+                        "İş Birliği Tipi",
+                        FieldType.SELECT.value,
+                        True,
+                        [
+                            "Sponsored Post",
+                            "Uzun Vadeli Elçi",
+                            "Ürün Gönderimi",
+                            "Barter",
+                            "Paid Partnership",
+                        ],
+                    ),
+                    (
+                        "deliverables",
+                        "Teslim Edilecek İçerikler",
+                        FieldType.TEXTAREA.value,
+                        True,
+                        None,
+                    ),
                 ],
             ),
             (
                 "İçerik Gereksinimleri",
                 [
-                    ("key_message", "İletilmesi Gereken Mesaj", FieldType.TEXTAREA.value, True, None),
+                    (
+                        "key_message",
+                        "İletilmesi Gereken Mesaj",
+                        FieldType.TEXTAREA.value,
+                        True,
+                        None,
+                    ),
                     ("mandatory_mentions", "Zorunlu Bahsetmeler", FieldType.TEXT.value, True, None),
                     ("forbidden_content", "Yasak İçerik", FieldType.TEXTAREA.value, False, None),
                     ("post_deadline", "Paylaşım Tarihi", FieldType.DATE.value, True, None),
-                    ("approval_required", "Ön Onay Gerekli mi", FieldType.SELECT.value, True,
-                     ["Evet, içerik onaylanmadan yayınlanamaz", "Hayır, doğrudan yayınlayabilir"]),
+                    (
+                        "approval_required",
+                        "Ön Onay Gerekli mi",
+                        FieldType.SELECT.value,
+                        True,
+                        [
+                            "Evet, içerik onaylanmadan yayınlanamaz",
+                            "Hayır, doğrudan yayınlayabilir",
+                        ],
+                    ),
                 ],
             ),
         ],
@@ -374,9 +562,7 @@ async def seed_demo() -> None:
         await seed_system_templates(session)
 
         # Idempotency check for demo agency
-        existing = await session.scalar(
-            select(Agency).where(Agency.slug == DEMO_AGENCY_SLUG)
-        )
+        existing = await session.scalar(select(Agency).where(Agency.slug == DEMO_AGENCY_SLUG))
         if existing is not None:
             print("[SKIP] Demo agency already exists.")
             return
@@ -526,9 +712,7 @@ async def seed_demo() -> None:
             )
 
         # ── Subscription ──────────────────────────────────────────────────────
-        plan = await session.scalar(
-            select(Plan).where(Plan.code == PlanCode.PRO_AGENCY.value)
-        )
+        plan = await session.scalar(select(Plan).where(Plan.code == PlanCode.PRO_AGENCY.value))
         if plan:
             sub = Subscription(
                 id=uuid.uuid4(),

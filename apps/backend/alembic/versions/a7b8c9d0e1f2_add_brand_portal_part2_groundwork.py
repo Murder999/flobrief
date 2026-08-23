@@ -5,6 +5,7 @@ Revision ID: a7b8c9d0e1f2
 Revises: z6a7b8c9d0e1
 Create Date: 2026-07-15
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -48,15 +49,15 @@ def upgrade() -> None:
     )
     op.add_column(
         "brands",
-        sa.Column(
-            "timezone", sa.String(50), nullable=False, server_default="Europe/Istanbul"
-        ),
+        sa.Column("timezone", sa.String(50), nullable=False, server_default="Europe/Istanbul"),
     )
 
     op.create_table(
         "brand_identity_suggestions",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
+        ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),
@@ -100,9 +101,7 @@ def upgrade() -> None:
         sa.Column("resolution_note", sa.Text(), nullable=True),
         sa.Column("resolved_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.create_index(
-        "ix_bis_profile_id", "brand_identity_suggestions", ["profile_id"]
-    )
+    op.create_index("ix_bis_profile_id", "brand_identity_suggestions", ["profile_id"])
     op.create_index("ix_bis_status", "brand_identity_suggestions", ["status"])
 
 

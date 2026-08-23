@@ -4,8 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/context/workspace-context";
-import { templateApi, type TemplateRead } from "@/lib/api-client";
-import { ApiError } from "@/lib/api-client";
+import { templateApi, industryApi, type TemplateRead, type IndustryRead, ApiError } from "@/lib/api-client";
 
 const FIELD_COUNT_PLACEHOLDER = "—";
 
@@ -53,13 +52,24 @@ function TemplateCard({
   template,
   onDuplicate,
   onArchive,
+  onUse,
 }: {
   template: TemplateRead;
   onDuplicate: (id: string) => void;
   onArchive: (id: string) => void;
+  onUse: (templateId: string) => void;
 }) {
+  const gradientClasses = useTemplateGradient(template.id);
+
   return (
-    <div className="bg-surface border border-border rounded-xl p-5 hover:border-accent/30 hover:shadow-sm transition-all group">
+    <div
+      className="bg-surface border border-border rounded-xl p-5 hover:border-accent/30 hover:shadow-sm transition-all group"
+      style={{
+          background: gradientClasses.background,
+          backgroundImage: `linear-gradient(135deg, ${gradientClasses.stop1}, ${gradientClasses.stop2})`,
+          border: gradientClasses.border,
+        }}
+    >
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="font-semibold text-text truncate">{template.name}</h3>
@@ -82,7 +92,7 @@ function TemplateCard({
 
       <div className="flex items-center gap-2 flex-wrap mb-4">
         {template.industry && (
-          <span className="text-xs px-2 py-0.5 bg-accent/10 text-accent rounded-full">
+          <span className="text-xs px-2 py-0.5 rounded-full">
             {template.industry}
           </span>
         )}
@@ -95,7 +105,8 @@ function TemplateCard({
         {!template.is_system_template && (
           <Link
             href={`/dashboard/templates/${template.id}/edit`}
-            className="flex-1 text-center text-xs font-medium px-3 py-1.5 bg-surface-2 text-text hover:bg-accent hover:text-white rounded-lg transition-colors"
+            className="flex-1 text-sm font-medium px-3 py-1.5 bg-surface-2 text-text hover:bg-accent hover:text-white rounded-lg transition-colors"
+            title="Şablonu Düzenle"
           >
             Düzenle
           </Link>
@@ -103,6 +114,7 @@ function TemplateCard({
         <button
           onClick={() => onDuplicate(template.id)}
           className="flex-1 text-xs font-medium px-3 py-1.5 bg-surface-2 text-text hover:bg-surface-3 rounded-lg transition-colors"
+          title="Şablonu Kopyala"
         >
           Kopyala
         </button>
@@ -110,13 +122,33 @@ function TemplateCard({
           <button
             onClick={() => onArchive(template.id)}
             className="text-xs font-medium px-3 py-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
+            title="Şablonu Arşivle"
           >
             Arşivle
           </button>
         )}
+        <button
+          onClick={() => onUse(template.id)}
+          className="flex-1 text-xs font-medium px-3 py-1.5 bg-accent/10 text-accent rounded-lg transition-colors"
+          title="Şablonu Kullan"
+        >
+          Kullan
+        </button>
       </div>
     </div>
   );
+}
+
+function useTemplateGradient(templateId: string) {
+  const hash = templateId.split("-").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hues = [200, 250, 180, 140];
+  const hue = hues[hash % hues.length];
+  const isDark = hue > 220;
+  const bg = isDark ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)";
+  const color = isDark ? `hsl(${hue}, 30%, 90%)` : `hsl(${hue}, 30%, 20%)`;
+  const stop1 = isDark ? `hsl(${hue}, 30%, 70%)` : `hsl(${hue}, 30%, 80%)`;
+  const stop2 = isDark ? `hsl(${hue}, 30%, 50%)` : `hsl(${hue}, 30%, 60%)`;
+  return { background: bg, border: color, text: color, stop1, stop2, hue };
 }
 
 export default function TemplatesPage() {
@@ -127,20 +159,34 @@ export default function TemplatesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIndustry, setSelectedIndustry] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     if (!accessToken || !activeAgency) return;
     setIsLoading(true);
     setError(null);
     try {
-      const data = await templateApi.list(activeAgency.id, accessToken);
-      setTemplates(data);
+      const industryFilter = selectedIndustry ? `industry=${selectedIndustry}` : undefined;
+      const searchFilter = searchQuery ? `&search=${searchQuery}` : undefined;
+      const url = `/api/v1/templates${industryFilter ? `?industry=${industryFilter}` : ""}${searchQuery ? (industryFilter ? "&" : "?") + `search=${searchQuery}` : ""}`;
+      const data = await templateApi.list(activeAgency.id, accessToken, selectedIndustry);
+      let filtered = data;
+
+      if (searchQuery) {
+        filtered = data.filter((t) =>
+          t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+        );
+      }
+
+      setTemplates(filtered);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Şablonlar yüklenemedi");
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken, activeAgency]);
+  }, [accessToken, activeAgency, searchQuery, selectedIndustry]);
 
   useEffect(() => {
     if (workspaceReady && !workspaceLoading && !activeAgency) {
@@ -178,12 +224,31 @@ export default function TemplatesPage() {
     }
   };
 
+  const handleUse = async (templateId: string) => {
+    if (!accessToken || !activeAgency) return;
+    setActionLoading(templateId);
+    try {
+      // Navigate to new brief with template selected, or just mark it
+      // For now, we'll just set the state and let the caller handle navigation
+      setActionLoading(null);
+      // Could trigger navigation or state management here
+    } catch {
+      setActionLoading(null);
+    }
+  };
+
+  // Load industries for filter
+  const [industries, setIndustries] = useState<IndustryRead[]>([]);
+  useEffect(() => {
+    industryApi.list().then(setIndustries).catch(() => {});
+  }, []);
+
   const systemTemplates = templates.filter((t) => t.is_system_template);
   const agencyTemplates = templates.filter((t) => !t.is_system_template);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-text">Brief Şablonları</h1>
           <p className="text-sm text-text-muted mt-1">
@@ -199,6 +264,43 @@ export default function TemplatesPage() {
           </svg>
           Yeni Şablon
         </Link>
+      </div>
+
+      {/* Search and Filters Bar */}
+      <div className="mb-6 bg-surface border border-border rounded-xl p-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Search */}
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">Şabloon Ara</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Şabloon adı veya açıklama..."
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            />
+          </div>
+
+          {/* Industry Filter */}
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">Kategori</label>
+            <select
+              value={selectedIndustry || ""}
+              onChange={(e) => setSelectedIndustry(e.target.value || "")}
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            >
+              <option value="">Tüm kategoriler</option>
+              {industries.map((ind) => (
+                <option key={ind.code} value={ind.code}>
+                  {ind.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* CTA */}
+          <div />
+        </div>
       </div>
 
       {!isLoading && !activeAgency ? (
@@ -239,6 +341,7 @@ export default function TemplatesPage() {
                     template={t}
                     onDuplicate={handleDuplicate}
                     onArchive={handleArchive}
+                    onUse={handleUse}
                   />
                 ))}
               </div>
@@ -257,6 +360,7 @@ export default function TemplatesPage() {
                     template={t}
                     onDuplicate={handleDuplicate}
                     onArchive={handleArchive}
+                    onUse={handleUse}
                   />
                 ))}
               </div>

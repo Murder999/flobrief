@@ -138,7 +138,11 @@ function FieldEditorModal({ initial, sectionId, onSave, onClose }: FieldEditorMo
           <h2 className="font-semibold text-text">
             {initial ? "Alanı Düzenle" : "Yeni Alan Ekle"}
           </h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text transition-colors">
+          <button
+            onClick={onClose}
+            aria-label="Modal'ı kapat"
+            className="text-text-muted hover:text-text transition-colors"
+          >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -742,14 +746,15 @@ function SectionCard({
         {!isReadOnly && (
           <div className="flex items-center gap-1">
             <button
-              onClick={onAddField}
+              onClick={(e) => onAddField()}
               className="text-xs px-2.5 py-1.5 text-accent hover:bg-accent/10 rounded-lg transition-colors font-medium"
             >
               + Alan
             </button>
-            <button
+<button
               onClick={onDeleteSection}
               className="text-xs px-2.5 py-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
+              aria-label="Bölümü sil"
             >
               Sil
             </button>
@@ -781,10 +786,11 @@ function SectionCard({
                 <span className="text-xs text-text-muted">{field.field_key} · {field.field_type}</span>
               </div>
               {!isReadOnly && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => onEditField(field)}
                     className="p-1.5 text-text-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+                    aria-label="Alan düzenle"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -794,6 +800,7 @@ function SectionCard({
                   <button
                     onClick={() => onDeleteField(field.id)}
                     className="p-1.5 text-text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                    aria-label="Alan sil"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

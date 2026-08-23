@@ -15,6 +15,7 @@ rather than re-implementing PDF text extraction in Node.
 Usage:
   python e2e_extract_pdf_text.py <path-to-pdf>   -> prints extracted text to stdout
 """
+
 from __future__ import annotations
 
 import sys

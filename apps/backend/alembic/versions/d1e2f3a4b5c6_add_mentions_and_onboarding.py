@@ -4,6 +4,7 @@ Revision ID: d1e2f3a4b5c6
 Revises: c1d2e3f4a5b6
 Create Date: 2026-07-22
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -78,9 +79,7 @@ def upgrade() -> None:
         sa.Column("dismissed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_seen_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
-        sa.Column(
-            "onboarding_metadata", postgresql.JSONB(), nullable=False, server_default="{}"
-        ),
+        sa.Column("onboarding_metadata", postgresql.JSONB(), nullable=False, server_default="{}"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),

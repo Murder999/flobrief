@@ -238,9 +238,7 @@ def is_event_visible_for_role(event_type: str, role_ctx: UserRoleContext) -> boo
         return False
     if role_ctx.portal is None or role_ctx.portal not in meta.portals:
         return False
-    return (
-        meta.required_permission is None or meta.required_permission in role_ctx.permissions
-    )
+    return meta.required_permission is None or meta.required_permission in role_ctx.permissions
 
 
 def list_visible_events_for_role(role_ctx: UserRoleContext) -> list[WhatsAppEventUIMeta]:

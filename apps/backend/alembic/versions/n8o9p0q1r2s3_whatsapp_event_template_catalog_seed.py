@@ -22,6 +22,7 @@ Revision ID: n8o9p0q1r2s3
 Revises: f3g4h5i6j7k8
 Create Date: 2026-07-28 00:00:00.000000
 """
+
 from __future__ import annotations
 
 import uuid as _uuid
@@ -184,4 +185,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     codes = [code for code, _event_type, _name, _body in _SEED_TEMPLATES]
-    op.execute(_whatsapp_templates_table.delete().where(_whatsapp_templates_table.c.code.in_(codes)))
+    op.execute(
+        _whatsapp_templates_table.delete().where(_whatsapp_templates_table.c.code.in_(codes))
+    )

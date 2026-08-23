@@ -4,6 +4,7 @@ Revision ID: c1d2e3f4a5b6
 Revises: b0c1d2e3f4a5
 Create Date: 2026-07-22
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -47,9 +48,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["created_by_id"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        "ix_accounting_connector_agency_id", "accounting_connectors", ["agency_id"]
-    )
+    op.create_index("ix_accounting_connector_agency_id", "accounting_connectors", ["agency_id"])
     op.create_index(
         "uq_accounting_connector_one_per_provider",
         "accounting_connectors",
@@ -84,9 +83,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["connector_id"], ["accounting_connectors.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["connector_id"], ["accounting_connectors.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["agency_id"], ["agencies.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(
             ["related_invoice_id"], ["client_invoices.id"], ondelete="SET NULL"
@@ -94,12 +91,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("idempotency_key", name="uq_connector_sync_log_idempotency_key"),
     )
-    op.create_index(
-        "ix_connector_sync_log_agency_id", "connector_sync_logs", ["agency_id"]
-    )
-    op.create_index(
-        "ix_connector_sync_log_connector_id", "connector_sync_logs", ["connector_id"]
-    )
+    op.create_index("ix_connector_sync_log_agency_id", "connector_sync_logs", ["agency_id"])
+    op.create_index("ix_connector_sync_log_connector_id", "connector_sync_logs", ["connector_id"])
 
     # ── payments ──────────────────────────────────────────────────────────────
     op.create_table(

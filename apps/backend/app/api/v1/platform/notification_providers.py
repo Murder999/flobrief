@@ -35,7 +35,7 @@ from app.schemas.whatsapp_provider import (
     WhatsAppTestSendRequest,
     WhatsAppTestSendResult,
 )
-from app.services.secret_encryption import secret_encryption
+from app.services.secret_encryption import SecretEncryptionError, secret_encryption
 from app.services.whatsapp_connection_status import compute_connection_status
 
 _PROVIDER_KEY = "whatsapp_twilio"
@@ -330,32 +330,81 @@ def _build_email_status(row: PlatformProviderSetting | None) -> ResendProviderSt
     default_from_email = (
         settings.RESEND_TEST_FROM_EMAIL if settings.RESEND_TEST_MODE else settings.EMAIL_FROM
     )
-    if row is None:
+    db_key_valid = False
+    if row is not None and row.is_enabled and row.encrypted_api_key:
+        try:
+            db_key_valid = bool(secret_encryption.decrypt(row.encrypted_api_key))
+        except SecretEncryptionError:
+            db_key_valid = False
+
+    env_is_configured = bool(settings.RESEND_API_KEY and default_from_email)
+    if settings.is_production and env_is_configured:
         return ResendProviderStatusRead(
             provider=_EMAIL_PROVIDER_KEY,
-            is_enabled=settings.RESEND_TEST_MODE,
-            is_configured=False,
+            configuration_source="environment",
+            is_enabled=True,
+            is_configured=True,
+            api_key_set=True,
+            email_api_key_masked=_mask_api_key(settings.RESEND_API_KEY),
             from_name=settings.EMAIL_FROM_NAME,
             from_email=default_from_email,
             reply_to=settings.EMAIL_REPLY_TO or None,
-            missing_fields=["api_key"],
+            configured_at=row.configured_at if row is not None else None,
+            configured_by_user_id=(row.configured_by_user_id if row is not None else None),
+            missing_fields=[],
         )
 
-    missing: list[str] = []
-    if not row.encrypted_api_key:
-        missing.append("api_key")
+    if db_key_valid and row is not None:
+        return ResendProviderStatusRead(
+            provider=row.provider,
+            configuration_source="database",
+            is_enabled=True,
+            is_configured=True,
+            api_key_set=True,
+            email_api_key_masked=row.email_api_key_masked,
+            from_name=row.email_from_name or settings.EMAIL_FROM_NAME,
+            from_email=row.email_from_email or default_from_email,
+            reply_to=row.email_reply_to or settings.EMAIL_REPLY_TO or None,
+            configured_at=row.configured_at,
+            configured_by_user_id=row.configured_by_user_id,
+            missing_fields=[],
+        )
+
+    if env_is_configured:
+        return ResendProviderStatusRead(
+            provider=_EMAIL_PROVIDER_KEY,
+            configuration_source="environment",
+            is_enabled=True,
+            is_configured=True,
+            api_key_set=True,
+            email_api_key_masked=_mask_api_key(settings.RESEND_API_KEY),
+            from_name=settings.EMAIL_FROM_NAME,
+            from_email=default_from_email,
+            reply_to=settings.EMAIL_REPLY_TO or None,
+            configured_at=row.configured_at if row is not None else None,
+            configured_by_user_id=(row.configured_by_user_id if row is not None else None),
+            missing_fields=[],
+        )
+
+    stored_key = bool(row and row.encrypted_api_key)
+    missing = [] if stored_key else ["api_key"]
+    if row is not None and row.is_enabled and stored_key and not db_key_valid:
+        missing = ["api_key"]
 
     return ResendProviderStatusRead(
-        provider=row.provider,
-        is_enabled=row.is_enabled,
-        is_configured=len(missing) == 0,
-        api_key_set=bool(row.encrypted_api_key),
-        email_api_key_masked=row.email_api_key_masked,
-        from_name=row.email_from_name or settings.EMAIL_FROM_NAME,
-        from_email=row.email_from_email or default_from_email,
-        reply_to=row.email_reply_to or settings.EMAIL_REPLY_TO or None,
-        configured_at=row.configured_at,
-        configured_by_user_id=row.configured_by_user_id,
+        provider=row.provider if row is not None else _EMAIL_PROVIDER_KEY,
+        configuration_source="none",
+        is_enabled=False,
+        is_configured=stored_key and not (row and row.is_enabled and not db_key_valid),
+        api_key_set=stored_key,
+        email_api_key_masked=row.email_api_key_masked if row is not None else None,
+        from_name=(row.email_from_name if row is not None else None) or settings.EMAIL_FROM_NAME,
+        from_email=(row.email_from_email if row is not None else None) or default_from_email,
+        reply_to=(row.email_reply_to if row is not None else None)
+        or settings.EMAIL_REPLY_TO
+        or None,
+        configured_at=row.configured_at if row is not None else None,
+        configured_by_user_id=(row.configured_by_user_id if row is not None else None),
         missing_fields=missing,
     )
 
@@ -454,15 +503,19 @@ async def test_email_send(
 ) -> EmailTestSendResult:
     from app.services.resend_email_provider import EmailProviderFactory
 
-    provider = await EmailProviderFactory.get_provider(db, ignore_enabled=True)
+    provider = await EmailProviderFactory.get_provider(db)
 
-    subject = data.subject or "Flobrief — Test E-postası"
-    message = data.message or "Bu bir Flobrief platform test e-postasıdır. Yapılandırma başarılı."
+    subject = data.subject or f"{settings.EMAIL_FROM_NAME} — Test E-postası"
+    message = (
+        data.message
+        or f"Bu bir {settings.EMAIL_FROM_NAME} platform test e-postasıdır. "
+        "Yapılandırma başarılı."
+    )
     html = f"""<!DOCTYPE html>
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">{settings.EMAIL_FROM_NAME}</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Test E-postası</h2>
     <p style="color:#8888A8;margin-bottom:24px">{message}</p>
     <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu e-posta platform admin tarafından gönderilmiştir.</p>

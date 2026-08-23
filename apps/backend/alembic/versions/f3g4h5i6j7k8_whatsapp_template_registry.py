@@ -17,6 +17,7 @@ Revision ID: f3g4h5i6j7k8
 Revises: e2f3a4b5c6d7
 Create Date: 2026-07-28 00:00:00.000000
 """
+
 from __future__ import annotations
 
 import uuid as _uuid
@@ -108,9 +109,7 @@ def upgrade() -> None:
         "notification_deliveries",
         sa.Column("failure_category", sa.String(30), nullable=True),
     )
-    op.create_index(
-        "ix_ndel_idempotency_key", "notification_deliveries", ["idempotency_key"]
-    )
+    op.create_index("ix_ndel_idempotency_key", "notification_deliveries", ["idempotency_key"])
 
     # ── platform_provider_settings: real connection-check results ───────────────
     op.add_column(
@@ -162,9 +161,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Remove the seeded test template row first — otherwise re-running
     # upgrade() would violate the unique constraint on `code`.
-    op.execute(
-        sa.text("DELETE FROM whatsapp_templates WHERE code = 'flobrief_test_notification'")
-    )
+    op.execute(sa.text("DELETE FROM whatsapp_templates WHERE code = 'flobrief_test_notification'"))
 
     op.drop_column("platform_provider_settings", "last_connection_error")
     # (status width narrowed back at the end of this function, after the

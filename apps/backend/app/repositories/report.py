@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.report import Report, ReportShareToken, ReportSnapshot
@@ -47,13 +47,20 @@ class ReportRepository:
             stmt = stmt.where(Report.report_type == report_type)
         stmt = stmt.order_by(Report.created_at.desc())
 
-        count_result = await self.session.execute(
-            select(Report).where(
+        count_stmt = (
+            select(func.count())
+            .select_from(Report)
+            .where(
                 Report.agency_id == agency_id,
                 Report.deleted_at.is_(None),
             )
         )
-        total = len(count_result.scalars().all())
+        if brand_id is not None:
+            count_stmt = count_stmt.where(Report.brand_id == brand_id)
+        if report_type is not None:
+            count_stmt = count_stmt.where(Report.report_type == report_type)
+        count_result = await self.session.execute(count_stmt)
+        total = count_result.scalar_one()
 
         paged = stmt.limit(limit).offset(offset)
         result = await self.session.execute(paged)
@@ -123,10 +130,13 @@ class ReportShareTokenRepository:
         return result.scalar_one_or_none()
 
     async def list_for_report(self, report_id: uuid.UUID) -> list[ReportShareToken]:
+        now = datetime.now(UTC)
         result = await self.session.execute(
             select(ReportShareToken).where(
                 ReportShareToken.report_id == report_id,
                 ReportShareToken.deleted_at.is_(None),
+                ReportShareToken.revoked_at.is_(None),
+                ReportShareToken.expires_at >= now,
             )
         )
         return list(result.scalars().all())
@@ -135,3 +145,12 @@ class ReportShareTokenRepository:
         token.revoked_at = datetime.now(UTC)
         await self.session.flush()
         return token
+
+    async def revoke_all_for_report(self, report_id: uuid.UUID) -> None:
+        tokens = await self.list_for_report(report_id)
+        if not tokens:
+            return
+        revoked_at = datetime.now(UTC)
+        for token in tokens:
+            token.revoked_at = revoked_at
+        await self.session.flush()

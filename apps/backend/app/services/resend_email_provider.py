@@ -10,6 +10,7 @@ Security: API key never logged or returned in API responses. DB value is Fernet-
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 import httpx
@@ -21,6 +22,7 @@ from app.services.secret_encryption import SecretEncryptionError, secret_encrypt
 
 _RESEND_API = "https://api.resend.com/emails"
 _EMAIL_PROVIDER_KEY = "email_resend"
+logger = logging.getLogger(__name__)
 
 
 def _map_resend_error(status_code: int, err_name: str, err_msg: str) -> str:
@@ -131,7 +133,10 @@ class ResendEmailProvider:
             )
 
         if resp.status_code in (200, 201):
-            data = resp.json()
+            try:
+                data = resp.json()
+            except ValueError:
+                data = {}
             return EmailDeliveryResult(
                 status=NotificationDeliveryStatus.SENT.value,
                 provider="resend",
@@ -183,7 +188,10 @@ class DisabledEmailProvider:
 class EmailProviderFactory:
     """Loads provider config from DB, decrypts secrets, returns correct provider.
 
-    DB config takes priority over env vars. Env vars are dev/local fallback only.
+    Production environment config is authoritative when present, so a stale
+    DB row cannot disable or replace the server-managed credential. Outside
+    production, a valid and enabled DB config takes priority and environment
+    config remains the fallback.
     Decrypted API key exists only within the provider instance lifetime.
     """
 
@@ -201,6 +209,10 @@ class EmailProviderFactory:
         from sqlalchemy import select
 
         from app.models.platform_provider_settings import PlatformProviderSetting
+
+        env_is_configured = bool(settings.RESEND_API_KEY and settings.EMAIL_FROM)
+        if settings.is_production and env_is_configured and not ignore_enabled:
+            return EmailProviderFactory._from_environment()
 
         stmt = select(PlatformProviderSetting).where(
             PlatformProviderSetting.provider == _EMAIL_PROVIDER_KEY,
@@ -221,21 +233,27 @@ class EmailProviderFactory:
                     test_recipient=settings.RESEND_TEST_RECIPIENT,
                     test_from_email=settings.RESEND_TEST_FROM_EMAIL,
                 )
-            except SecretEncryptionError:
-                return DisabledEmailProvider()
+            except SecretEncryptionError as exc:
+                logger.warning(
+                    "Email provider DB secret could not be decrypted; "
+                    "falling back to environment configuration "
+                    "provider=resend error_type=%s",
+                    type(exc).__name__,
+                )
 
-        # Env fallback only when no DB row exists at all (dev/local only).
-        # Never fall through to env if a DB row exists — avoids using a stale
-        # env key when the admin has already saved a new key via the panel.
-        if row is None and settings.RESEND_API_KEY:
-            return ResendEmailProvider(
-                api_key=settings.RESEND_API_KEY,
-                from_name=settings.EMAIL_FROM_NAME,
-                from_email=settings.EMAIL_FROM,
-                reply_to=settings.EMAIL_REPLY_TO or None,
-                test_mode=settings.RESEND_TEST_MODE,
-                test_recipient=settings.RESEND_TEST_RECIPIENT,
-                test_from_email=settings.RESEND_TEST_FROM_EMAIL,
-            )
+        if env_is_configured:
+            return EmailProviderFactory._from_environment()
 
         return DisabledEmailProvider()
+
+    @staticmethod
+    def _from_environment() -> ResendEmailProvider:
+        return ResendEmailProvider(
+            api_key=settings.RESEND_API_KEY,
+            from_name=settings.EMAIL_FROM_NAME,
+            from_email=settings.EMAIL_FROM,
+            reply_to=settings.EMAIL_REPLY_TO or None,
+            test_mode=settings.RESEND_TEST_MODE,
+            test_recipient=settings.RESEND_TEST_RECIPIENT,
+            test_from_email=settings.RESEND_TEST_FROM_EMAIL,
+        )

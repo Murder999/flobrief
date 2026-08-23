@@ -30,13 +30,14 @@ async def _main(to_phone: str, message: str) -> None:
     from app.core.config import settings
 
     if settings.is_production:
-        print("ERROR: This script must not run in production (APP_ENV=production).", file=sys.stderr)
+        print(
+            "ERROR: This script must not run in production (APP_ENV=production).", file=sys.stderr
+        )
         sys.exit(1)
 
     if not settings.FLOBRIEF_SECRET_ENCRYPTION_KEY:
         print(
-            "ERROR: FLOBRIEF_SECRET_ENCRYPTION_KEY is not set. "
-            "Cannot decrypt provider secrets.",
+            "ERROR: FLOBRIEF_SECRET_ENCRYPTION_KEY is not set. " "Cannot decrypt provider secrets.",
             file=sys.stderr,
         )
         sys.exit(1)

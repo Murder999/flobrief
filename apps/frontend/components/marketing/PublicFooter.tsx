@@ -37,15 +37,15 @@ export function PublicFooter() {
           <p className="mb-6 max-w-sm text-sm leading-relaxed text-text-muted">
             {t("marketing.footer.description")}
           </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/demo" className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-gradient-accent px-4 text-xs font-semibold text-white">
-              {t("marketing.actions.demo")}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-            <Link href="/auth/register" className="inline-flex min-h-11 items-center rounded-xl border border-border px-4 text-xs font-semibold text-text-secondary hover:border-border-hover hover:text-text">
-              {t("auth.actions.register")}
-            </Link>
-          </div>
+<div className="flex flex-wrap gap-3">
+              <Link href={localize("/demo")} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-gradient-accent px-4 text-xs font-semibold text-white">
+                {t("marketing.actions.demo")}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+              <Link href={localize("/auth/register")} className="inline-flex min-h-11 items-center rounded-xl border border-border px-4 text-xs font-semibold text-text-secondary hover:border-border-hover hover:text-text">
+                {t("auth.actions.register")}
+              </Link>
+            </div>
         </div>
 
         <div>
@@ -65,7 +65,7 @@ export function PublicFooter() {
           <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-text">{t("marketing.footer.getStarted")}</h2>
           <ul className="space-y-3">
             <li><Link href={localize("/pricing")} className="text-sm text-text-muted hover:text-text">{t("common.navigation.pricing")}</Link></li>
-            <li><Link href="/auth/register" className="text-sm text-text-muted hover:text-text">{t("marketing.actions.freeSignup")}</Link></li>
+            <li><Link href={localize("/auth/register")} className="text-sm text-text-muted hover:text-text">{t("marketing.actions.freeSignup")}</Link></li>
             <li>
               <button
                 type="button"

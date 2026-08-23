@@ -16,6 +16,17 @@ export function formatLocalizedDate(
   return new Intl.DateTimeFormat(resolveFormattingLocale(locale), options).format(date);
 }
 
+export function formatLocalizedDateOnly(
+  value: string,
+  locale?: Locale | string | null,
+  options: Intl.DateTimeFormatOptions = { day: "2-digit", month: "short", year: "numeric" }
+): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return formatLocalizedDate(value, locale, options);
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return new Intl.DateTimeFormat(resolveFormattingLocale(locale), options).format(date);
+}
+
 export function formatLocalizedDateTime(value: Date | string | number, locale?: Locale | string | null): string {
   return formatLocalizedDate(value, locale, { dateStyle: "medium", timeStyle: "short" });
 }

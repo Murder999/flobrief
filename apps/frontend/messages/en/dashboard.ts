@@ -1,5 +1,69 @@
 export const dashboard = {
+  "dashboard.navigation.help": "Help",
   "dashboard.navigation.overview": "Overview",
+
+  // Agency help center
+  "agency.help.portalIntroduction": "Portal Overview",
+  "agency.help.portalIntroDescription": "General overview of the agency portal and how it works.",
+  "agency.help.portalIntroSections": "Agency portal serves customer/workspace areas. Primary purpose: create briefs, manage revision processes and track approval workflow. Multiple brands can operate within an agency, each with separate access.",
+
+  "agency.help.briefCreation": "Brief Creation",
+  "agency.help.briefCreationDescription": "How to start a new brief and when to use templates.",
+  "agency.help.briefCreationSections": "- Brief: Create, plan & send content for a brand\n- Template: Quick start point for repeatedly structured briefs\n- Important fields: Target audience, delivery date, content type, brand info",
+
+  "agency.help.revisionProcess": "Revision Process",
+  "agency.help.revisionProcessDescription": "How revisions work and the difference between comments and revisions.",
+  "agency.help.revisionProcessSections": "- After brief approval, agency begins work and delivers\n- When a revision is requested, you make the specified changes\n- Comment: note on the brief; Revision: concrete change request\n- After revision request, agency reviews and gets back to you",
+
+  "agency.help.approvalWorkflow": "Approval Workflow",
+  "agency.help.approvalWorkflowDescription": "Customer approval, pending approval and rejection processes.",
+  "agency.help.approvalWorkflowSections": "- Customer approval: Final sign-off. When approved, agency proceeds to production\n- Pending approval: Unapproved briefs listed with color coding\n- Reject/Request revision: Send brief back to agency with reason\n- Completed approval: All stages finished, brief delivered",
+
+  "agency.help.notificationPreferences": "Notification Preferences",
+  "agency.help.notificationPreferencesDescription": "When you receive email, in-app and WhatsApp notifications.",
+  "agency.help.notificationPreferencesSections": "- Email: Automated emails for brief and status changes\n- In-app: Notifications visible when app is open, page-top warnings\n- WhatsApp: Notifications after phone number is configured\n- 'Setup required' means your number hasn't been added or verified yet",
+
+  "agency.help.reports": "Reports",
+  "agency.help.reportsDescription": "What the reporting screen is used for.",
+  "agency.help.reportsSections": "- Creates period snapshots from real brief, approval and calendar data\n- Shows current approval state for briefs created in the selected period\n- Report register can be filtered by brand and report type\n- Generated reports can be downloaded as PDF or shared with an expiring link",
+
+  "agency.help.whiteLabel": "White-label / Agency Settings",
+  "agency.help.whiteLabelDescription": "Explanation of really available features in the system.",
+  "agency.help.whiteLabelSections": "- Branding: Your logo, color palette and custom domain settings\n- Team/Roles: Manage agency members and their roles\n- Settings: Notification preferences, integrations and account options",
+
+  "agency.help.teamRoles": "Team / Roles",
+  "agency.help.teamRolesDescription": "PostPiloter role system explained from user perspective.",
+  "agency.help.teamRolesSections": "- Platform Admin: Independent authority over all tenants\n- Agency Owner: Full access within the agency\n- Agency Manager: Team management and content approval\n- Brand User: View briefs and approve/reject\n- Viewers: Read-only, cannot comment or redirect",
+
+  // Brand help center
+  "brand.help.portalIntroduction": "Portal Overview",
+  "brand.help.portalIntroDescription": "What the brand portal does and how the workflow with an agency works.",
+  "brand.help.portalIntroSections": "- Brand portal tracks briefs, approvals and deliveries sent by the agency\n- Agency creates briefs and sends them to you\n- You approve, request revision or reject based on your assessment",
+
+  "brand.help.briefs": "Briefs",
+  "brand.help.briefsDescription": "What a brand user sees and does in briefs.",
+  "brand.help.briefsSections": "- Briefs section shows all briefs sent by the agency\n- Each brief status: Draft, Submitted, Awaiting approval, Accepted, Rejected, Completed or Scheduled\n- Click a brief to view details, deliverables and revisions\n- 'Pending' filter shows briefs waiting for your action",
+
+  "brand.help.revision": "Revision",
+  "brand.help.revisionDescription": "Revision request, comments and feedback.",
+  "brand.help.revisionSections": "- When agency sends a revision request, review your brief and specify changes needed\n- Comment: internal note on the brief; Revision: concrete change request\n- When requesting revision, send descriptive note on what to change\n- After agency completes revision, it returns to you for review",
+
+  "brand.help.approval": "Approval",
+  "brand.help.approvalDescription": "Approve deliverable, reject or request revision.",
+  "brand.help.approvalSections": "- Approve button appears when brief is delivered to you\n- Approve: Confirm brief and all deliverables. Agency continues production\n- Reject/Request revision: Send back to agency with reason\n- Pending actions: List of unprocessed approvals",
+
+  "brand.help.notifications": "Notifications",
+  "brand.help.notificationsDescription": "Available channels and where to change preferences.",
+  "brand.help.notificationsSections": "- In-app: Notifications within the application, page-top warnings\n- Email: Automated emails for brief and status changes\n- WhatsApp: Notifications after phone number is configured\n- Preferences: Change via Settings > Notifications > Channel preferences",
+
+  "brand.help.brandSettings": "Brand Settings",
+  "brand.help.brandSettingsDescription": "Profile, brand information and current actual settings.",
+  "brand.help.brandSettingsSections": "- Profile: Your name, title and avatar\n- Brand info: DNA, vision and brand details\n- Settings: Notification preferences, connected accounts and preferences",
+
+  "brand.help.portalUsage": "Portal Usage",
+  "brand.help.portalUsageDescription": "Briefly explains what important screens do.",
+  "brand.help.portalUsageSections": "- Briefs: Track all your briefs and their statuses\n- Approvals: Manage pending and completed approvals\n- Notifications: Check channels and preferences\n- Reports: View performance and delivery summaries",
+  "common.help.backToPortal": "Back to portal",
   "dashboard.navigation.briefs": "Briefs",
   "dashboard.navigation.calendar": "Content calendar",
   "dashboard.navigation.reports": "Reports",
@@ -7,6 +71,8 @@ export const dashboard = {
   "dashboard.welcome": "Welcome, {name}",
   "dashboard.navigation.workflow": "Workflow",
   "dashboard.navigation.templates": "Templates",
+  "dashboard.templates.search": "Search templates",
+  "dashboard.templates.category": "Category",
   "dashboard.navigation.timeTracking": "Time tracking",
   "dashboard.navigation.brandsReports": "Brands & reports",
   "dashboard.navigation.brands": "Brands",
@@ -196,4 +262,13 @@ export const dashboard = {
   "dashboard.onboarding.createTemplate": "Create template",
   "dashboard.onboarding.brief": "Create your first brief",
   "dashboard.onboarding.createBrief": "Create brief",
+
+  // Demo
+  "dashboard.demo.mode": "Demo Mode",
+  "dashboard.demo.switchPortal": "Switch demo portal",
+  "dashboard.demo.loading": "Loading…",
+  "dashboard.demo.agencyPortal": "Agency Portal",
+  "dashboard.demo.brandPortal": "Brand Portal",
+  "dashboard.demo.agencyDesc": "Agency operations",
+  "dashboard.demo.brandDesc": "Brand / client view",
 } as const;

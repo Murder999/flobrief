@@ -4,6 +4,7 @@ Revision ID: b0c1d2e3f4a5
 Revises: a9b0c1d2e3f4
 Create Date: 2026-07-21
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -31,9 +32,7 @@ def upgrade() -> None:
         sa.Column("commercial_terms_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("invoice_number", sa.String(50), nullable=False),
         sa.Column("external_invoice_id", sa.String(255), nullable=True),
-        sa.Column(
-            "document_type", sa.String(20), nullable=False, server_default="draft_invoice"
-        ),
+        sa.Column("document_type", sa.String(20), nullable=False, server_default="draft_invoice"),
         sa.Column("issue_date", sa.Date(), nullable=False),
         sa.Column("due_date", sa.Date(), nullable=False),
         sa.Column("service_period_start", sa.Date(), nullable=True),
@@ -81,9 +80,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["created_by_id"], ["users.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["approved_by_id"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "agency_id", "invoice_number", name="uq_client_invoice_agency_number"
-        ),
+        sa.UniqueConstraint("agency_id", "invoice_number", name="uq_client_invoice_agency_number"),
         sa.CheckConstraint(
             "document_type IN ('draft_invoice', 'proforma')",
             name="ck_client_invoice_document_type_never_e_fatura",
@@ -92,9 +89,7 @@ def upgrade() -> None:
             "total_cents = subtotal_cents - discount_cents + tax_cents",
             name="ck_client_invoice_total_matches_components",
         ),
-        sa.CheckConstraint(
-            "subtotal_cents >= 0", name="ck_client_invoice_subtotal_non_negative"
-        ),
+        sa.CheckConstraint("subtotal_cents >= 0", name="ck_client_invoice_subtotal_non_negative"),
         sa.CheckConstraint("discount_cents >= 0", name="ck_client_invoice_discount_non_negative"),
         sa.CheckConstraint("tax_cents >= 0", name="ck_client_invoice_tax_non_negative"),
         sa.CheckConstraint("total_cents >= 0", name="ck_client_invoice_total_non_negative"),
@@ -172,9 +167,7 @@ def upgrade() -> None:
             name="ck_client_invoice_line_cost_rate_non_negative",
         ),
     )
-    op.create_index(
-        "ix_client_invoice_line_invoice_id", "client_invoice_lines", ["invoice_id"]
-    )
+    op.create_index("ix_client_invoice_line_invoice_id", "client_invoice_lines", ["invoice_id"])
     op.create_index(
         "uq_client_invoice_line_time_entry_source",
         "client_invoice_lines",
@@ -187,9 +180,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "uq_client_invoice_line_time_entry_source", table_name="client_invoice_lines"
-    )
+    op.drop_index("uq_client_invoice_line_time_entry_source", table_name="client_invoice_lines")
     op.drop_index("ix_client_invoice_line_invoice_id", table_name="client_invoice_lines")
     op.drop_table("client_invoice_lines")
 

@@ -37,6 +37,7 @@ E2E_REWRITE_API_PORT dev-rewrite target — see apps/frontend/.env.local and
 next.config.mjs) so this script talks to the same backend instance
 Playwright's browser actually exercises, instead of an unrelated port 8000.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -131,9 +132,7 @@ async def _delete_agency_and_brands(db, agency_id: uuid.UUID) -> None:
     agency = await db.get(Agency, agency_id)
     if agency is not None:
         await db.delete(agency)
-    brands = (
-        await db.execute(select(Brand).where(Brand.agency_id == agency_id))
-    ).scalars().all()
+    brands = (await db.execute(select(Brand).where(Brand.agency_id == agency_id))).scalars().all()
     for brand in brands:
         await db.delete(brand)
 
@@ -143,9 +142,7 @@ async def cleanup(run_id: str | None = None) -> None:
     async with AsyncSessionLocal() as db:
         agency_ids: set[uuid.UUID] = set()
         for email in all_emails:
-            user = (
-                await db.execute(select(User).where(User.email == email))
-            ).scalar_one_or_none()
+            user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is None:
                 continue
             member = (
@@ -158,9 +155,7 @@ async def cleanup(run_id: str | None = None) -> None:
         await db.commit()
 
         for email in all_emails:
-            user = (
-                await db.execute(select(User).where(User.email == email))
-            ).scalar_one_or_none()
+            user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is not None:
                 await db.delete(user)
         await db.commit()
@@ -191,50 +186,83 @@ async def seed_db(run_id: str | None = None) -> dict[str, uuid.UUID]:
         db.add_all([agency, brand, other_agency])
 
         owner_user = User(
-            id=uuid.uuid4(), email=owner_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E Agency Owner", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=owner_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Agency Owner",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         designer_user = User(
-            id=uuid.uuid4(), email=designer_email, password_hash=hash_password(PASSWORD),
-            full_name=DESIGNER_FULL_NAME, user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=designer_email,
+            password_hash=hash_password(PASSWORD),
+            full_name=DESIGNER_FULL_NAME,
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         viewer_user = User(
-            id=uuid.uuid4(), email=viewer_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E Agency Viewer", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=viewer_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Agency Viewer",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         other_tenant_owner = User(
-            id=uuid.uuid4(), email=other_tenant_owner_email, password_hash=hash_password(PASSWORD),
-            full_name="E2E Other Tenant Owner", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=other_tenant_owner_email,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Other Tenant Owner",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         db.add_all([owner_user, designer_user, viewer_user, other_tenant_owner])
         await db.flush()
 
-        db.add_all([
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=owner_user.id,
-                role=AgencyMemberRole.OWNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=designer_user.id,
-                role=AgencyMemberRole.DESIGNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=viewer_user.id,
-                role=AgencyMemberRole.VIEWER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=other_agency.id, user_id=other_tenant_owner.id,
-                role=AgencyMemberRole.OWNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-        ])
+        db.add_all(
+            [
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=owner_user.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=designer_user.id,
+                    role=AgencyMemberRole.DESIGNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=viewer_user.id,
+                    role=AgencyMemberRole.VIEWER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=other_agency.id,
+                    user_id=other_tenant_owner.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+            ]
+        )
 
         brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Mention/Onboarding Brief", status="in_production",
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Mention/Onboarding Brief",
+            status="in_production",
             created_by_id=owner_user.id,
         )
         db.add(brief)
@@ -251,7 +279,9 @@ async def seed_db(run_id: str | None = None) -> dict[str, uuid.UUID]:
         }
 
 
-async def seed_content(ids: dict[str, uuid.UUID], dismiss_onboarding: bool = True) -> dict[str, str]:
+async def seed_content(
+    ids: dict[str, uuid.UUID], dismiss_onboarding: bool = True
+) -> dict[str, str]:
     token = create_access_token(str(ids["owner_user_id"]))
     headers = {"Authorization": f"Bearer {token}", "X-Agency-ID": str(ids["agency_id"])}
     brief_id = ids["brief_id"]
@@ -331,7 +361,9 @@ async def seed_content(ids: dict[str, uuid.UUID], dismiss_onboarding: bool = Tru
         owner_progress = await client.get("/api/v1/onboarding/progress", headers=headers)
         owner_progress.raise_for_status()
         if dismiss_onboarding:
-            dismiss_owner = await client.post("/api/v1/onboarding/progress/dismiss", headers=headers)
+            dismiss_owner = await client.post(
+                "/api/v1/onboarding/progress/dismiss", headers=headers
+            )
             dismiss_owner.raise_for_status()
 
         designer_token = create_access_token(str(ids["designer_user_id"]))
@@ -339,7 +371,9 @@ async def seed_content(ids: dict[str, uuid.UUID], dismiss_onboarding: bool = Tru
             "Authorization": f"Bearer {designer_token}",
             "X-Agency-ID": str(ids["agency_id"]),
         }
-        designer_progress = await client.get("/api/v1/onboarding/progress", headers=designer_headers)
+        designer_progress = await client.get(
+            "/api/v1/onboarding/progress", headers=designer_headers
+        )
         designer_progress.raise_for_status()
         if dismiss_onboarding:
             dismiss_designer = await client.post(

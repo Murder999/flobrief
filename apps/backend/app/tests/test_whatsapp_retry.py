@@ -237,9 +237,7 @@ class TestRetryBatchIntegration:
         finally:
             await _delete_delivery(delivery_id)
 
-    async def test_retryable_failure_reschedules_with_backoff(
-        self, ctx, approve_template
-    ) -> None:
+    async def test_retryable_failure_reschedules_with_backoff(self, ctx, approve_template) -> None:
         await approve_template(
             "brief_created", content_sid="HXtest123", variable_schema={"1": "recipient_first_name"}
         )
@@ -426,9 +424,7 @@ class TestRetryRevalidation:
         finally:
             await _delete_delivery(delivery_id)
 
-    async def test_invoice_paid_expires_pending_reminder_retry(
-        self, ctx, approve_template
-    ) -> None:
+    async def test_invoice_paid_expires_pending_reminder_retry(self, ctx, approve_template) -> None:
         await approve_template(
             "invoice_overdue", content_sid="HXinv123", variable_schema={"1": "invoice_number"}
         )

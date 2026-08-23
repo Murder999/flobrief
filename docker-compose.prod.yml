@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -29,6 +27,7 @@ services:
       retries: 5
 
   backend:
+    image: flobrief-backend:${RELEASE_SHA:-latest}
     build:
       context: ./apps/backend
       dockerfile: Dockerfile
@@ -51,16 +50,17 @@ services:
       start_period: 30s
 
   frontend:
+    image: flobrief-frontend:${RELEASE_SHA:-latest}
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://flobrief.com}
-        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://flobrief.com}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://postpiloter.com}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://postpiloter.com}
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://flobrief.com}
-      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://flobrief.com}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://postpiloter.com}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://postpiloter.com}
     expose:
       - "3000"
     depends_on:

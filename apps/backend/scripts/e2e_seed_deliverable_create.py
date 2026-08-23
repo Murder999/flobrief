@@ -16,6 +16,7 @@ Two modes:
 Safety: refuses to run unless DATABASE_URL resolves to a local host and
 APP_ENV is not "production" — mirrors e2e_seed_preview_center.py.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -95,16 +96,18 @@ async def cleanup_by_email() -> None:
             user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is None:
                 continue
-            member = (await db.execute(
-                select(AgencyMember).where(AgencyMember.user_id == user.id)
-            )).scalar_one_or_none()
+            member = (
+                await db.execute(select(AgencyMember).where(AgencyMember.user_id == user.id))
+            ).scalar_one_or_none()
             if member is not None:
                 agency = await db.get(Agency, member.agency_id)
                 if agency is not None:
                     await db.delete(agency)
-                brands = (await db.execute(
-                    select(Brand).where(Brand.agency_id == member.agency_id)
-                )).scalars().all()
+                brands = (
+                    (await db.execute(select(Brand).where(Brand.agency_id == member.agency_id)))
+                    .scalars()
+                    .all()
+                )
                 for brand in brands:
                     await db.delete(brand)
         await db.commit()
@@ -116,9 +119,9 @@ async def cleanup_by_agency_id(agency_id: uuid.UUID) -> None:
         agency = await db.get(Agency, agency_id)
         if agency is not None:
             await db.delete(agency)
-        brands = (await db.execute(
-            select(Brand).where(Brand.agency_id == agency_id)
-        )).scalars().all()
+        brands = (
+            (await db.execute(select(Brand).where(Brand.agency_id == agency_id))).scalars().all()
+        )
         for brand in brands:
             await db.delete(brand)
         await db.commit()
@@ -128,51 +131,82 @@ async def cleanup_by_agency_id(agency_id: uuid.UUID) -> None:
 async def seed_db() -> tuple[uuid.UUID, uuid.UUID, uuid.UUID]:
     async with AsyncSessionLocal() as db:
         agency = Agency(
-            id=uuid.uuid4(), name="E2E Deliverable Create Agency",
-            slug=f"e2e-delcreate-agency-{uuid.uuid4().hex[:8]}", status=AgencyStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            name="E2E Deliverable Create Agency",
+            slug=f"e2e-delcreate-agency-{uuid.uuid4().hex[:8]}",
+            status=AgencyStatus.ACTIVE.value,
         )
         brand = Brand(
-            id=uuid.uuid4(), agency_id=agency.id, name="E2E Deliverable Create Brand",
-            slug=f"e2e-delcreate-brand-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            name="E2E Deliverable Create Brand",
+            slug=f"e2e-delcreate-brand-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
         )
         db.add_all([agency, brand])
 
         owner_user = User(
-            id=uuid.uuid4(), email=OWNER_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Deliverable Owner", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=OWNER_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Deliverable Owner",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         viewer_user = User(
-            id=uuid.uuid4(), email=VIEWER_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Deliverable Viewer", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=VIEWER_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Deliverable Viewer",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         brand_user = User(
-            id=uuid.uuid4(), email=BRAND_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Deliverable Brand Owner", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=BRAND_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Deliverable Brand Owner",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         db.add_all([owner_user, viewer_user, brand_user])
         await db.flush()
 
-        db.add_all([
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=owner_user.id,
-                role=AgencyMemberRole.OWNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=viewer_user.id,
-                role=AgencyMemberRole.VIEWER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=brand.id, user_id=brand_user.id,
-                role=BrandMemberRole.BRAND_OWNER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-        ])
+        db.add_all(
+            [
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=owner_user.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=viewer_user.id,
+                    role=AgencyMemberRole.VIEWER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=brand.id,
+                    user_id=brand_user.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+            ]
+        )
 
         brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Deliverable Create Brief", status="in_production",
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Deliverable Create Brief",
+            status="in_production",
             created_by_id=owner_user.id,
         )
         db.add(brief)
@@ -202,7 +236,13 @@ async def seed_existing_deliverable(
         resp = await client.post(
             f"/api/v1/briefs/{brief_id}/deliverables/{deliverable_id}/assets",
             headers=headers,
-            files={"file": ("e2e-existing-deliverable.png", _make_fixture_png((40, 110, 190)), "image/png")},
+            files={
+                "file": (
+                    "e2e-existing-deliverable.png",
+                    _make_fixture_png((40, 110, 190)),
+                    "image/png",
+                )
+            },
         )
         resp.raise_for_status()
 

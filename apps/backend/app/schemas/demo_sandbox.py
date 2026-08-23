@@ -63,3 +63,19 @@ class DemoSandboxRead(BaseModel):
     terminated_at: datetime | None
     termination_reason: str | None
     created_at: datetime
+
+
+class DemoSessionStatus(BaseModel):
+    is_demo: bool
+    active_portal: str | None = None
+    expires_at: str | None = None
+
+
+class DemoPortalSwitchRequest(BaseModel):
+    portal: str  # "agency" | "brand"
+
+
+class DemoPortalSwitchResponse(BaseModel):
+    portal: str
+    redirect_to: str
+    expires_at: str

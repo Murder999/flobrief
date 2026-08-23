@@ -4,6 +4,7 @@ Revision ID: p6q7r8s9t0u1
 Revises: o5p6q7r8s9t0
 Create Date: 2026-07-11
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -19,9 +20,24 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "deliverables",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column(
+            "id",
+            postgresql.UUID(as_uuid=True),
+            nullable=False,
+            server_default=sa.text("gen_random_uuid()"),
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("agency_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("brand_id", postgresql.UUID(as_uuid=True), nullable=True),

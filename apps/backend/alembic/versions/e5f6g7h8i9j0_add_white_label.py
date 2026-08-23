@@ -27,12 +27,8 @@ def upgrade() -> None:
         sa.Column("secondary_color", sa.String(7), nullable=True),
         sa.Column("accent_color", sa.String(7), nullable=True),
         sa.Column("logo_asset_id", sa.dialects.postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column(
-            "email_logo_asset_id", sa.dialects.postgresql.UUID(as_uuid=True), nullable=True
-        ),
-        sa.Column(
-            "favicon_asset_id", sa.dialects.postgresql.UUID(as_uuid=True), nullable=True
-        ),
+        sa.Column("email_logo_asset_id", sa.dialects.postgresql.UUID(as_uuid=True), nullable=True),
+        sa.Column("favicon_asset_id", sa.dialects.postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("custom_footer_text", sa.String(500), nullable=True),
         sa.Column("is_white_label_enabled", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column(
@@ -50,9 +46,7 @@ def upgrade() -> None:
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(["agency_id"], ["agencies.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["logo_asset_id"], ["assets.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(
-            ["email_logo_asset_id"], ["assets.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["email_logo_asset_id"], ["assets.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["favicon_asset_id"], ["assets.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("agency_id", name="uq_branding_agency_id"),

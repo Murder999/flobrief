@@ -9,6 +9,7 @@ import { applyTheme, getTheme, type Theme } from "@/lib/theme";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 import { useLocale } from "@/context/locale-context";
 import { formatLocalizedDate } from "@/lib/i18n/format";
+import { SettingsLayout } from "@/components/settings/SettingsLayout";
 
 function formatDate(iso: string | null, locale: "en" | "tr"): string {
   if (!iso) return "—";
@@ -157,29 +158,13 @@ export default function ProfilePage() {
   const isDirty = fullName !== (user?.full_name ?? "") || jobTitle !== (user?.job_title ?? "");
   const isWhatsAppDirty = phoneNumber !== (user?.phone_number ?? "");
 
-  return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-text">{t("settings.profile.title")}</h1>
-        <p className="mt-1 text-sm text-text-muted">{t("settings.profile.description")}</p>
-      </div>
-
-      <section className="mb-4 rounded-2xl border border-border bg-surface p-6" aria-labelledby="profile-language-title">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 id="profile-language-title" className="text-sm font-semibold text-text">{t("settings.profile.language")}</h2>
-            <p className="mt-1 max-w-lg text-xs leading-relaxed text-text-muted">{t("settings.profile.languageHelp")}</p>
-          </div>
-          <LanguageSelector className="self-start sm:self-auto" />
-        </div>
-      </section>
-
-      {/* Editable Profile */}
-      <div className="bg-surface border border-border rounded-2xl p-6 mb-4">
-        <div className="flex items-center gap-5 mb-6">
+return (
+    <SettingsLayout portal="agency" title="Profil">
+      {/* Section: Profil Bilgileri */}
+      <section className="mb-6 rounded-2xl border border-border bg-surface p-5">
+        <div className="flex items-center gap-5 mb-5">
           <div className="relative flex-shrink-0 group/avatar">
             {user?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={user.avatar_url}
                 alt={user.full_name}
@@ -231,7 +216,7 @@ export default function ProfilePage() {
         </div>
 
         {avatarError && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{avatarError}</div>
+          <div className="mb-3 p-2 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{avatarError}</div>
         )}
 
         <div className="space-y-4">
@@ -265,12 +250,12 @@ export default function ProfilePage() {
           </div>
 
           {saveError && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{saveError}</div>
+            <div className="p-2 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{saveError}</div>
           )}
 
           {saveSuccess && (
-            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-700 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-200 text-sm text-emerald-700">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               {t("settings.profile.saved")}
@@ -280,12 +265,12 @@ export default function ProfilePage() {
           <button
             onClick={handleSaveProfile}
             disabled={saving || !isDirty || !fullName.trim()}
-            className="px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+            className="w-full px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {saving ? (
               <>
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
                 {t("settings.profile.saving")}
@@ -293,66 +278,68 @@ export default function ProfilePage() {
             ) : t("common.actions.save")}
           </button>
         </div>
+      </section>
 
-        <div className="mt-6 pt-6 border-t border-border divide-y divide-border">
-          <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-text-muted">{t("settings.profile.email")}</span>
-            <span className="text-sm font-medium text-text">{user?.email ?? "—"}</span>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-text-muted">{t("settings.profile.emailVerification")}</span>
-            <span className={`text-sm font-medium ${user?.is_verified ? "text-emerald-500" : "text-amber-500"}`}>
-              {t(user?.is_verified ? "settings.profile.verified" : "settings.profile.unverified")}
-            </span>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-text-muted">{t("settings.profile.memberSince")}</span>
-            <span className="text-sm font-medium text-text">{formatDate(user?.created_at ?? null, locale)}</span>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-text-muted">{t("settings.profile.lastLogin")}</span>
-            <span className="text-sm font-medium text-text">{formatDate(user?.last_login_at ?? null, locale)}</span>
-          </div>
+      {/* Section: Tercihler */}
+      <section className="mb-6 rounded-2xl border border-border bg-surface p-5">
+        <h3 className="text-sm font-semibold text-text mb-3">{t("settings.profile.language")}</h3>
+        <p className="text-xs text-text-muted mb-4">{t("settings.profile.languageHelp")}</p>
+        <LanguageSelector className="self-start sm:self-auto" />
+
+        <h3 className="text-sm font-semibold text-text mb-3 mt-6">{t("settings.theme.title")}</h3>
+        <p className="text-xs text-text-muted mb-4">{t("settings.theme.description")}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {THEME_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleThemeChange(opt.value)}
+              className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border-2 transition-all ${
+                currentTheme === opt.value
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border hover:border-border-hover text-text-muted hover:text-text"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={opt.iconPath} />
+              </svg>
+              <div className="text-center">
+                <p className="text-xs font-semibold">{opt.label}</p>
+                <p className="text-[10px] mt-0.5 opacity-70">{opt.description}</p>
+              </div>
+              {currentTheme === opt.value && (
+                <div className="w-3 h-3 rounded-full bg-accent flex items-center justify-center">
+                  <svg className="w-1.5 h-1.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+            </button>
+          ))}
         </div>
-      </div>
+      </section>
 
-      <div className="mb-4">
+      {/* Section: Hesap & Güvenlik */}
+      <section className="rounded-2xl border border-border bg-surface p-5">
         <PasswordChangeForm accessToken={accessToken} onCompleted={() => void logout()} />
-      </div>
 
-      {/* MFA Status */}
-      <div className="bg-surface border border-border rounded-2xl p-6 mb-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-text mb-1">{t("settings.security.mfaTitle")}</h3>
-            <p className="text-xs text-text-muted">
-              {user?.mfa_enabled
-                ? t("settings.security.mfaEnabledDescription")
-                : t("settings.security.mfaDisabledDescription")}
-            </p>
-          </div>
-          <span
-            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-              user?.mfa_enabled
-                ? "bg-success/10 text-success"
-                : "bg-warning/10 text-warning"
-            }`}
-          >
+        <div className="mt-5 pt-5 border-t border-border">
+          <h3 className="text-sm font-semibold text-text mb-2">{t("settings.security.mfaTitle")}</h3>
+          <p className="text-xs text-text-muted">
+            {user?.mfa_enabled
+              ? t("settings.security.mfaEnabledDescription")
+              : t("settings.security.mfaDisabledDescription")}
+          </p>
+          <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
             {t(user?.mfa_enabled ? "settings.security.enabled" : "settings.security.disabled")}
-          </span>
+          </div>
         </div>
-      </div>
 
-      {/* WhatsApp Opt-In */}
-      <div className="bg-surface border border-border rounded-2xl p-6 mb-4">
-        <div className="mb-5">
-          <h3 className="text-sm font-semibold text-text mb-1">{t("settings.whatsapp.title")}</h3>
+        <div className="mt-5 pt-5 border-t border-border">
+          <h3 className="text-sm font-semibold text-text mb-2">{t("settings.whatsapp.title")}</h3>
           <p className="text-xs text-text-muted">
             {t("settings.whatsapp.description")}
           </p>
-        </div>
-        <div className="space-y-4">
           <PhoneNumberInput
             id="profile-phone"
             label={t("settings.whatsapp.phone")}
@@ -375,13 +362,11 @@ export default function ProfilePage() {
           </div>
 
           {whatsAppSaveError && (
-            <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">
-              {whatsAppSaveError}
-            </div>
+            <div className="p-2 rounded-lg bg-danger/10 border border-danger/20 text-sm text-danger">{whatsAppSaveError}</div>
           )}
           {whatsAppSaveSuccess && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-500">
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-center gap-1.5 p-2 rounded-lg bg-emerald-500/10 border border-emerald-200 text-sm text-emerald-500">
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               {t("settings.whatsapp.saved")}
@@ -391,12 +376,12 @@ export default function ProfilePage() {
           <button
             onClick={handleSaveWhatsApp}
             disabled={savingWhatsApp || !isWhatsAppDirty}
-            className="px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+            className="w-full px-5 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {savingWhatsApp ? (
               <>
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
                 {t("settings.profile.saving")}
@@ -404,43 +389,7 @@ export default function ProfilePage() {
             ) : t("settings.whatsapp.save")}
           </button>
         </div>
-      </div>
-
-      {/* Theme Preference */}
-      <div className="bg-surface border border-border rounded-2xl p-6">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-text mb-1">{t("settings.theme.title")}</h3>
-          <p className="text-xs text-text-muted">{t("settings.theme.description")}</p>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {THEME_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleThemeChange(opt.value)}
-              className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border-2 transition-all ${
-                currentTheme === opt.value
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border hover:border-border-hover text-text-muted hover:text-text"
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={opt.iconPath} />
-              </svg>
-              <div className="text-center">
-                <p className="text-xs font-semibold">{opt.label}</p>
-                <p className="text-[10px] mt-0.5 opacity-70">{opt.description}</p>
-              </div>
-              {currentTheme === opt.value && (
-                <div className="w-4 h-4 rounded-full bg-accent flex items-center justify-center">
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+      </section>
+    </SettingsLayout>
   );
 }

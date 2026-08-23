@@ -40,9 +40,7 @@ def _sign_inbound(params: dict[str, str]) -> str:
 async def _post_inbound(client: AsyncClient, params: dict[str, str]):
     sig = _sign_inbound(params)
     with _decrypt_patch():
-        return await client.post(
-            INBOUND_PATH, data=params, headers={"X-Twilio-Signature": sig}
-        )
+        return await client.post(INBOUND_PATH, data=params, headers={"X-Twilio-Signature": sig})
 
 
 async def _make_optin_user(phone_number: str) -> uuid.UUID:
@@ -61,9 +59,7 @@ async def _make_optin_user(phone_number: str) -> uuid.UUID:
         )
         session.add(user)
         await session.flush()
-        session.add(
-            NotificationPreference(id=uuid.uuid4(), user_id=user.id, whatsapp_enabled=True)
-        )
+        session.add(NotificationPreference(id=uuid.uuid4(), user_id=user.id, whatsapp_enabled=True))
         await session.commit()
         return user.id
 
@@ -71,12 +67,16 @@ async def _make_optin_user(phone_number: str) -> uuid.UUID:
 async def _cleanup_user(user_id: uuid.UUID) -> None:
     async with AsyncSessionLocal() as session:
         deliveries = (
-            await session.execute(
-                select(NotificationDelivery).where(
-                    NotificationDelivery.recipient_user_id == user_id
+            (
+                await session.execute(
+                    select(NotificationDelivery).where(
+                        NotificationDelivery.recipient_user_id == user_id
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         for d in deliveries:
             await session.delete(d)
 
@@ -89,8 +89,10 @@ async def _cleanup_user(user_id: uuid.UUID) -> None:
             await session.delete(pref)
 
         logs = (
-            await session.execute(select(ActivityLog).where(ActivityLog.entity_id == user_id))
-        ).scalars().all()
+            (await session.execute(select(ActivityLog).where(ActivityLog.entity_id == user_id)))
+            .scalars()
+            .all()
+        )
         for log in logs:
             await session.delete(log)
 
@@ -195,9 +197,7 @@ class TestStopPhoneMatching:
         self, client: AsyncClient, twilio_provider_row
     ) -> None:
         never_registered = "+90555" + str(uuid.uuid4().int)[:7]
-        resp = await _post_inbound(
-            client, {"From": f"whatsapp:{never_registered}", "Body": "STOP"}
-        )
+        resp = await _post_inbound(client, {"From": f"whatsapp:{never_registered}", "Body": "STOP"})
         assert resp.status_code == 200  # no error, just a safe no-op
 
     async def test_ambiguous_phone_opts_out_nobody_and_audits(
@@ -207,9 +207,7 @@ class TestStopPhoneMatching:
         user_a = await _make_optin_user(shared_phone)
         user_b = await _make_optin_user(shared_phone)
         try:
-            resp = await _post_inbound(
-                client, {"From": f"whatsapp:{shared_phone}", "Body": "STOP"}
-            )
+            resp = await _post_inbound(client, {"From": f"whatsapp:{shared_phone}", "Body": "STOP"})
             assert resp.status_code == 200
             ua = await _get_user(user_a)
             ub = await _get_user(user_b)
@@ -218,9 +216,7 @@ class TestStopPhoneMatching:
 
             async with AsyncSessionLocal() as session:
                 result = await session.execute(
-                    select(ActivityLog).where(
-                        ActivityLog.action == "whatsapp_stop_ambiguous_phone"
-                    )
+                    select(ActivityLog).where(ActivityLog.action == "whatsapp_stop_ambiguous_phone")
                 )
                 rows = result.scalars().all()
                 assert any(r.meta.get("candidate_count") == 2 for r in rows)

@@ -84,6 +84,8 @@ export const marketing = {
   "marketing.pricing.faq.5.q": "Faturalar nasıl kesiliyor?",
   "marketing.pricing.faq.5.a": "Ödemeler Paddle (Kayıtlı Satıcımız) aracılığıyla güvenli bir şekilde işlenir. Her dönem için fatura oluşturulur ve panelden erişilebilir.",
   "marketing.pricing.loading": "Fiyat yükleniyor...",
+  "marketing.pricing.loadingPrice": "Yerel fiyat getiriliyor…",
+  "marketing.pricing.priceUnavailable": "Fiyat şu anda yüklenemiyor",
 
   "marketing.legal.terms.title": "Kullanım Koşulları",
   "marketing.legal.terms.lastUpdated": "Son güncelleme: 21 Ağustos 2026",

@@ -50,7 +50,7 @@ function PricingCard({
   const isEnterprise = plan.monthly_price_cents === 0;
   const period = yearly ? "yearly" : "monthly";
 
-  const { price, loading: priceLoading } = usePaddlePricePreview(
+  const { price, loading: priceLoading, error: priceError } = usePaddlePricePreview(
     isEnterprise ? null : (plan.code as "brand_solo" | "starter_agency" | "pro_agency" | "agency_plus"),
     period
   );
@@ -60,16 +60,11 @@ function PricingCard({
       window.location.href = "mailto:sales@postpiloter.com?subject=Enterprise Plan";
       return;
     }
+    if (priceError || !price) {
+      return;
+    }
     await onSelect(plan);
   };
-
-  const formatPrice = (cents: number) => {
-    return new Intl.NumberFormat(intlLocale, { style: "currency", currency: plan.currency, minimumFractionDigits: 0 }).format(cents / 100);
-  };
-
-  const priceMonthly = yearly && plan.yearly_price_cents
-    ? plan.yearly_price_cents / 12
-    : plan.monthly_price_cents;
 
   return (
     <div
@@ -105,40 +100,39 @@ function PricingCard({
             <p className="text-3xl font-bold text-text">{t("marketing.pricing.customPrice")}</p>
             <p className="mt-1 text-xs text-text-muted">{t("marketing.pricing.talkToSales")}</p>
           </>
-        ) : (
+        ) : priceError ? (
+          <div className="flex flex-col items-center gap-2 text-center py-4">
+            <div className="text-3xl font-bold text-text-muted">—</div>
+            <p className="text-sm text-danger-text">{t("marketing.pricing.priceUnavailable")}</p>
+            <p className="text-xs text-text-muted">Checkout devre dışı</p>
+          </div>
+        ) : priceLoading ? (
           <>
             <div className="flex items-end gap-1">
-              {priceLoading ? (
-                <>
-                  <div className="text-3xl font-bold text-text animate-pulse">
-                    <span className="bg-surface-2 rounded w-24 h-10" />
-                  </div>
-                  <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
-                </>
-              ) : price ? (
-                <>
-                  <p className="text-3xl font-bold text-text">{price.formattedTotal}</p>
-                  <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
-                </>
-              ) : (
-                <>
-                  <p className="text-3xl font-bold text-text">{formatPrice(priceMonthly)}</p>
-                  <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
-                </>
-              )}
+              <div className="text-3xl font-bold text-text animate-pulse">
+                <span className="bg-surface-2 rounded w-24 h-10" />
+              </div>
+              <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
             </div>
-            {yearly && plan.yearly_price_cents && !priceLoading && price ? (
+            <p className="mt-1 text-xs text-text-muted">{t("marketing.pricing.loadingPrice")}</p>
+          </>
+        ) : price ? (
+          <>
+            <div className="flex items-end gap-1">
+              <p className="text-3xl font-bold text-text">{price.formattedTotal}</p>
+              <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
+            </div>
+            {yearly && plan.yearly_price_cents && (
               <p className="mt-1 text-xs text-success-text font-medium">
                 {t("marketing.pricing.yearlySavings", { price: price.formattedTotal })}
               </p>
-            ) : yearly && plan.yearly_price_cents && !price ? (
-              <p className="mt-1 text-xs text-success-text font-medium">
-                {t("marketing.pricing.yearlySavings", { price: formatPrice(plan.yearly_price_cents) })}
-              </p>
-            ) : (
-              <p className="mt-1 text-xs text-text-muted">{t("marketing.pricing.monthlyBilling")}</p>
             )}
           </>
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-center py-4">
+            <div className="text-3xl font-bold text-text-muted">—</div>
+            <p className="text-sm text-danger-text">{t("marketing.pricing.priceUnavailable")}</p>
+          </div>
         )}
       </div>
 

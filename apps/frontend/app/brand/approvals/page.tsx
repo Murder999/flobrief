@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { brandPortalApi, type BrandApprovalCard } from "@/lib/api-client";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import { MessageSquare, ArrowRight } from "lucide-react";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { InfoTooltip } from "@/components/contextual-help/InfoTooltip";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -75,6 +76,7 @@ export default function BrandApprovalsPage() {
   const [approvals, setApprovals] = useState<BrandApprovalCard[] | null>(null);
   const [error, setError] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>("pending");
+  const approvalsRef = useRef<HTMLDivElement>(null);
 
   const loadData = useCallback(async () => {
     if (!accessToken) return;
@@ -118,6 +120,11 @@ export default function BrandApprovalsPage() {
               <span className="text-sm font-medium">{pendingCount} onay bekliyor</span>
             </div>
           )}
+          <InfoTooltip
+            targetRef={approvalsRef}
+            text="Onay akışı: Brief'in teslim edilmesi → Inceleme → Onay veya Revizyon iste → Tamamlandı. Bekleyen onaylar renkle belirtilir. Reddetmek/revizyon istemek için brief'i seçin."
+            title="Onak Akışı Hakkında"
+          />
         </div>
       </div>
 

@@ -1,12 +1,25 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, Response, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth_dependencies import get_current_user
 from app.core.config import settings
 from app.core.rate_limiter import get_client_ip
 from app.db.session import get_db
-from app.schemas.demo_sandbox import DemoPublicStatus, DemoStartRequest, DemoStartResponse
+from app.models.agency import Agency
+from app.models.agency_member import AgencyMember
+from app.models.brand import Brand
+from app.models.user import User
+from app.schemas.demo_sandbox import (
+    DemoPortalSwitchRequest,
+    DemoPortalSwitchResponse,
+    DemoPublicStatus,
+    DemoSessionStatus,
+    DemoStartRequest,
+    DemoStartResponse,
+)
 from app.services.demo_sandbox_service import DemoSandboxService, demo_counts, get_demo_settings
 
 demo_router = APIRouter(prefix="/demo", tags=["public-demo"])
@@ -82,4 +95,124 @@ async def create_demo_sandbox(
         expires_in=min(settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, ttl_seconds),
         agency_id=sandbox.agency_id,
         expires_at=sandbox.expires_at,
+    )
+
+
+@demo_router.get("/session", response_model=DemoSessionStatus)
+async def demo_session(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> DemoSessionStatus:
+    """Get current demo session status and active portal."""
+    # Check if user is in a demo agency
+    agency = await db.scalar(
+        select(Agency)
+        .join(AgencyMember, AgencyMember.agency_id == Agency.id)
+        .where(
+            AgencyMember.user_id == current_user.id,
+            AgencyMember.deleted_at.is_(None),
+            Agency.is_demo.is_(True),
+            Agency.deleted_at.is_(None),
+        )
+        .limit(1)
+    )
+
+    if agency is None:
+        return DemoSessionStatus(is_demo=False, active_portal=None, expires_at=None)
+
+    from datetime import UTC, datetime
+
+    now = datetime.now(UTC)
+    is_active = (
+        agency.status == "active"
+        and agency.demo_expires_at is not None
+        and agency.demo_expires_at > now
+    )
+
+    # Determine active portal from request context or default to agency
+    # For demo, we track active portal via a simple approach
+    # The frontend will tell us which portal it's currently in
+    # We can infer from the user's last activity or just return the agency as default
+    active_portal = "agency"  # default
+
+    return DemoSessionStatus(
+        is_demo=is_active,
+        active_portal=active_portal if is_active else None,
+        expires_at=agency.demo_expires_at.isoformat() if agency.demo_expires_at else None,
+    )
+
+
+@demo_router.post("/switch-portal", response_model=DemoPortalSwitchResponse)
+async def demo_switch_portal(
+    body: DemoPortalSwitchRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> DemoPortalSwitchResponse:
+    """Switch between agency and brand portal in demo mode."""
+    # Verify user is in a demo agency
+    agency = await db.scalar(
+        select(Agency)
+        .join(AgencyMember, AgencyMember.agency_id == Agency.id)
+        .where(
+            AgencyMember.user_id == current_user.id,
+            AgencyMember.deleted_at.is_(None),
+            Agency.is_demo.is_(True),
+            Agency.deleted_at.is_(None),
+        )
+        .limit(1)
+    )
+
+    if agency is None:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Demo portal switch only available in demo mode",
+        )
+
+    from datetime import UTC, datetime
+
+    now = datetime.now(UTC)
+    if agency.status != "active" or agency.demo_expires_at is None or agency.demo_expires_at <= now:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Demo session expired",
+        )
+
+    target_portal = body.portal
+    if target_portal not in ("agency", "brand"):
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid portal. Must be 'agency' or 'brand'",
+        )
+
+    # For brand portal, verify there's at least one brand in the demo agency
+    if target_portal == "brand":
+        brand = await db.scalar(
+            select(Brand)
+            .where(
+                Brand.agency_id == agency.id,
+                Brand.deleted_at.is_(None),
+            )
+            .limit(1)
+        )
+        if brand is None:
+            from fastapi import HTTPException
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No brands available in demo agency",
+            )
+
+    # Determine redirect URL
+    redirect_to = "/dashboard" if target_portal == "agency" else "/brand/dashboard"
+
+    return DemoPortalSwitchResponse(
+        portal=target_portal,
+        redirect_to=redirect_to,
+        expires_at=agency.demo_expires_at.isoformat() if agency.demo_expires_at else "",
     )

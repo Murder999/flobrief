@@ -52,9 +52,7 @@ def upgrade() -> None:
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.UniqueConstraint("page_key", name="uq_seo_page_key"),
     )
-    op.create_index(
-        "ix_seo_page_key", "platform_seo_page_settings", ["page_key"], unique=True
-    )
+    op.create_index("ix_seo_page_key", "platform_seo_page_settings", ["page_key"], unique=True)
 
     # ── platform_growth_settings ──────────────────────────────────────────────
     op.create_table(

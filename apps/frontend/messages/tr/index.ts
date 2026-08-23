@@ -6,6 +6,7 @@ import { dashboard } from "./dashboard";
 import { marketing } from "./marketing";
 import { notifications } from "./notifications";
 import { portal } from "./portal";
+import { reports } from "./reports";
 import { settings } from "./settings";
 
 export const trMessages = {
@@ -15,6 +16,7 @@ export const trMessages = {
   ...dashboard,
   ...briefs,
   ...portal,
+  ...reports,
   ...notifications,
   ...settings,
 } satisfies Record<TranslationKey, string>;

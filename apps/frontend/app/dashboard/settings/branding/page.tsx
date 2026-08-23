@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/context/workspace-context";
 import { useToast } from "@/components/ui/toast";
+import { InfoTooltip } from "@/components/contextual-help/InfoTooltip";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -312,6 +313,7 @@ export default function BrandingSettingsPage() {
   const { accessToken } = useAuth();
   const { activeAgency } = useWorkspace();
   const { confirm, toast } = useToast();
+  const brandingRef = useRef<HTMLDivElement>(null);
 
   const [branding, setBranding] = useState<AgencyBrandingRead | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -464,9 +466,13 @@ export default function BrandingSettingsPage() {
           {/* White-label toggle */}
           <div className="bg-surface border border-border rounded-2xl p-6 space-y-5">
             <div className="flex items-center justify-between">
-              <div>
+              <div ref={brandingRef}>
                 <h2 className="text-sm font-semibold text-text">White-label Modu</h2>
-                <p className="text-xs text-text-muted mt-0.5">Flobrief markasını müşteri sayfalarından gizler.</p>
+                <InfoTooltip
+                  targetRef={brandingRef}
+                  text="White-label modu: Müşterilerinize gösterilen onay ve rapor sayfalarınızı markanızla özelleştirir. Logonuz, renk paletiniz ve custom footer metni gösterilir. Agency Plus ve Enterprise planlarda kullanılabilir."
+                  title="White-label Modu"
+                />
               </div>
               <button
                 type="button"
@@ -493,14 +499,19 @@ export default function BrandingSettingsPage() {
               <label className="text-xs font-medium text-text-muted uppercase tracking-wide">
                 Marka Adı (Opsiyonel)
               </label>
-              <input
-                type="text"
-                value={form.brand_name_override ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, brand_name_override: e.target.value || null }))}
-                disabled={locked}
-                placeholder="Ajans adınız veya müşteri markanız"
-                className="w-full px-3 py-2.5 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed bg-surface text-text"
-              />
+              <InfoTooltip
+                text="Marka adı: Müşterileriniz onay ve rapor sayfalarında görürülen ajans adınız. Varsayılan olarak sistem adı kullanılır."
+                title="Marka Adı"
+              >
+                <input
+                  type="text"
+                  value={form.brand_name_override ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, brand_name_override: e.target.value || null }))}
+                  disabled={locked}
+                  placeholder="Ajans adınız veya müşteri markanız"
+                  className="w-full px-3 py-2.5 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed bg-surface text-text"
+                />
+              </InfoTooltip>
             </div>
 
             <div className="space-y-3">

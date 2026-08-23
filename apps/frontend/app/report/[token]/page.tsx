@@ -2,6 +2,7 @@
 
 import { publicReportApi, publicBrandingApi, type PublicReportView, type PublicBrandingView } from "@/lib/api-client";
 import { useParams } from "next/navigation";
+import { Clock3, FileQuestion } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocale } from "@/context/locale-context";
 import { LanguageSelector } from "@/components/i18n/language-selector";
@@ -35,11 +36,11 @@ function KpiCard({
 
 function LoadingSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0f1a] via-[#111127] to-[#0a0a14] p-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0f1a] via-[#111127] to-[#0a0a14] px-4 py-8 sm:px-8">
       <div className="max-w-3xl mx-auto animate-pulse">
         <div className="h-8 bg-white/10 rounded w-1/2 mb-3" />
         <div className="h-4 bg-white/10 rounded w-1/3 mb-8" />
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-24 bg-white/5 rounded-xl border border-white/10" />
           ))}
@@ -92,8 +93,8 @@ export default function PublicReportPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0f0f1a] via-[#111127] to-[#0a0a14] flex items-center justify-center p-8">
         <div className="text-center max-w-sm">
-          <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">{errorCode === 410 ? "⏱" : "◎"}</span>
+          <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white/60">
+            {errorCode === 410 ? <Clock3 className="h-7 w-7" aria-hidden="true" /> : <FileQuestion className="h-7 w-7" aria-hidden="true" />}
           </div>
           <h1 className="text-xl font-semibold text-white mb-2">
             {errorCode === 410 ? t("portal.report.invalidTitle") : t("portal.report.notFoundTitle")}
@@ -120,7 +121,7 @@ export default function PublicReportPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#0f0f1a] via-[#111127] to-[#0a0a14]">
       {/* Header bar */}
       <div className="border-b border-white/10 backdrop-blur-sm" style={{ background: branding ? `${primaryColor}20` : "rgba(99,102,241,0.2)" }}>
-        <div className="max-w-3xl mx-auto px-8 py-4 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3 sm:px-8">
           <div className="flex items-center gap-2.5">
             {logoUrl ? (
               <img src={logoUrl} alt={brandDisplayName} className="h-6 w-auto max-w-[90px] object-contain" />
@@ -130,7 +131,7 @@ export default function PublicReportPage() {
                 style={{ background: primaryColor }}
               >
                 <span className="text-white font-bold text-xs">
-                  {(brandDisplayName[0] ?? "F").toUpperCase()}
+                  {(brandDisplayName[0] ?? "P").toUpperCase()}
                 </span>
               </div>
             )}
@@ -141,7 +142,7 @@ export default function PublicReportPage() {
           {report.allow_pdf_download && (
             <a
               href={publicReportApi.pdfUrl(token)}
-              download={`flobrief-report.pdf`}
+              download="postpiloter-report.pdf"
               className="px-3 py-1.5 text-xs font-medium text-white bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
             >
               {t("portal.report.downloadPdf")}
@@ -151,7 +152,7 @@ export default function PublicReportPage() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-8 py-10">
+      <div className="max-w-3xl mx-auto px-4 py-8 sm:px-8 sm:py-10">
         {/* Title block */}
         <div className="mb-8">
           <p className="text-xs font-medium text-indigo-400 uppercase tracking-wider mb-2">
@@ -182,7 +183,7 @@ export default function PublicReportPage() {
           />
           <KpiCard
             label={t("portal.report.published")}
-            value={m.published_calendar_items_count as number}
+            value={m.scope_version === 2 ? m.published_calendar_items_count : null}
             accent="border-l-cyan-500"
           />
         </div>
@@ -217,16 +218,16 @@ export default function PublicReportPage() {
           {/* Platform distribution */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-5">
             <h2 className="text-sm font-semibold text-white mb-4">{t("portal.report.distribution")}</h2>
-            {Object.keys(m.platform_distribution as Record<string, number> ?? {}).length === 0 ? (
+            {m.scope_version !== 2 || Object.keys(m.platform_distribution ?? {}).length === 0 ? (
               <p className="text-sm text-white/40">{t("portal.report.noData")}</p>
             ) : (
               <div className="space-y-2">
-                {Object.entries(m.platform_distribution as Record<string, number>)
+                {Object.entries(m.platform_distribution ?? {})
                   .sort(([, a], [, b]) => b - a)
                   .slice(0, 6)
                   .map(([plat, cnt]) => {
                     const total = Object.values(
-                      m.platform_distribution as Record<string, number>
+                      m.platform_distribution ?? {}
                     ).reduce((s, v) => s + v, 0);
                     const pct = total ? Math.round((cnt / total) * 100) : 0;
                     return (

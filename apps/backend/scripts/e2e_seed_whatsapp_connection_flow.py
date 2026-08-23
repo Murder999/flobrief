@@ -13,6 +13,7 @@ Two modes:
 Safety: refuses to run unless DATABASE_URL resolves to a local host and
 APP_ENV is not "production".
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -58,12 +59,16 @@ async def _delete_fixture(session) -> None:
         if user is None:
             continue
         agencies = (
-            await session.execute(
-                select(Agency)
-                .join(AgencyMember, AgencyMember.agency_id == Agency.id)
-                .where(AgencyMember.user_id == user.id)
+            (
+                await session.execute(
+                    select(Agency)
+                    .join(AgencyMember, AgencyMember.agency_id == Agency.id)
+                    .where(AgencyMember.user_id == user.id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         for agency in agencies:
             await session.delete(agency)
         await session.flush()

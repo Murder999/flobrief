@@ -5,6 +5,7 @@ import { getInitials } from "@/lib/auth";
 import { brandPortalApi } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { DemoPortalSwitcher } from "@/components/workspace/demo-portal-switcher";
 import type { NotificationFeedSource } from "@/components/notifications/useNotificationFeed";
 import { BrandOnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { useOnboardingPageSeen } from "@/hooks/useOnboardingPageSeen";
@@ -18,7 +19,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   LayoutDashboard, CheckCircle, FileText, Calendar,
-  FolderOpen, BarChart3, Settings2, LogOut, PlusSquare, Dna, Users, Bell, Receipt,
+  FolderOpen, BarChart3, Settings2, LogOut, PlusSquare, Dna, Users, Bell, Receipt, Info,
 } from "lucide-react";
 
 const BRAND_MANAGER_ROLES = new Set(["brand_owner", "brand_manager"]);
@@ -57,6 +58,12 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Marka",
     items: [
       { href: "/brand/identity", label: "Marka DNA", icon: Dna },
+    ],
+  },
+  {
+    title: "Yardım",
+    items: [
+      { href: "/brand/help", label: "Yardım Merkezi", icon: Info },
     ],
   },
   {
@@ -210,6 +217,11 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
 
       {/* Footer */}
       <div className="px-2.5 py-3 border-t border-border">
+        {/* Demo Portal Switcher */}
+        <div className="mb-2.5">
+          <DemoPortalSwitcher />
+        </div>
+
         <div className="flex items-center gap-2 px-2 py-2 rounded-lg">
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center ring-2 ring-accent/30 flex-shrink-0"
@@ -274,12 +286,18 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
   }, [accessToken]);
 
   const navSections = useMemo(() => {
-    if (!isManager) return NAV_SECTIONS;
+    const roleScopedSections = membershipRole === "external_approver"
+      ? NAV_SECTIONS.map((section) => ({
+          ...section,
+          items: section.items.filter((item) => item.href !== "/brand/reports"),
+        }))
+      : NAV_SECTIONS;
+    if (!isManager) return roleScopedSections;
     const teamItem: NavItem = { href: "/brand/team", label: "Ekip", icon: Users };
-    return NAV_SECTIONS.map((section) =>
+    return roleScopedSections.map((section) =>
       section.title === "Marka" ? { ...section, items: [...section.items, teamItem] } : section
     );
-  }, [isManager]);
+  }, [isManager, membershipRole]);
 
   const navDrawerGroups = useMemo(() => toNavDrawerGroups(navSections, t), [navSections, t]);
   const localizedBottomNavItems = useMemo(

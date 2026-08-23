@@ -236,22 +236,25 @@ class TestResendEmailProvider:
 
 class TestEmailProviderFactory:
     @pytest.mark.asyncio
-    async def test_returns_disabled_when_no_db_row_and_no_env(self):
+    async def test_returns_disabled_when_no_db_row_and_no_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
         mock_db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        with patch.dict(os.environ, {"RESEND_API_KEY": ""}, clear=False):
-            from app.core.config import settings as _settings
-
-            _settings.RESEND_API_KEY = ""
-            provider = await EmailProviderFactory.get_provider(mock_db)
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "")
+        provider = await EmailProviderFactory.get_provider(mock_db)
 
         assert isinstance(provider, DisabledEmailProvider)
 
     @pytest.mark.asyncio
-    async def test_returns_resend_provider_when_db_row_configured(self):
+    async def test_returns_resend_provider_when_db_row_configured(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        monkeypatch.setattr(settings, "APP_ENV", "development")
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "")
         mock_row = MagicMock()
         mock_row.is_enabled = True
         mock_row.encrypted_api_key = "encrypted_value"
@@ -275,7 +278,7 @@ class TestEmailProviderFactory:
         assert provider.is_active() is True
 
     @pytest.mark.asyncio
-    async def test_returns_disabled_when_db_row_disabled(self):
+    async def test_returns_disabled_when_db_row_disabled(self, monkeypatch: pytest.MonkeyPatch):
         mock_row = MagicMock()
         mock_row.is_enabled = False
         mock_row.encrypted_api_key = "encrypted_value"
@@ -286,15 +289,14 @@ class TestEmailProviderFactory:
         mock_result.scalar_one_or_none.return_value = mock_row
         mock_db.execute = AsyncMock(return_value=mock_result)
 
-        from app.core.config import settings as _settings
-
-        _settings.RESEND_API_KEY = ""
+        monkeypatch.setattr(settings, "APP_ENV", "development")
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "")
         provider = await EmailProviderFactory.get_provider(mock_db)
 
         assert isinstance(provider, DisabledEmailProvider)
 
     @pytest.mark.asyncio
-    async def test_returns_disabled_when_decryption_fails(self):
+    async def test_returns_disabled_when_decryption_fails(self, monkeypatch: pytest.MonkeyPatch):
         from app.services.secret_encryption import SecretEncryptionError
 
         mock_row = MagicMock()
@@ -311,12 +313,54 @@ class TestEmailProviderFactory:
             "app.services.resend_email_provider.secret_encryption.decrypt",
             side_effect=SecretEncryptionError("decrypt failed"),
         ):
-            from app.core.config import settings as _settings
-
-            _settings.RESEND_API_KEY = ""
+            monkeypatch.setattr(settings, "APP_ENV", "development")
+            monkeypatch.setattr(settings, "RESEND_API_KEY", "")
             provider = await EmailProviderFactory.get_provider(mock_db)
 
         assert isinstance(provider, DisabledEmailProvider)
+
+    @pytest.mark.asyncio
+    async def test_production_environment_overrides_stale_enabled_db_row(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        mock_row = MagicMock(
+            is_enabled=True,
+            encrypted_api_key="old_encrypted_value",
+            email_from_name="Old Sender",
+            email_from_email="old@example.com",
+            email_reply_to=None,
+        )
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_row
+        mock_db.execute = AsyncMock(return_value=mock_result)
+        monkeypatch.setattr(settings, "APP_ENV", "production")
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "re_environment_key")
+        monkeypatch.setattr(settings, "EMAIL_FROM", "noreply@postpiloter.com")
+        monkeypatch.setattr(settings, "EMAIL_FROM_NAME", "PostPiloter")
+
+        provider = await EmailProviderFactory.get_provider(mock_db)
+
+        assert isinstance(provider, ResendEmailProvider)
+        assert provider._from_email == "noreply@postpiloter.com"
+        assert provider._from_name == "PostPiloter"
+        mock_db.execute.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_disabled_db_row_falls_back_to_environment(self, monkeypatch: pytest.MonkeyPatch):
+        mock_row = MagicMock(is_enabled=False, encrypted_api_key="old_encrypted_value")
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_row
+        mock_db.execute = AsyncMock(return_value=mock_result)
+        monkeypatch.setattr(settings, "APP_ENV", "development")
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "re_environment_key")
+        monkeypatch.setattr(settings, "EMAIL_FROM", "noreply@postpiloter.com")
+
+        provider = await EmailProviderFactory.get_provider(mock_db)
+
+        assert isinstance(provider, ResendEmailProvider)
+        assert provider._from_email == "noreply@postpiloter.com"
 
 
 # ── Schema validation tests ────────────────────────────────────────────────────
@@ -371,17 +415,40 @@ class TestEmailTestSendRequest:
 
 
 class TestResendProviderStatusRead:
-    def test_test_mode_defaults_require_only_api_key(self, monkeypatch: pytest.MonkeyPatch):
+    def test_test_mode_without_api_key_is_not_configured(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "APP_ENV", "development")
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "")
         monkeypatch.setattr(settings, "RESEND_TEST_MODE", True)
         monkeypatch.setattr(settings, "RESEND_TEST_FROM_EMAIL", "onboarding@resend.dev")
         monkeypatch.setattr(settings, "EMAIL_FROM_NAME", "Flobrief")
 
         status = _build_email_status(None)
 
-        assert status.is_enabled is True
+        assert status.is_enabled is False
+        assert status.configuration_source == "none"
         assert status.from_name == "Flobrief"
         assert status.from_email == "onboarding@resend.dev"
         assert status.missing_fields == ["api_key"]
+
+    def test_production_environment_status_is_authoritative(self, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(settings, "APP_ENV", "production")
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "re_environment_key_1234")
+        monkeypatch.setattr(settings, "RESEND_TEST_MODE", False)
+        monkeypatch.setattr(settings, "EMAIL_FROM", "noreply@postpiloter.com")
+        monkeypatch.setattr(settings, "EMAIL_FROM_NAME", "PostPiloter")
+        row = MagicMock(
+            is_enabled=False,
+            encrypted_api_key="old_key",
+            configured_at=None,
+            configured_by_user_id=None,
+        )
+
+        status = _build_email_status(row)
+
+        assert status.is_enabled is True
+        assert status.is_configured is True
+        assert status.configuration_source == "environment"
+        assert status.from_email == "noreply@postpiloter.com"
 
     def test_not_configured_status(self):
         status = ResendProviderStatusRead(

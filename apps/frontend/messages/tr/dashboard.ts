@@ -1,5 +1,68 @@
 export const dashboard = {
+  "dashboard.navigation.help": "Yardım",
   "dashboard.navigation.overview": "Genel bakış",
+
+  // Agency help center
+  "agency.help.portalIntroduction": "Portal Genel Bakışı",
+  "agency.help.portalIntroDescription": "Ajans portalı genel bakışı ve nasıl çalıştırılacağını açıklar.",
+  "agency.help.portalIntroSections": "Ajans portalı müşteri/çalışma alanlarını yönetir. Temel amac: Brief oluşturma, revizyon süreçlerini yönetme ve onay akışını takipEtme. Ajans içinde farklı markalar çalışabilir, her biri ayrı erişim sağlar.",
+
+  "agency.help.briefCreation": "Brief Oluşturma",
+  "agency.help.briefCreationDescription": "Yeni brief nasıl başlatılır ve template ne zaman kullanılmalıdır.",
+  "agency.help.briefCreationSections": "- Brief: Bir briefe içerik planlayın, oluşturun ve teslim edin\n- Template: Tekrarlayan yapıdaki briefler için hızlı başlangıç noktası\n- Önemli alanlar: Hedef kitle, teslim tarihi, içerik türü ve marka bilgileri",
+
+  "agency.help.revisionProcess": "Revizyon Süreci",
+  "agency.help.revisionProcessDescription": "Revizyon nasıl işler ve yorum ile revizyon farkı.",
+  "agency.help.revisionProcessSections": "- Brief onaylandıktan sonra ajans çalışmaya başlar ve teslim eder\n- Revizyon istendiğinde belirtilen değişiklikleri yapmanız istenir\n- Yorum, brief üzerindeki notdur; revizyon, konkrete değişiklik isteğini ifade eder\n- Revizyon talebi gönderildikten sonra ajans bunu inceleyecek ve size geri dönecektir",
+
+  "agency.help.approvalWorkflow": "Onak Akışı",
+  "agency.help.approvalWorkflowDescription": "Müşteri onayı, bekleyen onay ve reddetme süreçleri.",
+  "agency.help.approvalWorkflowSections": "- Müşteri onayı: Final onay. Onaylandığında ajans üretime geçer\n- Bekleyen onay: Henüz onaylanmamış briefler listelenir. Renkle belirlendiği görülür\n- Reddetme/Revizyon isteme: Brief'i reddedip nedeniyle ajansa geri gönderebilirsiniz\n- Tamamlanan onay: Tüm aşamalar tamamlandı ve brief teslim edilmiştir",
+
+  "agency.help.notificationPreferences": "Bildirim Tercihleri",
+  "agency.help.notificationPreferencesDescription": "Email, in-app ve WhatsApp kanallarında ne zaman bildirim alacağını açıklar.",
+  "agency.help.notificationPreferencesSections": "- Email: Brief ve onay durumundaki otomatik e-postalar\n- In-app: Uygulama açığında görünen bildirimler ve sayfa üstü uyarılar\n- WhatsApp: Telefon numaranız eklendikten sonra yapılandırılmış bildirimler\n- 'Kurulum gerekli' gösterirse, telefon numaranız henüz eklenmemiş veya doğrulanmamış",
+
+  "agency.help.reports": "Raporlar",
+  "agency.help.reportsDescription": "Raporlama ekranının ne amaçla kullanıldığını açıklar.",
+  "agency.help.reportsSections": "- Gerçek brief, onay ve takvim verilerinden dönem anlık görüntüsü oluşturur\n- Seçilen dönemde oluşturulan brieflerin güncel onay durumunu gösterir\n- Rapor kayıtları marka ve rapor türüne göre filtrelenebilir\n- Oluşturulan raporlar PDF olarak indirilebilir veya süreli bağlantıyla paylaşılabilir",
+
+  "agency.help.whiteLabel": "White-label / Ajans Ayarları",
+  "agency.help.whiteLabelDescription": "Sistemde gerçekten mevcut özellikleri açıklar.",
+  "agency.help.whiteLabelSections": "- Branding: Logonuz, renk paleti ve custom domain ayarları\n- Ekip/Roller: Ajans üyeleri, rolleri ve izinleri yönetin\n- Ayarlar: Bildirim tercihleri, entegrasyonlar ve account options",
+
+  "agency.help.teamRoles": "Ekip / Roller",
+  "agency.help.teamRolesDescription": "PostPiloter role sistemi kullanıcının açısından açıklanır.",
+  "agency.help.teamRolesSections": "- Platform Admin: Tüm tenant'lar üzerinde bağımsız yetki\n- Ajans Sahibi: Ajans içinde tam erişim\n- Ajans Yöneticisi: Takım yönetimi ve içerik onayı\n- Marka Kullanıcı: Briefler görüntülemek ve onaylamak\n- Görüntüleyiciler: Sadece okuyabilir, yorum/yönlendirme yapamaz",
+
+  // Brand help center
+  "brand.help.portalIntroduction": "Portal Genel Bakışı",
+  "brand.help.portalIntroDescription": "Marka portalı ne yapar ve ajansla çalışma akışı.",
+  "brand.help.portalIntroSections": "- Marka portalı, ajans tarafından gönderilen briefleri, onayları ve teslimatları takip eder\n- Ajans briefler oluşturur, size gönderir. Size göre onay, revizyon isteme veya reddetme yaparsınız",
+
+  "brand.help.briefs": "Briefler",
+  "brand.help.briefsDescription": "Marka kullanıcısı brieflerde ne görür / ne yapar.",
+  "brand.help.briefsSections": "- Briefler sekmesinde ajans tarafından gönderilen tüm brieflerin listesi görüntülenir\n- Her brief'in durumu: Taslak, gönderildi, incelemede, onaylandı, reddedildi veya tamamlandı\n- Bir brief'i incelemek için üzerine tıklayın - detaylar, teslimatlar ve revizyonlar görünür\n- Bekleyen filtresi altında yeni briefler bekliyorsanız görüntülenir",
+
+  "brand.help.revision": "Revizyon",
+  "brand.help.revisionDescription": "Revizyon talebi, yorum ve geri bildirim.",
+  "brand.help.revisionSections": "- Ajans tarafından revizyon talebi gönderildiğinde, brief'inizi inceleyin ve gerekirse değişiklikleri belirtin\n- Yorum, brief üzerindeki dahili notdur; revizyon, konkrete değişiklik isteğini ifade eder\n- Revizyon istediğinizde, neyin değiştirilmesi gerektiğini açıklayıcı bir notla gönderin\n- Ajans revizyonu tamamladığında, tekrar incelemek için size döner",
+
+  "brand.help.approval": "Onay",
+  "brand.help.approvalDescription": "İçerik/deliverable onaylama, reddetme veya revizyon isteme.",
+  "brand.help.approvalSections": "- Onay butonu: Brief'in teslim edilip size sunulduğunda görünür\n- Onay: Brief'i ve tüm deliverable'ları onaylarsınız. Ajans üremeye devam eder\n- Reddetme/Revizyon isteme: Brief'i reddedip gerekçe ile ajansa geri gönderebilirsiniz\n- Bekleyen aksiyon: Henüz işlemedeki onaylar listedir",
+
+  "brand.help.notifications": "Bildirimler",
+  "brand.help.notificationsDescription": "Hangi kanallar kullanılabilir ve tercihler nereden değiştirilir.",
+  "brand.help.notificationsSections": "- In-app: Uygulama içi bildirimler, sayfa üstü uyarıları\n- Email: Brief ve onay durumundaki otomatik e-postalar\n- WhatsApp: Telefon numaranız eklendikten sonra yapılandırılmış bildirimler\n- Tercihler: Ayarlar > Bildirimler > Kanal tercihleri üzerinden değiştirilebilir",
+
+  "brand.help.brandSettings": "Marka Ayarları",
+  "brand.help.brandSettingsDescription": "Profil, marka bilgileri ve mevcut gerçek ayarlar.",
+  "brand.help.brandSettingsSections": "- Profil: Adınız, unvanınız ve avatarınız\n- Marka Bilgileri: DNA, vizyon ve marka detaylarınız\n- Ayarlar: Bildirim tercihleri, bağlı hesaplar ve tercihler",
+
+  "brand.help.portalUsage": "Portal Kullanımı",
+  "brand.help.portalUsageDescription": "Önemli ekranların ne işe yaradığını kısaca açıklar.",
+  "brand.help.portalUsageSections": "- Briefler: Tüm brieflerinizi ve ihre durumlarını izleyin\n- Onaylar: Bekleyen ve tamamlanan onayları yönetin\n- Bildirimler: Kanalları ve tercihleri kontrol edin\n- Raporlar: Performans ve teslimat özetlerini görüntüleyin",
   "dashboard.navigation.briefs": "Briefler",
   "dashboard.navigation.calendar": "İçerik takvimi",
   "dashboard.navigation.reports": "Raporlar",
@@ -7,6 +70,8 @@ export const dashboard = {
   "dashboard.welcome": "Hoş geldiniz, {name}",
   "dashboard.navigation.workflow": "İş Akışı",
   "dashboard.navigation.templates": "Şablonlar",
+  "dashboard.templates.search": "Şablon Ara",
+  "dashboard.templates.category": "Kategori",
   "dashboard.navigation.timeTracking": "Zaman Takibi",
   "dashboard.navigation.brandsReports": "Markalar & Raporlar",
   "dashboard.navigation.brands": "Markalar",
@@ -196,4 +261,14 @@ export const dashboard = {
   "dashboard.onboarding.createTemplate": "Şablon oluştur",
   "dashboard.onboarding.brief": "İlk briefinizi oluştur",
   "dashboard.onboarding.createBrief": "Brief oluştur",
+  "common.help.backToPortal": "Portal'a Dön",
+
+  // Demo
+  "dashboard.demo.mode": "Demo Modu",
+  "dashboard.demo.switchPortal": "Demo portal değiştir",
+  "dashboard.demo.loading": "Yükleniyor…",
+  "dashboard.demo.agencyPortal": "Ajans Portalı",
+  "dashboard.demo.brandPortal": "Marka Portalı",
+  "dashboard.demo.agencyDesc": "Ajans operasyonları",
+  "dashboard.demo.brandDesc": "Marka / müşteri görüşü",
 } as const;

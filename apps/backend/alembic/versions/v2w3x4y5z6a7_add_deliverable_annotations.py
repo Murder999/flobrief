@@ -4,6 +4,7 @@ Revision ID: v2w3x4y5z6a7
 Revises: u1v2w3x4y5z6
 Create Date: 2026-07-12
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -64,14 +65,18 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(["annotation_id"], ["deliverable_annotations.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["annotation_id"], ["deliverable_annotations.id"], ondelete="CASCADE"
+        ),
         sa.ForeignKeyConstraint(["author_user_id"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_ar_annotation_id", "annotation_replies", ["annotation_id"])
 
     # Add created_by_id to deliverables table if missing
-    op.add_column("deliverables", sa.Column("created_by_id", postgresql.UUID(as_uuid=True), nullable=True))
+    op.add_column(
+        "deliverables", sa.Column("created_by_id", postgresql.UUID(as_uuid=True), nullable=True)
+    )
 
 
 def downgrade() -> None:

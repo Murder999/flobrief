@@ -71,7 +71,7 @@ def _detect_unicode_font_bold() -> str | None:
 _UNICODE_FONT: str | None = _detect_unicode_font()
 _UNICODE_FONT_BOLD: str | None = _detect_unicode_font_bold()
 
-# ── Flobrief brand palette (dark-UI matching hex approximations for PDF) ──────
+# ── PostPiloter brand palette (dark-UI matching hex approximations for PDF) ───
 _BG = (17, 17, 24)  # #111118 surface
 _ACCENT = (99, 102, 241)  # #6366F1 indigo
 _TEXT = (240, 240, 248)  # #F0F0F8
@@ -121,7 +121,7 @@ class _FloBriefPDF(FPDF):
         self.cell(
             0,
             6,
-            f"Flobrief - {date_str}     Sayfa {self.page_no()}",
+            f"PostPiloter - {date_str}     Sayfa {self.page_no()}",
             align="C",
         )
 
@@ -145,7 +145,7 @@ class ReportExportService:
         pdf.set_xy(14, 6)
         pdf.set_font(_FONT_BOLD, "", 14)
         pdf.set_text_color(*_WHITE)
-        pdf.cell(0, 8, "Flobrief", ln=False)
+        pdf.cell(0, 8, "PostPiloter", ln=False)
 
         pdf.set_xy(14, 24)
         pdf.set_font(_FONT_BOLD, "", 20)
@@ -301,7 +301,7 @@ class ReportExportService:
         pdf.set_font(_FONT_REGULAR, "", 8)
         pdf.set_text_color(*_MUTED)
         now_str = datetime.utcnow().strftime("%d.%m.%Y %H:%M")
-        footer_line = f"Bu rapor {now_str} UTC'de Flobrief tarafindan olusturuldu."
+        footer_line = f"Bu rapor {now_str} UTC'de PostPiloter tarafindan olusturuldu."
         pdf.cell(0, 5, footer_line)
 
         return bytes(pdf.output())

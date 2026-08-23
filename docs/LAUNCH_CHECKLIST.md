@@ -11,6 +11,7 @@
 - [ ] `npm run typecheck` passes
 - [ ] `npm run build` passes in CI/Docker Node 20
 - [ ] GitHub Actions is green on the exact release commit
+- [ ] Green `main` CI deploys that exact SHA to Hetzner and records it in `.deploy/current-release`
 - [ ] Alembic reports one head
 
 ## Infrastructure and data
@@ -23,6 +24,7 @@
 - [ ] `media_data` is persistent and included in off-host backups
 - [ ] Database and media restoration has been tested
 - [ ] Health endpoints are monitored
+- [ ] Failed-release application rollback and deployment concurrency lock are exercised in staging
 
 ## Secrets and runtime environment
 

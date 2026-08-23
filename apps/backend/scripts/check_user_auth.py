@@ -8,6 +8,7 @@ Usage (run from apps/backend/):
     python scripts/check_user_auth.py --email user@example.com
     python scripts/check_user_auth.py --email user@example.com --verify-password
 """
+
 import argparse
 import asyncio
 import getpass
@@ -25,9 +26,7 @@ from app.models.user import User  # noqa: E402
 
 async def check(email: str, do_verify: bool = False) -> None:
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(User).where(User.email == email.lower())
-        )
+        result = await session.execute(select(User).where(User.email == email.lower()))
         user = result.scalar_one_or_none()
 
     if user is None:

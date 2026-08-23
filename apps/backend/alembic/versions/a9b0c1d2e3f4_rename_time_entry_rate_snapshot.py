@@ -4,6 +4,7 @@ Revision ID: a9b0c1d2e3f4
 Revises: f8a9b0c1d2e3
 Create Date: 2026-07-21
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -24,9 +25,7 @@ def upgrade() -> None:
     op.add_column(
         "time_entries", sa.Column("cost_rate_snapshot_cents", sa.Integer(), nullable=True)
     )
-    op.add_column(
-        "time_entries", sa.Column("rate_currency_snapshot", sa.String(3), nullable=True)
-    )
+    op.add_column("time_entries", sa.Column("rate_currency_snapshot", sa.String(3), nullable=True))
 
 
 def downgrade() -> None:

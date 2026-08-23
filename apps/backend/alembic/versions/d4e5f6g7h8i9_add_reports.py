@@ -120,13 +120,9 @@ def upgrade() -> None:
         sa.Column("token_hash", sa.String(64), nullable=False, unique=True),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column(
-            "allow_pdf_download", sa.Boolean, nullable=False, server_default="true"
-        ),
+        sa.Column("allow_pdf_download", sa.Boolean, nullable=False, server_default="true"),
     )
-    op.create_index(
-        "ix_rst_token_hash", "report_share_tokens", ["token_hash"], unique=True
-    )
+    op.create_index("ix_rst_token_hash", "report_share_tokens", ["token_hash"], unique=True)
 
 
 def downgrade() -> None:

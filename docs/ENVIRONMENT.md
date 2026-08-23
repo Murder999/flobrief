@@ -8,6 +8,8 @@ Flobrief uses three separate environment surfaces:
 
 Never commit populated `.env`, `.env.prod`, or `.env.local` files.
 
+Sanitised `.env.example` files are intentionally version-controlled. The root `.gitignore` keeps those examples while ignoring every populated environment file. Hetzner deployment connection settings live in the protected GitHub `production` environment and are documented in `docs/DEPLOYMENT.md`; application secrets remain in the server-local environment files.
+
 ## Application and authentication
 
 | Variable | Required | Default | Description |
@@ -65,9 +67,9 @@ REDIS_URL=redis://:<redis-password>@redis:6379/0
 
 | Variable | Required | Default | Description |
 |---|---:|---|---|
-| `FRONTEND_URL` | Production | `http://localhost:3000` | Browser-facing frontend origin |
-| `FRONTEND_PUBLIC_URL` | Production | `http://localhost:3000` | Public action-link origin |
-| `BACKEND_PUBLIC_URL` | Twilio production | empty | Exact backend origin registered for Twilio webhook signature verification |
+| `FRONTEND_URL` | Production | `http://localhost:3000` | Must be `https://postpiloter.com` in production |
+| `FRONTEND_PUBLIC_URL` | Production | `http://localhost:3000` | Must be `https://postpiloter.com`; source for email and notification action links |
+| `BACKEND_PUBLIC_URL` | Production | empty | Must be `https://postpiloter.com`; also used for Twilio signature verification |
 | `CORS_ORIGINS` | Production | `http://localhost:3000` | Comma-separated browser origins |
 | `CORS_ALLOW_CREDENTIALS` | No | `true` | Credentialed CORS requests |
 | `NEXT_PUBLIC_API_URL` | Frontend build | `http://localhost:8000` | Public API origin; may equal the frontend origin behind Nginx |
@@ -92,15 +94,20 @@ Each visitor receives a separate agency and synthetic verified user. Demo tenant
 
 | Variable | Required | Default | Description |
 |---|---:|---|---|
-| `RESEND_API_KEY` | Delivery | empty | Environment fallback; encrypted DB provider settings take priority |
-| `RESEND_TEST_MODE` | No | `false` | Routes messages to the Resend test recipient |
+| `RESEND_API_KEY` | Production delivery | empty | Server secret; authoritative in production when set, never commit it |
+| `RESEND_TEST_MODE` | No | `false` | Routes messages to the Resend test recipient; production validation requires `false` |
 | `RESEND_TEST_RECIPIENT` | No | `delivered@resend.dev` | Test-mode destination |
 | `RESEND_TEST_FROM_EMAIL` | No | `onboarding@resend.dev` | Test-mode sender |
-| `EMAIL_FROM` | Production delivery | `noreply@flobrief.com` | Verified sender |
-| `EMAIL_FROM_NAME` | No | `Flobrief` | Sender display name |
+| `EMAIL_FROM` | Production delivery | `noreply@postpiloter.com` | Production validation requires this verified sender |
+| `EMAIL_FROM_NAME` | Production delivery | `PostPiloter` | Production sender display name |
 | `EMAIL_REPLY_TO` | No | empty | Optional reply-to |
 
-Production code uses the Resend HTTPS API and has no SMTP fallback.
+Production code uses the Resend HTTPS API and has no SMTP fallback. When a production
+`RESEND_API_KEY` is present, environment configuration is authoritative so a stale,
+disabled, incomplete, or invalid DB row cannot replace the server-managed credential.
+Without a production environment key, an enabled/decryptable `email_resend` DB row is
+used. Outside production, the valid enabled DB row is preferred and environment config
+is the fallback.
 
 ## WhatsApp (Twilio)
 

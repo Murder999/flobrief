@@ -14,6 +14,7 @@ Two modes:
 Safety: refuses to run unless DATABASE_URL resolves to a local host and
 APP_ENV is not "production".
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -177,7 +178,9 @@ async def seed() -> None:
             phone_number="+905551230004",
         )
 
-        session.add_all([agency_a, agency_b, demo_agency, owner_a, owner_b, brand_manager, demo_owner])
+        session.add_all(
+            [agency_a, agency_b, demo_agency, owner_a, owner_b, brand_manager, demo_owner]
+        )
         await session.flush()
 
         brand_a = Brand(agency_id=agency_a.id, name="E2E WA Prefs Brand", slug="e2e-waprefs-brand")

@@ -1,6 +1,6 @@
 # Flobrief Production Deployment
 
-This guide covers the repository’s Docker Compose topology: Nginx → Next.js/FastAPI, PostgreSQL 16, Redis 7, and a persistent local-media volume.
+This guide covers the repository’s Docker Compose topology on Hetzner: Nginx → Next.js/FastAPI, PostgreSQL 16, Redis 7, and a persistent local-media volume. A successful CI run on `main` can promote the exact tested commit automatically; deployment remains disabled until the production environment is configured explicitly.
 
 ## Prerequisites
 
@@ -13,10 +13,50 @@ This guide covers the repository’s Docker Compose topology: Nginx → Next.js/
 
 S3/R2 storage is not implemented. The `media_data` Docker volume is production data and requires backups.
 
+## Automated GitHub → Hetzner delivery
+
+The `deploy_hetzner` job in `.github/workflows/ci.yml` runs only when all of the following are true:
+
+- The event is a push to `main`.
+- Backend Ruff/Pytest and frontend TypeScript/build jobs both pass.
+- Repository variable `HETZNER_DEPLOY_ENABLED` is exactly `true`.
+
+The job connects with strict SSH host-key checking and sends `scripts/deploy_hetzner.sh` to the server. The server then verifies the repository remote and commit, backs up PostgreSQL and local media, builds commit-tagged images, verifies that Alembic has one head, applies migrations, seeds plans idempotently, replaces application containers, waits for container health, and checks the public frontend/API. Concurrent production deployments are locked. If the new application containers fail, the script attempts an application-image rollback; it never performs an automatic Alembic downgrade or database restore.
+
+### One-time Hetzner preparation
+
+1. Install Git, Docker Engine 24+, Docker Compose v2, `curl`, `flock`, `gzip`, and `sha256sum` on the server.
+2. Create a non-root deploy user with SSH-key login and permission to use Docker. Disable password SSH authentication after key access is verified.
+3. Clone `git@github.com:Murder999/flobrief.git` into a dedicated path such as `/opt/flobrief`. Give the server a read-only GitHub deploy key because every deployment fetches the exact CI-tested commit.
+4. Create `/opt/flobrief/.env` and `/opt/flobrief/apps/backend/.env.prod` from the tracked examples, with production-only values.
+5. Install the TLS files at `/opt/flobrief/infra/nginx/certs/fullchain.pem` and `privkey.pem`. Configure and test certificate renewal outside the repository before enabling automatic deployment.
+6. Run the manual first deployment in this document and confirm the public health endpoints.
+
+Create a protected GitHub environment named `production`, then configure:
+
+| Type | Name | Value |
+|---|---|---|
+| Secret | `HETZNER_HOST` | Server DNS name or IPv4 address |
+| Secret | `HETZNER_SSH_USER` | Non-root deploy user |
+| Secret | `HETZNER_SSH_PRIVATE_KEY` | Private key dedicated to GitHub Actions → Hetzner |
+| Secret | `HETZNER_KNOWN_HOSTS` | Trusted `known_hosts` line captured after fingerprint verification |
+| Variable | `HETZNER_SSH_PORT` | SSH port; blank means `22` |
+| Variable | `HETZNER_APP_DIR` | Absolute checkout path, for example `/opt/flobrief` |
+| Variable | `PRODUCTION_URL` | HTTPS origin only, for example `https://app.example.com` |
+| Variable | `HETZNER_DEPLOY_ENABLED` | Set to `true` only after the manual deployment passes |
+
+Generate the known-host entry from a trusted network and compare the fingerprint with Hetzner before storing it:
+
+```bash
+ssh-keyscan -p 22 <hetzner-host>
+```
+
+Do not replace `HETZNER_KNOWN_HOSTS` with runtime `ssh-keyscan` in CI; doing so would remove host identity verification. Do not store application secrets in GitHub deployment variables—the populated `.env` files remain only on the server.
+
 ## 1. Prepare configuration
 
 ```bash
-git clone <repository-url>
+git clone git@github.com:Murder999/flobrief.git
 cd flobrief
 cp .env.example .env
 cp apps/backend/.env.example apps/backend/.env.prod
@@ -29,8 +69,8 @@ POSTGRES_USER=flobrief
 POSTGRES_PASSWORD=<strong-database-password>
 POSTGRES_DB=flobrief
 REDIS_PASSWORD=<strong-redis-password>
-NEXT_PUBLIC_API_URL=https://flobrief.example
-NEXT_PUBLIC_WS_URL=wss://flobrief.example
+NEXT_PUBLIC_API_URL=https://postpiloter.com
+NEXT_PUBLIC_WS_URL=wss://postpiloter.com
 ```
 
 Set backend `apps/backend/.env.prod`:
@@ -43,10 +83,15 @@ DATABASE_URL=postgresql+asyncpg://flobrief:<database-password>@postgres:5432/flo
 REDIS_URL=redis://:<redis-password>@redis:6379/0
 MEDIA_ROOT=/app/media
 STORAGE_BACKEND=local
-FRONTEND_URL=https://flobrief.example
-FRONTEND_PUBLIC_URL=https://flobrief.example
-BACKEND_PUBLIC_URL=https://flobrief.example
-CORS_ORIGINS=https://flobrief.example
+FRONTEND_URL=https://postpiloter.com
+FRONTEND_PUBLIC_URL=https://postpiloter.com
+BACKEND_PUBLIC_URL=https://postpiloter.com
+CORS_ORIGINS=https://postpiloter.com
+RESEND_API_KEY=<server-secret>
+EMAIL_FROM=noreply@postpiloter.com
+EMAIL_FROM_NAME=PostPiloter
+EMAIL_REPLY_TO=
+RESEND_TEST_MODE=False
 PLATFORM_BOOTSTRAP_SECRET=<one-time-bootstrap-secret>
 TOTP_ENCRYPTION_KEY=<fernet-key>
 FLOBRIEF_SECRET_ENCRYPTION_KEY=<different-fernet-key>
@@ -66,7 +111,7 @@ infra/nginx/certs/fullchain.pem
 infra/nginx/certs/privkey.pem
 ```
 
-Replace `flobrief.com` / `www.flobrief.com` in `infra/nginx/nginx.conf` with the production hosts. Keep the exact `/api/v1/notifications/realtime` WebSocket location and its Upgrade headers.
+Nginx is configured for `postpiloter.com` / `www.postpiloter.com`. Keep the exact `/api/v1/notifications/realtime` WebSocket location and its Upgrade headers.
 
 ## 3. Build with public frontend variables
 
@@ -157,6 +202,8 @@ docker compose -f docker-compose.prod.yml up -d --no-deps backend frontend nginx
 ```
 
 Database rollback is migration-specific. Do not downgrade automatically after new code has written data; use the documented backup and a reviewed rollback plan.
+
+After the one-time GitHub/Hetzner configuration above, normal releases do not use these manual update commands: a green push to `main` invokes the same guarded sequence automatically. The server records the successful SHA in `.deploy/current-release`, and pre-deploy backups are stored under `backups/<timestamp>-<previous-sha>/`. These on-host backups are a recovery aid, not a substitute for the mandatory off-host backup policy.
 
 ## Backups
 

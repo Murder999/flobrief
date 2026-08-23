@@ -920,9 +920,7 @@ async def test_paid_invoice_excluded_from_due_soon_and_overdue(ctx: Ctx) -> None
 
     await run_finance_capacity_checks()
 
-    assert (
-        await _notifications_for(ctx.owner_id, NotificationEventType.INVOICE_OVERDUE.value) == []
-    )
+    assert await _notifications_for(ctx.owner_id, NotificationEventType.INVOICE_OVERDUE.value) == []
     assert (
         await _notifications_for(ctx.brand_manager_id, NotificationEventType.INVOICE_DUE_SOON.value)
         == []
@@ -1152,9 +1150,7 @@ async def test_duplicate_mention_created_events_single_whatsapp_delivery(
     assert len(fake.calls) == 1
 
 
-async def test_duplicate_deliverable_submitted_version_events(
-    ctx: Ctx, approve_template
-) -> None:
+async def test_duplicate_deliverable_submitted_version_events(ctx: Ctx, approve_template) -> None:
     """Same submission re-emitted -> one message; a *new* version (higher
     revision_count on the same deliverable_id, since deliverable_versioning
     mutates the same row in place rather than creating a new one) -> a new
@@ -1446,8 +1442,6 @@ async def test_concurrent_workers_racing_same_domain_occurrence_single_delivery(
     with _patched_provider(fake):
         await asyncio.gather(_run(event1), _run(event2))
 
-    wa = await _deliveries_for_events(
-        [event1.id, event2.id], NotificationChannel.WHATSAPP.value
-    )
+    wa = await _deliveries_for_events([event1.id, event2.id], NotificationChannel.WHATSAPP.value)
     assert len(wa) == 1, "two concurrent dispatches for the same occurrence must yield one row"
     assert len(fake.calls) == 1, "the provider must be called at most once, never twice"

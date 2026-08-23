@@ -66,30 +66,36 @@ async def build_agency_summary(
     )
     connection_status = compute_connection_status(provider_row)
 
-    opted_in_users = await db.scalar(
-        select(func.count(func.distinct(User.id)))
-        .select_from(User)
-        .join(AgencyMember, AgencyMember.user_id == User.id)
-        .where(
-            AgencyMember.agency_id == agency_id,
-            AgencyMember.status == AgencyMemberStatus.ACTIVE.value,
-            AgencyMember.deleted_at.is_(None),
-            User.whatsapp_opt_in.is_(True),
+    opted_in_users = (
+        await db.scalar(
+            select(func.count(func.distinct(User.id)))
+            .select_from(User)
+            .join(AgencyMember, AgencyMember.user_id == User.id)
+            .where(
+                AgencyMember.agency_id == agency_id,
+                AgencyMember.status == AgencyMemberStatus.ACTIVE.value,
+                AgencyMember.deleted_at.is_(None),
+                User.whatsapp_opt_in.is_(True),
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    whatsapp_enabled_users = await db.scalar(
-        select(func.count(func.distinct(User.id)))
-        .select_from(User)
-        .join(AgencyMember, AgencyMember.user_id == User.id)
-        .join(NotificationPreference, NotificationPreference.user_id == User.id)
-        .where(
-            AgencyMember.agency_id == agency_id,
-            AgencyMember.status == AgencyMemberStatus.ACTIVE.value,
-            AgencyMember.deleted_at.is_(None),
-            NotificationPreference.whatsapp_enabled.is_(True),
+    whatsapp_enabled_users = (
+        await db.scalar(
+            select(func.count(func.distinct(User.id)))
+            .select_from(User)
+            .join(AgencyMember, AgencyMember.user_id == User.id)
+            .join(NotificationPreference, NotificationPreference.user_id == User.id)
+            .where(
+                AgencyMember.agency_id == agency_id,
+                AgencyMember.status == AgencyMemberStatus.ACTIVE.value,
+                AgencyMember.deleted_at.is_(None),
+                NotificationPreference.whatsapp_enabled.is_(True),
+            )
         )
-    ) or 0
+        or 0
+    )
 
     catalog_codes = {defn.template_key for defn in WHATSAPP_EVENT_CATALOG.values()}
     template_rows = await db.execute(
@@ -215,7 +221,7 @@ _SAMPLE_VARS = {
     "invoice_number": "INV-2026-001",
     "invoice_total_formatted": "12.500,00 TRY",
     "short_safe_summary": "Yeni bir güncelleme var.",
-    "deep_link_url": "https://app.flobrief.com/...",
+    "deep_link_url": "https://postpiloter.com/...",
 }
 
 _SAMPLE_TEMPLATES: dict[str, str] = {

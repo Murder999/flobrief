@@ -21,6 +21,7 @@ Safety: refuses to run unless DATABASE_URL resolves to a local host and
 APP_ENV is not "production" — mirrors the other tracked e2e_seed_*.py
 scripts.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -97,16 +98,18 @@ async def cleanup() -> None:
             user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is None:
                 continue
-            member = (await db.execute(
-                select(AgencyMember).where(AgencyMember.user_id == user.id)
-            )).scalar_one_or_none()
+            member = (
+                await db.execute(select(AgencyMember).where(AgencyMember.user_id == user.id))
+            ).scalar_one_or_none()
             if member is not None:
                 agency = await db.get(Agency, member.agency_id)
                 if agency is not None:
                     await db.delete(agency)  # cascades agency_members/briefs/deliverables/...
-                brands = (await db.execute(
-                    select(Brand).where(Brand.agency_id == member.agency_id)
-                )).scalars().all()
+                brands = (
+                    (await db.execute(select(Brand).where(Brand.agency_id == member.agency_id)))
+                    .scalars()
+                    .all()
+                )
                 for brand in brands:
                     await db.delete(brand)  # cascades brand_members
         await db.commit()
@@ -121,42 +124,66 @@ async def cleanup() -> None:
 async def seed_db() -> tuple[uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID]:
     async with AsyncSessionLocal() as db:
         agency = Agency(
-            id=uuid.uuid4(), name="E2E Annotation Agency",
-            slug=f"e2e-annotation-agency-{uuid.uuid4().hex[:8]}", status=AgencyStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            name="E2E Annotation Agency",
+            slug=f"e2e-annotation-agency-{uuid.uuid4().hex[:8]}",
+            status=AgencyStatus.ACTIVE.value,
         )
         brand = Brand(
-            id=uuid.uuid4(), agency_id=agency.id, name="E2E Annotation Brand",
-            slug=f"e2e-annotation-brand-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            name="E2E Annotation Brand",
+            slug=f"e2e-annotation-brand-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
         )
         db.add_all([agency, brand])
 
         agency_user = User(
-            id=uuid.uuid4(), email=AGENCY_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Annotation Agency Owner", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=AGENCY_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Annotation Agency Owner",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         brand_user = User(
-            id=uuid.uuid4(), email=BRAND_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Annotation Brand Owner", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=BRAND_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Annotation Brand Owner",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         db.add_all([agency_user, brand_user])
         await db.flush()
 
-        db.add_all([
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=agency_user.id,
-                role=AgencyMemberRole.OWNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=brand.id, user_id=brand_user.id,
-                role=BrandMemberRole.BRAND_OWNER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-        ])
+        db.add_all(
+            [
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=agency_user.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=brand.id,
+                    user_id=brand_user.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+            ]
+        )
 
         brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Annotation Brief", status="in_production",
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Annotation Brief",
+            status="in_production",
             created_by_id=agency_user.id,
         )
         db.add(brief)
@@ -199,9 +226,7 @@ async def seed_deliverable_via_api(
         # e2e_seed_mention_onboarding_agency.py/_brand.py's same fixture.
         agency_progress = await client.get("/api/v1/onboarding/progress", headers=headers)
         agency_progress.raise_for_status()
-        dismiss_agency = await client.post(
-            "/api/v1/onboarding/progress/dismiss", headers=headers
-        )
+        dismiss_agency = await client.post("/api/v1/onboarding/progress/dismiss", headers=headers)
         dismiss_agency.raise_for_status()
 
         brand_token = create_access_token(str(brand_user_id))

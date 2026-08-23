@@ -12,6 +12,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import type { NotificationFeedSource } from "@/components/notifications/useNotificationFeed";
 import { GlobalTimerWidget } from "@/components/time-tracking/GlobalTimerWidget";
 import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
+import { DemoPortalSwitcher } from "@/components/workspace/demo-portal-switcher";
 import { useWorkspace } from "@/context/workspace-context";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { AgencyOnboardingWizard } from "@/components/onboarding/OnboardingWizard";
@@ -25,7 +26,7 @@ import {
   LayoutDashboard, FileText, Calendar, Layers, Building2, BarChart3,
   Zap, Users, Mail, CreditCard, User, Bell, Settings2, LogOut,
   Gauge, Clock, Wallet, Hourglass, Receipt, Repeat, Plug,
-  TrendingUp,
+  TrendingUp, Info,
 } from "lucide-react";
 
 // ── Nav config ────────────────────────────────────────────────────────────────
@@ -107,6 +108,12 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/dashboard/settings/profile",       label: "Profilim",        icon: User },
       { href: "/dashboard/settings/notifications", label: "Bildirimler",     icon: Bell },
       { href: "/dashboard/settings/agency",        label: "Ajans Ayarları",  icon: Settings2 },
+    ],
+  },
+  {
+    label: "Yardım",
+    items: [
+      { href: "/dashboard/help", label: "Yardım Merkezi", icon: Info },
     ],
   },
 ];
@@ -258,6 +265,11 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
       <div
         className="relative px-2.5 py-3 flex-shrink-0 border-t border-border"
       >
+        {/* Demo Portal Switcher */}
+        <div className="mb-2.5">
+          <DemoPortalSwitcher />
+        </div>
+
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-hover transition-all">
           <Link href="/dashboard/settings/profile" className="flex-shrink-0" title="Profil">
             <div

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth_dependencies import WorkspaceContext, get_workspace_context
+from app.core.rate_limiter import get_client_ip
 from app.core.rbac import Permission
 from app.db.session import get_db
 from app.repositories.plan import PlanRepository
@@ -73,6 +74,7 @@ async def get_subscription(
 @billing_router.post("/checkout", response_model=CheckoutResponse)
 async def create_checkout(
     body: CheckoutRequest,
+    request: Request,
     workspace: WorkspaceContext = Depends(get_workspace_context),
     db: AsyncSession = Depends(get_db),
 ) -> CheckoutResponse:
@@ -85,6 +87,7 @@ async def create_checkout(
         buyer_email=workspace.user.email,
         buyer_name=workspace.user.full_name,
         buyer_id=str(workspace.user.id),
+        buyer_ip=get_client_ip(request),
         yearly=body.yearly,
     )
     return CheckoutResponse(**data)

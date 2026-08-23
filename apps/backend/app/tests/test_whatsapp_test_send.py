@@ -177,26 +177,18 @@ class TestWhatsAppTestSendAuth:
 
 
 class TestWhatsAppTestSendGating:
-    async def test_demo_tenant_always_skipped(
-        self, client: AsyncClient, demo_agency_admin
-    ) -> None:
+    async def test_demo_tenant_always_skipped(self, client: AsyncClient, demo_agency_admin) -> None:
         agency_id, _user_id, token = demo_agency_admin
-        resp = await client.post(
-            WHATSAPP_TEST_PATH, headers=agency_headers(token, agency_id)
-        )
+        resp = await client.post(WHATSAPP_TEST_PATH, headers=agency_headers(token, agency_id))
         assert resp.status_code == 200
         body = resp.json()
         assert body["status"] == "skipped_demo_tenant"
         assert body["masked_recipient"] is None
         assert body["provider_message_id"] is None
 
-    async def test_no_consent_skipped(
-        self, client: AsyncClient, no_consent_agency_admin
-    ) -> None:
+    async def test_no_consent_skipped(self, client: AsyncClient, no_consent_agency_admin) -> None:
         agency_id, _user_id, token = no_consent_agency_admin
-        resp = await client.post(
-            WHATSAPP_TEST_PATH, headers=agency_headers(token, agency_id)
-        )
+        resp = await client.post(WHATSAPP_TEST_PATH, headers=agency_headers(token, agency_id))
         assert resp.status_code == 200
         assert resp.json()["status"] == "skipped_no_consent"
 
@@ -208,9 +200,7 @@ class TestWhatsAppTestSendGating:
         fully-consented, phone-having user still gets an honest skip — never a
         fabricated success."""
         agency_id, _user_id, token = consented_agency_admin
-        resp = await client.post(
-            WHATSAPP_TEST_PATH, headers=agency_headers(token, agency_id)
-        )
+        resp = await client.post(WHATSAPP_TEST_PATH, headers=agency_headers(token, agency_id))
         assert resp.status_code == 200
         body = resp.json()
         assert body["status"] == "skipped_template_missing"
@@ -221,9 +211,7 @@ class TestWhatsAppTestSendGating:
         self, client: AsyncClient, consented_agency_admin
     ) -> None:
         agency_id, _user_id, token = consented_agency_admin
-        resp = await client.post(
-            WHATSAPP_TEST_PATH, headers=agency_headers(token, agency_id)
-        )
+        resp = await client.post(WHATSAPP_TEST_PATH, headers=agency_headers(token, agency_id))
         body = resp.json()
         for forbidden_key in ("auth_token", "account_sid", "secret", "password"):
             assert forbidden_key not in body

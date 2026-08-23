@@ -7,6 +7,7 @@ Existing plans (matched by code) are updated in place; missing ones are created.
 Usage (run from apps/backend/):
     python scripts/seed_plans.py
 """
+
 import asyncio
 import sys
 from pathlib import Path
@@ -123,9 +124,7 @@ async def seed_plans() -> None:
         created = 0
         updated = 0
         for plan_data in PLAN_DEFINITIONS:
-            result = await session.execute(
-                select(Plan).where(Plan.code == plan_data["code"])
-            )
+            result = await session.execute(select(Plan).where(Plan.code == plan_data["code"]))
             plan = result.scalar_one_or_none()
             if plan is not None:
                 for field, value in plan_data.items():

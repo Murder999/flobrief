@@ -20,6 +20,7 @@ Two modes:
   python e2e_seed_brand_dashboard.py seed             -> prints E2E_* env vars
   python e2e_seed_brand_dashboard.py cleanup <agency_id>
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -76,16 +77,18 @@ async def cleanup_by_email() -> None:
             user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
             if user is None:
                 continue
-            member = (await db.execute(
-                select(AgencyMember).where(AgencyMember.user_id == user.id)
-            )).scalar_one_or_none()
+            member = (
+                await db.execute(select(AgencyMember).where(AgencyMember.user_id == user.id))
+            ).scalar_one_or_none()
             if member is not None:
                 agency = await db.get(Agency, member.agency_id)
                 if agency is not None:
                     await db.delete(agency)
-                brands = (await db.execute(
-                    select(Brand).where(Brand.agency_id == member.agency_id)
-                )).scalars().all()
+                brands = (
+                    (await db.execute(select(Brand).where(Brand.agency_id == member.agency_id)))
+                    .scalars()
+                    .all()
+                )
                 for brand in brands:
                     await db.delete(brand)
         await db.commit()
@@ -102,7 +105,9 @@ async def cleanup_by_agency_id(agency_id: uuid.UUID) -> None:
         agency = await db.get(Agency, agency_id)
         if agency is not None:
             await db.delete(agency)
-        brands = (await db.execute(select(Brand).where(Brand.agency_id == agency_id))).scalars().all()
+        brands = (
+            (await db.execute(select(Brand).where(Brand.agency_id == agency_id))).scalars().all()
+        )
         for brand in brands:
             await db.delete(brand)
         await db.commit()
@@ -118,94 +123,159 @@ async def seed() -> dict[str, str]:
     now = datetime.now(UTC)
     async with AsyncSessionLocal() as db:
         agency = Agency(
-            id=uuid.uuid4(), name="E2E Dashboard Agency",
-            slug=f"e2e-dashboard-agency-{uuid.uuid4().hex[:8]}", status=AgencyStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            name="E2E Dashboard Agency",
+            slug=f"e2e-dashboard-agency-{uuid.uuid4().hex[:8]}",
+            status=AgencyStatus.ACTIVE.value,
         )
         brand = Brand(
-            id=uuid.uuid4(), agency_id=agency.id, name="E2E Dashboard Brand",
-            slug=f"e2e-dashboard-brand-{uuid.uuid4().hex[:8]}", status=BrandStatus.ACTIVE.value,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            name="E2E Dashboard Brand",
+            slug=f"e2e-dashboard-brand-{uuid.uuid4().hex[:8]}",
+            status=BrandStatus.ACTIVE.value,
         )
         db.add_all([agency, brand])
 
         agency_user = User(
-            id=uuid.uuid4(), email=AGENCY_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Dashboard Agency Owner", user_type=UserType.AGENCY_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=AGENCY_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Dashboard Agency Owner",
+            user_type=UserType.AGENCY_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         brand_user = User(
-            id=uuid.uuid4(), email=BRAND_EMAIL, password_hash=hash_password(PASSWORD),
-            full_name="E2E Dashboard Brand Owner", user_type=UserType.BRAND_USER.value,
-            is_active=True, is_verified=True,
+            id=uuid.uuid4(),
+            email=BRAND_EMAIL,
+            password_hash=hash_password(PASSWORD),
+            full_name="E2E Dashboard Brand Owner",
+            user_type=UserType.BRAND_USER.value,
+            is_active=True,
+            is_verified=True,
         )
         db.add_all([agency_user, brand_user])
         await db.flush()
 
-        db.add_all([
-            AgencyMember(
-                id=uuid.uuid4(), agency_id=agency.id, user_id=agency_user.id,
-                role=AgencyMemberRole.OWNER.value, status=AgencyMemberStatus.ACTIVE.value,
-            ),
-            BrandMember(
-                id=uuid.uuid4(), brand_id=brand.id, user_id=brand_user.id,
-                role=BrandMemberRole.BRAND_OWNER.value, status=BrandMemberStatus.ACTIVE.value,
-            ),
-        ])
+        db.add_all(
+            [
+                AgencyMember(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    user_id=agency_user.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                ),
+                BrandMember(
+                    id=uuid.uuid4(),
+                    brand_id=brand.id,
+                    user_id=brand_user.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                ),
+            ]
+        )
 
         briefs: list[Brief] = []
         for i in range(5):
-            briefs.append(Brief(
-                id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-                title=f"E2E Onay Bekleyen Brief {i + 1}", status="ready_for_review",
-                source="brand_portal", deadline=(now + timedelta(days=3 + i)).date().isoformat(),
-                created_by_id=agency_user.id,
-            ))
+            briefs.append(
+                Brief(
+                    id=uuid.uuid4(),
+                    agency_id=agency.id,
+                    brand_id=brand.id,
+                    title=f"E2E Onay Bekleyen Brief {i + 1}",
+                    status="ready_for_review",
+                    source="brand_portal",
+                    deadline=(now + timedelta(days=3 + i)).date().isoformat(),
+                    created_by_id=agency_user.id,
+                )
+            )
 
         this_week_brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Bu Hafta Teslim Brief", status="ready_for_review",
-            source="brand_portal", deadline=(now + timedelta(days=1)).date().isoformat(),
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Bu Hafta Teslim Brief",
+            status="ready_for_review",
+            source="brand_portal",
+            deadline=(now + timedelta(days=1)).date().isoformat(),
             created_by_id=agency_user.id,
         )
         overdue_legacy_brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Gecikmis Legacy Brief", status="in_review",
-            source=None, deadline=(now - timedelta(days=2)).date().isoformat(),
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Gecikmis Legacy Brief",
+            status="in_review",
+            source=None,
+            deadline=(now - timedelta(days=2)).date().isoformat(),
             created_by_id=agency_user.id,
         )
         revision_brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Revizyon Istenen Brief", status="revision_requested",
-            source="brand_portal", created_by_id=agency_user.id,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Revizyon Istenen Brief",
+            status="revision_requested",
+            source="brand_portal",
+            created_by_id=agency_user.id,
         )
         approved_brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Onaylanan Brief", status="approved",
-            source="brand_portal", created_by_id=agency_user.id,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Onaylanan Brief",
+            status="approved",
+            source="brand_portal",
+            created_by_id=agency_user.id,
         )
         draft_brief = Brief(
-            id=uuid.uuid4(), agency_id=agency.id, brand_id=brand.id,
-            title="E2E Taslak Brief", status="draft",
-            source="brand_portal", created_by_id=agency_user.id,
+            id=uuid.uuid4(),
+            agency_id=agency.id,
+            brand_id=brand.id,
+            title="E2E Taslak Brief",
+            status="draft",
+            source="brand_portal",
+            created_by_id=agency_user.id,
         )
 
-        all_briefs = [*briefs, this_week_brief, overdue_legacy_brief, revision_brief, approved_brief, draft_brief]
+        all_briefs = [
+            *briefs,
+            this_week_brief,
+            overdue_legacy_brief,
+            revision_brief,
+            approved_brief,
+            draft_brief,
+        ]
         db.add_all(all_briefs)
         await db.flush()
 
         event = NotificationEvent(
-            id=uuid.uuid4(), event_type="brief.approved", agency_id=agency.id, brand_id=brand.id,
-            actor_user_id=agency_user.id, payload={"brief_id": str(approved_brief.id)},
+            id=uuid.uuid4(),
+            event_type="brief.approved",
+            agency_id=agency.id,
+            brand_id=brand.id,
+            actor_user_id=agency_user.id,
+            payload={"brief_id": str(approved_brief.id)},
             processed_at=now,
         )
         db.add(event)
         await db.flush()
 
-        db.add(Notification(
-            id=uuid.uuid4(), user_id=brand_user.id, agency_id=agency.id, brand_id=brand.id,
-            event_id=event.id, title="Brief onaylandi",
-            body=f'"{approved_brief.title}" onaylandi.', event_type="brief.approved",
-            is_read=False,
-        ))
+        db.add(
+            Notification(
+                id=uuid.uuid4(),
+                user_id=brand_user.id,
+                agency_id=agency.id,
+                brand_id=brand.id,
+                event_id=event.id,
+                title="Brief onaylandi",
+                body=f'"{approved_brief.title}" onaylandi.',
+                event_type="brief.approved",
+                is_read=False,
+            )
+        )
 
         await db.commit()
 

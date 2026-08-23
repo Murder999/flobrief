@@ -5,6 +5,7 @@ import { dashboard } from "./dashboard";
 import { marketing } from "./marketing";
 import { notifications } from "./notifications";
 import { portal } from "./portal";
+import { reports } from "./reports";
 import { settings } from "./settings";
 
 export const enMessages = {
@@ -14,6 +15,7 @@ export const enMessages = {
   ...dashboard,
   ...briefs,
   ...portal,
+  ...reports,
   ...notifications,
   ...settings,
 } as const;

@@ -1,52 +1,34 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import {
+  ReportAnalytics,
+  ReportAnalyticsSkeleton,
+  ReportEmptyState,
+  ReportErrorState,
+  ReportPeriod,
+  ReportStatusBadge,
+  ReportTypeLabel,
+  formatReportGeneratedAt,
+} from "@/components/reports/reporting";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Select } from "@/components/ui/select";
+import { useLocale } from "@/context/locale-context";
 import { useWorkspace } from "@/context/workspace-context";
+import { useAuth } from "@/hooks/useAuth";
 import {
   reportApi,
-  type ReportWithSnapshot,
   type ReportShareTokenCreated,
   type ReportShareTokenRead,
+  type ReportWithSnapshot,
 } from "@/lib/api-client";
+import { formatLocalizedDate } from "@/lib/i18n/format";
+import { AlertCircle, Archive, ArrowLeft, Check, Copy, Download, Link2, RefreshCw } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
-
-const TYPE_LABELS: Record<string, string> = {
-  monthly_brand: "Aylık Marka Raporu",
-  agency_overview: "Ajans Genel Özeti",
-  campaign_summary: "Kampanya Özeti",
-};
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function MetricCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string | number | null | undefined;
-  accent?: string;
-}) {
-  return (
-    <div
-      className={`bg-surface border rounded-xl p-5 ${accent ? `border-l-2 ${accent}` : "border-border"}`}
-    >
-      <div className="text-2xl font-bold text-text mb-1">
-        {value === null || value === undefined ? "–" : String(value)}
-      </div>
-      <div className="text-xs text-text-muted">{label}</div>
-    </div>
-  );
-}
+import { useCallback, useEffect, useState } from "react";
 
 function ShareModal({
+  isOpen,
   reportId,
   agencyId,
   accessToken,
@@ -55,508 +37,371 @@ function ShareModal({
   onTokenCreated,
   onTokenRevoked,
 }: {
+  isOpen: boolean;
   reportId: string;
   agencyId: string;
   accessToken: string;
   tokens: ReportShareTokenRead[];
   onClose: () => void;
-  onTokenCreated: (t: ReportShareTokenCreated) => void;
+  onTokenCreated: (token: ReportShareTokenCreated) => void;
   onTokenRevoked: (id: string) => void;
 }) {
+  const { locale, t } = useLocale();
   const [expiryDays, setExpiryDays] = useState(30);
   const [allowPdf, setAllowPdf] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newToken, setNewToken] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function create() {
+  const shareUrl = newToken && typeof window !== "undefined"
+    ? `${window.location.origin}/report/${newToken}`
+    : null;
+
+  async function createLink() {
     setCreating(true);
-    setErr(null);
+    setError(null);
     try {
-      const t = await reportApi.createShareToken(
+      const token = await reportApi.createShareToken(
         reportId,
         { expires_in_days: expiryDays, allow_pdf_download: allowPdf },
         agencyId,
         accessToken
       );
-      setNewToken(t.token);
-      onTokenCreated(t);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Oluşturulamadı");
+      setNewToken(token.token);
+      onTokenCreated(token);
+    } catch {
+      setError(t("reports.share.error"));
     } finally {
       setCreating(false);
     }
   }
 
-  async function revoke(tokenId: string) {
+  async function revokeLink(tokenId: string) {
     setRevoking(tokenId);
+    setError(null);
     try {
       await reportApi.revokeShareToken(reportId, tokenId, agencyId, accessToken);
       onTokenRevoked(tokenId);
     } catch {
-      // silent
+      setError(t("reports.share.revokeError"));
     } finally {
       setRevoking(null);
     }
   }
 
-  const shareUrl = newToken
-    ? `${window.location.origin}/report/${newToken}`
-    : null;
+  async function copyLink() {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface border border-border rounded-2xl w-full max-w-md mx-4 shadow-2xl">
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="font-semibold text-text">Raporu Paylaş</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text transition-colors">
-            ✕
-          </button>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} title={t("reports.share.title")} maxWidth="md">
+      <div className="space-y-5">
+        <p className="text-sm leading-6 text-text-muted">{t("reports.share.description")}</p>
 
-        <div className="p-5 space-y-4">
-          {shareUrl ? (
-            <div className="space-y-3">
-              <p className="text-sm text-emerald-400 font-medium">
-                Bağlantı oluşturuldu! Bir kez gösterilir, lütfen kopyalayın.
-              </p>
-              <div className="flex items-center gap-2">
-                <input
-                  readOnly
-                  value={shareUrl}
-                  className="flex-1 px-3 py-2 bg-surface-2 border border-border rounded-lg text-xs text-text font-mono"
-                />
-                <button
-                  onClick={() => navigator.clipboard.writeText(shareUrl)}
-                  className="px-3 py-2 bg-accent text-white rounded-lg text-xs font-medium hover:bg-accent/90 transition-colors"
-                >
-                  Kopyala
-                </button>
-              </div>
-              <button
-                onClick={() => setNewToken(null)}
-                className="text-sm text-text-muted hover:text-text transition-colors"
-              >
-                Yeni bağlantı oluştur
-              </button>
+        {shareUrl ? (
+          <div className="space-y-3">
+            <div role="status" className="flex items-start gap-2 rounded-lg border border-success/20 bg-success/10 px-3 py-2.5 text-sm text-text">
+              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" aria-hidden="true" />
+              <span>{t("reports.share.created")}</span>
             </div>
-          ) : (
-            <>
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1.5">
-                  Geçerlilik Süresi (gün)
-                </label>
-                <select
-                  value={expiryDays}
-                  onChange={(e) => setExpiryDays(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-surface-2 border border-border rounded-lg text-sm text-text focus:outline-none focus:border-accent"
-                >
-                  <option value={7}>7 gün</option>
-                  <option value={30}>30 gün</option>
-                  <option value={90}>90 gün</option>
-                  <option value={365}>1 yıl</option>
-                </select>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-text cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={allowPdf}
-                  onChange={(e) => setAllowPdf(e.target.checked)}
-                  className="accent-indigo-500 w-4 h-4"
-                />
-                PDF indirme izni ver
-              </label>
-              {err && (
-                <p className="text-xs text-danger">{err}</p>
-              )}
-              <button
-                onClick={create}
-                disabled={creating}
-                className="w-full py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-60 transition-colors"
-              >
-                {creating ? "Oluşturuluyor…" : "Bağlantı Oluştur"}
-              </button>
-            </>
-          )}
+            <label htmlFor="report-share-url" className="sr-only">{t("reports.share.copy")}</label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                id="report-share-url"
+                readOnly
+                value={shareUrl}
+                className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-surface-2 px-3 text-xs text-text outline-none focus:ring-2 focus:ring-accent/30"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={copyLink}>
+                {copied ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+                {copied ? t("reports.share.copied") : t("reports.share.copy")}
+              </Button>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setNewToken(null);
+                setCopied(false);
+              }}
+              className="text-xs font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+            >
+              {t("reports.share.createAnother")}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <Select
+              id="report-link-expiry"
+              label={t("reports.share.expiry")}
+              aria-label={t("reports.share.expiry")}
+              value={String(expiryDays)}
+              onChange={(event) => setExpiryDays(Number(event.target.value))}
+              options={[
+                { value: "7", label: t("reports.share.days7") },
+                { value: "30", label: t("reports.share.days30") },
+                { value: "90", label: t("reports.share.days90") },
+                { value: "365", label: t("reports.share.days365") },
+              ]}
+            />
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text">
+              <input
+                type="checkbox"
+                checked={allowPdf}
+                onChange={(event) => setAllowPdf(event.target.checked)}
+                className="h-4 w-4 accent-indigo-500"
+              />
+              {t("reports.share.allowPdf")}
+            </label>
+            <Button type="button" className="w-full" isLoading={creating} onClick={createLink}>
+              <Link2 className="h-4 w-4" aria-hidden="true" />
+              {creating ? t("reports.share.creating") : t("reports.share.create")}
+            </Button>
+          </div>
+        )}
 
-          {tokens.length > 0 && (
-            <div className="pt-2">
-              <p className="text-xs font-medium text-text-muted mb-2">Aktif bağlantılar</p>
-              <div className="space-y-2">
-                {tokens.map((t) => (
-                  <div
-                    key={t.id}
-                    className="flex items-center justify-between bg-surface-2 rounded-lg px-3 py-2"
-                  >
-                    <div>
-                      <p className="text-xs text-text">
-                        {t.allow_pdf_download ? "PDF izinli" : "Görüntüleme"}
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        Bitiş: {fmtDate(t.expires_at)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => revoke(t.id)}
-                      disabled={revoking === t.id}
-                      className="text-xs text-danger hover:text-danger/80 disabled:opacity-40 transition-colors"
-                    >
-                      {revoking === t.id ? "…" : "İptal"}
-                    </button>
+        {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
+
+        {tokens.length > 0 ? (
+          <div className="border-t border-border pt-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">{t("reports.share.active")}</h3>
+            <div className="mt-2 divide-y divide-border rounded-lg border border-border">
+              {tokens.map((token) => (
+                <div key={token.id} className="flex items-center justify-between gap-4 px-3 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text">{t(token.allow_pdf_download ? "reports.share.pdfAllowed" : "reports.share.viewOnly")}</p>
+                    <p className="mt-0.5 text-xs text-text-muted">
+                      {t("reports.share.expires", { date: formatLocalizedDate(token.expires_at, locale) })}
+                    </p>
                   </div>
-                ))}
-              </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={revoking === token.id}
+                    onClick={() => revokeLink(token.id)}
+                    className="text-danger hover:text-danger"
+                  >
+                    {revoking === token.id ? t("reports.share.revoking") : t("reports.share.revoke")}
+                  </Button>
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+          </div>
+        ) : null}
       </div>
-    </div>
+    </Modal>
   );
 }
 
 export default function ReportDetailPage() {
   const { accessToken } = useAuth();
   const { activeAgency } = useWorkspace();
+  const { locale, t } = useLocale();
   const agencyId = activeAgency?.id ?? null;
-  const params = useParams();
-  const reportId = params.id as string;
+  const reportId = useParams().id as string;
   const router = useRouter();
 
   const [report, setReport] = useState<ReportWithSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [shareTokens, setShareTokens] = useState<ReportShareTokenRead[]>([]);
 
-  const load = useCallback(async () => {
+  const loadReport = useCallback(async () => {
     if (!accessToken || !agencyId) return;
     setLoading(true);
-    setError(null);
+    setLoadError(false);
     try {
       const data = await reportApi.get(reportId, agencyId, accessToken);
       setReport(data);
       setShareTokens(data.active_share_tokens);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Yüklenemedi");
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
   }, [accessToken, agencyId, reportId]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    loadReport();
+  }, [loadReport]);
 
-  async function handleRegenerate() {
+  async function regenerate() {
     if (!accessToken || !agencyId) return;
     setRegenerating(true);
+    setActionError(null);
     try {
       const data = await reportApi.regenerate(reportId, agencyId, accessToken);
       setReport(data);
       setShareTokens(data.active_share_tokens);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Yenilenemedi");
+    } catch {
+      setActionError(t("reports.detail.actionError"));
     } finally {
       setRegenerating(false);
     }
   }
 
-  async function handleArchive() {
+  async function archiveReport() {
     if (!accessToken || !agencyId) return;
     setArchiving(true);
+    setActionError(null);
     try {
-      const data = await reportApi.archive(reportId, agencyId, accessToken);
-      setReport(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Arşivlenemedi");
+      setReport(await reportApi.archive(reportId, agencyId, accessToken));
+    } catch {
+      setActionError(t("reports.detail.actionError"));
     } finally {
       setArchiving(false);
     }
   }
 
-  function handlePdfDownload() {
+  async function downloadPdf() {
     if (!accessToken || !agencyId) return;
-    const url = reportApi.pdfUrl(reportId);
-    const a = document.createElement("a");
-    a.href = url;
-    a.setAttribute("download", `flobrief-report-${reportId}.pdf`);
-    document.body.appendChild(a);
-    fetch(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "X-Agency-ID": agencyId,
-      },
-    })
-      .then((r) => r.blob())
-      .then((blob) => {
-        const objUrl = URL.createObjectURL(blob);
-        a.href = objUrl;
-        a.click();
-        URL.revokeObjectURL(objUrl);
-        document.body.removeChild(a);
-      });
+    setDownloading(true);
+    setActionError(null);
+    try {
+      const blob = await reportApi.downloadPdf(reportId, agencyId, accessToken);
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `postpiloter-report-${reportId}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      setActionError(t("reports.detail.pdfError"));
+    } finally {
+      setDownloading(false);
+    }
   }
 
   if (loading) {
     return (
-      <div className="p-8 max-w-4xl mx-auto animate-pulse">
-        <div className="h-7 bg-surface-2 rounded w-1/2 mb-3" />
-        <div className="h-4 bg-surface-2 rounded w-1/3 mb-8" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-24 bg-surface rounded-xl border border-border" />
-          ))}
+      <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+        <div aria-hidden="true" className="mb-6 animate-pulse">
+          <div className="h-4 w-24 rounded bg-surface-2" />
+          <div className="mt-4 h-7 w-2/5 rounded bg-surface-2" />
+          <div className="mt-3 h-4 w-3/5 rounded bg-surface-2" />
         </div>
-        <div className="h-48 bg-surface rounded-xl border border-border" />
-      </div>
+        <ReportAnalyticsSkeleton />
+      </main>
     );
   }
 
-  if (error) {
+  if (loadError || !report) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <div className="bg-danger/10 border border-danger/30 rounded-xl p-4 text-sm text-danger">
-          {error}
-        </div>
-      </div>
+      <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+        <ReportErrorState
+          title={t("reports.detail.loadErrorTitle")}
+          description={t("reports.detail.loadErrorDescription")}
+          onRetry={loadReport}
+        />
+      </main>
     );
   }
-
-  if (!report) return null;
-
-  const m = report.snapshot?.metrics ?? {};
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-2">
-        <div>
-          <button
-            onClick={() => router.push("/dashboard/reports")}
-            className="text-sm text-text-muted hover:text-text transition-colors mb-2 flex items-center gap-1"
-          >
-            ← Raporlar
-          </button>
-          <h1 className="text-2xl font-semibold text-text">{report.title}</h1>
-          <p className="text-sm text-text-muted mt-1">
-            {TYPE_LABELS[report.report_type]} &middot;{" "}
-            {fmtDate(report.period_start)} – {fmtDate(report.period_end)}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {report.status !== "archived" && (
-            <>
-              <button
-                onClick={() => setShowShare(true)}
-                className="px-3 py-2 text-sm text-text-muted border border-border rounded-lg hover:border-accent/40 hover:text-text transition-colors"
-              >
-                Paylaş
-              </button>
-              <button
-                onClick={handlePdfDownload}
-                className="px-3 py-2 text-sm text-text-muted border border-border rounded-lg hover:border-accent/40 hover:text-text transition-colors"
-              >
-                PDF
-              </button>
-              <button
-                onClick={handleRegenerate}
-                disabled={regenerating}
-                className="px-3 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent/90 disabled:opacity-60 transition-colors"
-              >
-                {regenerating ? "Yenileniyor…" : "Yenile"}
-              </button>
-            </>
-          )}
-          {report.status !== "archived" && (
-            <button
-              onClick={handleArchive}
-              disabled={archiving}
-              className="px-3 py-2 text-sm text-text-muted border border-border rounded-lg hover:border-danger/40 hover:text-danger transition-colors"
-            >
-              {archiving ? "…" : "Arşivle"}
-            </button>
-          )}
-        </div>
-      </div>
+    <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+      <header className="mb-6">
+        <button
+          type="button"
+          onClick={() => router.push("/dashboard/reports")}
+          className="mb-4 inline-flex min-h-9 items-center gap-2 rounded-lg text-sm text-text-muted transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          {t("reports.detail.back")}
+        </button>
 
-      {report.status === "archived" && (
-        <div className="mt-3 mb-6 px-3 py-2 bg-surface-2 border border-border rounded-lg text-sm text-text-muted inline-flex items-center gap-2">
-          <span>◎</span> Bu rapor arşivlendi
-        </div>
-      )}
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <ReportStatusBadge status={report.status} />
+              <span className="text-xs font-medium text-text-muted"><ReportTypeLabel type={report.report_type} /></span>
+            </div>
+            <h1 className="mt-3 break-words text-2xl font-semibold tracking-tight text-text">{report.title}</h1>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted">
+              <span>{t("reports.common.period")}: <ReportPeriod start={report.period_start} end={report.period_end} /></span>
+              {report.snapshot ? (
+                <span>{t("reports.common.updated")}: {formatReportGeneratedAt(report.snapshot.created_at, locale)}</span>
+              ) : null}
+            </div>
+          </div>
 
-      {!report.snapshot ? (
-        <div className="mt-8 flex flex-col items-center justify-center py-20 text-center bg-surface border border-border rounded-2xl">
-          <p className="text-base font-medium text-text mb-1">Rapor verisi henüz yok</p>
-          <p className="text-sm text-text-muted mb-4">
-            Raporu oluşturmak için &quot;Yenile&quot; butonuna tıklayın.
-          </p>
+          <div className="flex flex-wrap gap-2">
+            {report.status !== "archived" ? (
+              <Button type="button" variant="outline" onClick={() => setShowShare(true)}>
+                <Link2 className="h-4 w-4" aria-hidden="true" />
+                {t("reports.detail.share")}
+              </Button>
+            ) : null}
+            <Button type="button" variant="outline" isLoading={downloading} onClick={downloadPdf}>
+              <Download className="h-4 w-4" aria-hidden="true" />
+              {downloading ? t("reports.detail.downloadingPdf") : t("reports.detail.downloadPdf")}
+            </Button>
+            {report.status !== "archived" ? (
+              <>
+                <Button type="button" isLoading={regenerating} onClick={regenerate}>
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                  {regenerating ? t("reports.detail.regenerating") : t("reports.detail.regenerate")}
+                </Button>
+                <Button type="button" variant="ghost" isLoading={archiving} onClick={archiveReport} className="text-text-muted">
+                  <Archive className="h-4 w-4" aria-hidden="true" />
+                  {archiving ? t("reports.detail.archiving") : t("reports.detail.archive")}
+                </Button>
+              </>
+            ) : null}
+          </div>
         </div>
+      </header>
+
+      {actionError ? (
+        <div role="alert" className="mb-5 flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+          {actionError}
+        </div>
+      ) : null}
+
+      {report.status === "archived" ? (
+        <div className="mb-5 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm text-text-muted">
+          {t("reports.detail.archivedNotice")}
+        </div>
+      ) : null}
+
+      {report.snapshot ? (
+        <ReportAnalytics metrics={report.snapshot.metrics} audience="agency" />
       ) : (
-        <>
-          {/* KPI cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 mb-8">
-            <MetricCard
-              label="Oluşturulan Brief"
-              value={m.created_briefs_count as number}
-              accent="border-l-indigo-500"
-            />
-            <MetricCard
-              label="Onaylanan Brief"
-              value={m.approved_briefs_count as number}
-              accent="border-l-emerald-500"
-            />
-            <MetricCard
-              label="Revizyon İstendi"
-              value={m.revision_requested_count as number}
-              accent="border-l-amber-500"
-            />
-            <MetricCard
-              label="Yayınlanan İçerik"
-              value={m.published_calendar_items_count as number}
-              accent="border-l-cyan-500"
-            />
-          </div>
-
-          {/* Two-column detail */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Brief performance */}
-            <div className="bg-surface border border-border rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-text mb-4">Brief Performansı</h2>
-              <div className="space-y-3">
-                {(
-                  [
-                    ["Bekleyen Onay", m.pending_approvals_count],
-                    [
-                      "Ort. Onay Süresi",
-                      m.average_approval_time_hours != null
-                        ? `${(m.average_approval_time_hours as number).toFixed(1)} saat`
-                        : "–",
-                    ],
-                  ] as [string, unknown][]
-                ).map(([label, val]) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <span className="text-text-muted">{label}</span>
-                    <span className="font-medium text-text">
-                      {val === null || val === undefined ? "–" : String(val)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Platform distribution */}
-            <div className="bg-surface border border-border rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-text mb-4">Platform Dağılımı</h2>
-              {Object.keys(m.platform_distribution as Record<string, number> ?? {}).length === 0 ? (
-                <p className="text-sm text-text-muted">Veri yok</p>
-              ) : (
-                <div className="space-y-2">
-                  {Object.entries(m.platform_distribution as Record<string, number>)
-                    .sort(([, a], [, b]) => b - a)
-                    .slice(0, 6)
-                    .map(([plat, cnt]) => {
-                      const total = Object.values(
-                        m.platform_distribution as Record<string, number>
-                      ).reduce((s, v) => s + v, 0);
-                      const pct = total ? Math.round((cnt / total) * 100) : 0;
-                      return (
-                        <div key={plat}>
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-text capitalize">{plat}</span>
-                            <span className="text-text-muted">{cnt}</span>
-                          </div>
-                          <div className="h-1.5 bg-surface-2 rounded-full">
-                            <div
-                              className="h-1.5 bg-accent rounded-full"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
-
-            {/* Most revised */}
-            {(m.most_revised_briefs as unknown[])?.length > 0 && (
-              <div className="bg-surface border border-border rounded-xl p-5">
-                <h2 className="text-sm font-semibold text-text mb-4">
-                  En Çok Revizyon İstenen
-                </h2>
-                <div className="space-y-2">
-                  {(
-                    m.most_revised_briefs as { brief_id: string; revision_count: number }[]
-                  )
-                    .slice(0, 5)
-                    .map((entry) => (
-                      <div
-                        key={entry.brief_id}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <span className="text-text-muted font-mono text-xs">
-                          #{entry.brief_id.slice(0, 8)}
-                        </span>
-                        <span className="font-medium text-amber-400">
-                          {entry.revision_count} revizyon
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Calendar status */}
-            {Object.keys(m.calendar_status_distribution as Record<string, number> ?? {}).length > 0 && (
-              <div className="bg-surface border border-border rounded-xl p-5">
-                <h2 className="text-sm font-semibold text-text mb-4">İçerik Durum Özeti</h2>
-                <div className="space-y-2">
-                  {Object.entries(
-                    m.calendar_status_distribution as Record<string, number>
-                  )
-                    .sort(([, a], [, b]) => b - a)
-                    .map(([status, cnt]) => (
-                      <div
-                        key={status}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <span className="text-text-muted capitalize">{status}</span>
-                        <span className="font-medium text-text">{cnt}</span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <p className="text-xs text-text-muted mt-6">
-            Son güncelleme: {fmtDate(report.snapshot.created_at)}
-          </p>
-        </>
+        <ReportEmptyState
+          title={t("reports.detail.emptyTitle")}
+          description={t("reports.detail.emptyDescription")}
+          action={report.status !== "archived" ? (
+            <Button type="button" size="sm" isLoading={regenerating} onClick={regenerate}>
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              {t("reports.detail.regenerate")}
+            </Button>
+          ) : undefined}
+        />
       )}
 
-      {showShare && agencyId && accessToken && (
+      {agencyId && accessToken ? (
         <ShareModal
+          isOpen={showShare}
           reportId={reportId}
           agencyId={agencyId}
           accessToken={accessToken}
           tokens={shareTokens}
           onClose={() => setShowShare(false)}
-          onTokenCreated={(t) => {
-            setShareTokens((prev) => [t, ...prev]);
-          }}
-          onTokenRevoked={(id) => {
-            setShareTokens((prev) => prev.filter((t) => t.id !== id));
-          }}
+          onTokenCreated={(token) => setShareTokens((current) => [token, ...current])}
+          onTokenRevoked={(id) => setShareTokens((current) => current.filter((token) => token.id !== id))}
         />
-      )}
-    </div>
+      ) : null}
+    </main>
   );
 }

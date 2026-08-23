@@ -1,4 +1,4 @@
-"""Unit tests for reporting: enums, token security, PDF generation, public view isolation.
+"""Unit tests for reporting: validation, security, PDF generation, public view isolation.
 
 No DB required — pure Python logic.
 """
@@ -9,9 +9,17 @@ import hashlib
 import secrets
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from unittest.mock import AsyncMock, Mock
 
+import pytest
+from fastapi import HTTPException
+from pydantic import ValidationError
+
+from app.api.v1.brand_portal import list_reports as list_brand_reports
 from app.models.enums import ReportStatus, ReportType
+from app.schemas.report import ReportCreate
 from app.services.report_export_service import ReportExportService
+from app.services.report_service import ReportService
 
 # ── Enum tests ────────────────────────────────────────────────────────────────
 
@@ -35,6 +43,62 @@ def test_report_type_count() -> None:
 
 def test_report_status_count() -> None:
     assert len(ReportStatus) == 4
+
+
+def test_report_create_rejects_inverted_period() -> None:
+    with pytest.raises(ValidationError):
+        ReportCreate(
+            report_type=ReportType.AGENCY_OVERVIEW,
+            period_start=date(2026, 8, 31),
+            period_end=date(2026, 8, 1),
+            title="August operations",
+        )
+
+
+def test_report_create_rejects_blank_title() -> None:
+    with pytest.raises(ValidationError):
+        ReportCreate(
+            report_type=ReportType.AGENCY_OVERVIEW,
+            period_start=date(2026, 8, 1),
+            period_end=date(2026, 8, 31),
+            title="   ",
+        )
+
+
+@pytest.mark.asyncio
+async def test_report_create_rejects_brand_outside_agency() -> None:
+    db = Mock()
+    db.execute = AsyncMock()
+    result = Mock()
+    result.scalar_one_or_none.return_value = None
+    db.execute.return_value = result
+
+    with pytest.raises(HTTPException) as exc_info:
+        await ReportService(db).create_and_generate(
+            agency_id=uuid.uuid4(),
+            report_type=ReportType.MONTHLY_BRAND,
+            period_start=date(2026, 8, 1),
+            period_end=date(2026, 8, 31),
+            title="Brand report",
+            created_by_id=uuid.uuid4(),
+            brand_id=uuid.uuid4(),
+        )
+
+    assert exc_info.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_brand_report_list_requires_report_permission() -> None:
+    ctx = Mock()
+    ctx.has_permission.return_value = False
+    db = Mock()
+    db.execute = AsyncMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await list_brand_reports(limit=50, ctx=ctx, db=db)
+
+    assert exc_info.value.status_code == 403
+    db.execute.assert_not_awaited()
 
 
 # ── Token security tests ──────────────────────────────────────────────────────
@@ -135,6 +199,7 @@ def test_public_report_no_token_hash() -> None:
 
 def test_metrics_expected_keys() -> None:
     expected = {
+        "scope_version",
         "created_briefs_count",
         "approved_briefs_count",
         "revision_requested_count",
@@ -149,6 +214,7 @@ def test_metrics_expected_keys() -> None:
         "period_end",
     }
     sample = {
+        "scope_version": 2,
         "created_briefs_count": 0,
         "approved_briefs_count": 0,
         "revision_requested_count": 0,

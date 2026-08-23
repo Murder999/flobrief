@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
-import type { SelectHTMLAttributes } from "react";
+import { useId, type SelectHTMLAttributes } from "react";
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -8,16 +8,19 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   options: { value: string; label: string; disabled?: boolean }[];
 }
 
-export function Select({ label, error, options, className = "", ...props }: SelectProps) {
+export function Select({ label, error, options, className = "", id, ...props }: SelectProps) {
+  const generatedId = useId();
+  const selectId = id ?? generatedId;
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-xs font-medium text-text-muted tracking-wide">
+        <label htmlFor={selectId} className="text-xs font-medium text-text-muted tracking-wide">
           {label}
         </label>
       )}
       <div className="relative">
         <select
+          id={selectId}
           className={cn(
             "w-full h-9 pl-3 pr-8 bg-surface-2 border border-border rounded-lg text-sm text-text appearance-none cursor-pointer",
             "transition-all duration-150",

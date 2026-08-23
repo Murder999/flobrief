@@ -7,6 +7,7 @@ WhatsApp message links are reachable from phones outside localhost.
 from __future__ import annotations
 
 import uuid
+from urllib.parse import quote
 
 from app.core.config import settings
 
@@ -61,7 +62,15 @@ class UrlBuilder:
 
     @staticmethod
     def invite_link(token: str) -> str:
-        return f"{_base()}/invite/{token}"
+        return f"{_base()}/auth/accept-invite?token={quote(token, safe='')}"
+
+    @staticmethod
+    def verification_link(token: str) -> str:
+        return f"{_base()}/auth/verify-email?token={quote(token, safe='')}"
+
+    @staticmethod
+    def password_reset_link(token: str) -> str:
+        return f"{_base()}/auth/reset-password?token={quote(token, safe='')}"
 
     @staticmethod
     def notification_preferences(*, brand_side: bool = False) -> str:

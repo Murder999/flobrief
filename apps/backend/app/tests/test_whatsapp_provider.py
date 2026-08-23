@@ -433,9 +433,7 @@ class TestTwilioTemplateSendAndConnection:
         assert check.ok is False
 
     def test_get_sender_status_no_from_configured(self) -> None:
-        provider = TwilioWhatsAppProvider(
-            account_sid="ACtest", auth_token="token", from_number=""
-        )
+        provider = TwilioWhatsAppProvider(account_sid="ACtest", auth_token="token", from_number="")
         check = provider.get_sender_status()
         assert check.ok is False
 

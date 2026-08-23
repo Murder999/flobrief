@@ -6,6 +6,7 @@ Detects by process command line (backend directory path + "uvicorn"), not by
 port, since a duplicate instance can end up on a different port. Never kills
 anything. If detection itself fails, it fails open.
 """
+
 import subprocess
 import sys
 from pathlib import Path
@@ -64,7 +65,9 @@ def main() -> int:
     print("========================================================")
     for inst in instances:
         ports = inst.get("Ports") or []
-        ports_str = ", ".join(str(p) for p in ports) if ports else "bilinmiyor (henüz dinlemiyor olabilir)"
+        ports_str = (
+            ", ".join(str(p) for p in ports) if ports else "bilinmiyor (henüz dinlemiyor olabilir)"
+        )
         print(f"  PID: {inst.get('Pid')}  Port(lar): {ports_str}")
     print("")
     print(" İkinci bir uvicorn süreci başlatmak, aynı porta iki bağımsız")

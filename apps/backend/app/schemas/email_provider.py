@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -20,6 +21,7 @@ class ResendProviderStatusRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     provider: str
+    configuration_source: Literal["database", "environment", "none"] = "none"
     is_enabled: bool
     is_configured: bool
     api_key_set: bool = False

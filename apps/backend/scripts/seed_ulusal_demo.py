@@ -19,6 +19,7 @@ duplicated.
 Usage (run from apps/backend/, with the local dev Postgres container up):
     python -m scripts.seed_ulusal_demo
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -165,7 +166,10 @@ BRIEFS = [
         "participant_role": "social_media_manager",
         "status": "draft",
         "dates": {
-            "start": _d(4), "draft": _d(8), "feedback": _d(11), "deadline": _d(14),
+            "start": _d(4),
+            "draft": _d(8),
+            "feedback": _d(11),
+            "deadline": _d(14),
             "publish": _d(18),
         },
         "reference_notes": _REFERENCE_NOTE,
@@ -195,7 +199,10 @@ BRIEFS = [
         "participant_role": "designer",
         "status": "draft",
         "dates": {
-            "start": _d(6), "draft": _d(10), "feedback": _d(13), "deadline": _d(16),
+            "start": _d(6),
+            "draft": _d(10),
+            "feedback": _d(13),
+            "deadline": _d(16),
             "publish": _d(20),
         },
         "reference_notes": _REFERENCE_NOTE,
@@ -226,7 +233,10 @@ BRIEFS = [
         "participant_role": "social_media_manager",
         "status": "in_production",
         "dates": {
-            "start": _d(2), "draft": _d(9), "feedback": _d(12), "deadline": _d(15),
+            "start": _d(2),
+            "draft": _d(9),
+            "feedback": _d(12),
+            "deadline": _d(15),
             "publish": _d(19),
         },
         "reference_notes": _REFERENCE_NOTE,
@@ -256,7 +266,10 @@ BRIEFS = [
         "participant_role": "designer",
         "status": "ready_for_review",
         "dates": {
-            "start": _d(1), "draft": _d(5), "feedback": _d(7), "deadline": _d(10),
+            "start": _d(1),
+            "draft": _d(5),
+            "feedback": _d(7),
+            "deadline": _d(10),
             "publish": _d(21),
         },
         "reference_notes": _REFERENCE_NOTE,
@@ -290,7 +303,10 @@ BRIEFS = [
         "participant_role": "designer",
         "status": "revision_requested",
         "dates": {
-            "start": _d(1), "draft": _d(4), "feedback": _d(6), "deadline": _d(9),
+            "start": _d(1),
+            "draft": _d(4),
+            "feedback": _d(6),
+            "deadline": _d(9),
             "publish": _d(25),
         },
         "reference_notes": _REFERENCE_NOTE,
@@ -321,8 +337,11 @@ BRIEFS = [
         "participant_role": "designer",
         "status": "approved",
         "dates": {
-            "start": "2026-08-01", "draft": "2026-08-10", "feedback": "2026-08-15",
-            "deadline": "2026-08-25", "publish": "2026-08-30",
+            "start": "2026-08-01",
+            "draft": "2026-08-10",
+            "feedback": "2026-08-15",
+            "deadline": "2026-08-25",
+            "publish": "2026-08-30",
         },
         "reference_notes": _REFERENCE_NOTE,
         "additional_notes": _ADDITIONAL_NOTE,
@@ -337,6 +356,7 @@ _APPROVAL_STATUS_FOR_BRIEF_STATUS = {
 
 
 # ── Idempotent get-or-create helpers ──────────────────────────────────────────
+
 
 async def _get_or_create_agency(session) -> tuple[Agency, bool]:
     result = await session.execute(
@@ -356,7 +376,9 @@ async def _get_or_create_agency(session) -> tuple[Agency, bool]:
     return agency, True
 
 
-async def _get_or_create_user(session, email: str, full_name: str, user_type: str) -> tuple[User, bool]:
+async def _get_or_create_user(
+    session, email: str, full_name: str, user_type: str
+) -> tuple[User, bool]:
     result = await session.execute(select(User).where(User.email == email.lower()))
     user = result.scalar_one_or_none()
     if user is not None:
@@ -382,7 +404,9 @@ async def _get_or_create_user(session, email: str, full_name: str, user_type: st
     return user, True
 
 
-async def _get_or_create_agency_member(session, agency_id, user_id, role: str) -> tuple[AgencyMember, bool]:
+async def _get_or_create_agency_member(
+    session, agency_id, user_id, role: str
+) -> tuple[AgencyMember, bool]:
     result = await session.execute(
         select(AgencyMember).where(
             AgencyMember.agency_id == agency_id,
@@ -398,8 +422,12 @@ async def _get_or_create_agency_member(session, agency_id, user_id, role: str) -
         return member, False
 
     member = AgencyMember(
-        id=uuid.uuid4(), agency_id=agency_id, user_id=user_id, role=role,
-        status=AgencyMemberStatus.ACTIVE.value, joined_at=datetime.now(UTC),
+        id=uuid.uuid4(),
+        agency_id=agency_id,
+        user_id=user_id,
+        role=role,
+        status=AgencyMemberStatus.ACTIVE.value,
+        joined_at=datetime.now(UTC),
     )
     session.add(member)
     await session.flush()
@@ -436,7 +464,9 @@ async def _get_or_create_brand(session, agency_id) -> tuple[Brand, bool]:
     return brand, True
 
 
-async def _get_or_create_brand_member(session, brand_id, user_id, role: str) -> tuple[BrandMember, bool]:
+async def _get_or_create_brand_member(
+    session, brand_id, user_id, role: str
+) -> tuple[BrandMember, bool]:
     result = await session.execute(
         select(BrandMember).where(
             BrandMember.brand_id == brand_id,
@@ -452,15 +482,21 @@ async def _get_or_create_brand_member(session, brand_id, user_id, role: str) -> 
         return member, False
 
     member = BrandMember(
-        id=uuid.uuid4(), brand_id=brand_id, user_id=user_id, role=role,
-        status=BrandMemberStatus.ACTIVE.value, joined_at=datetime.now(UTC),
+        id=uuid.uuid4(),
+        brand_id=brand_id,
+        user_id=user_id,
+        role=role,
+        status=BrandMemberStatus.ACTIVE.value,
+        joined_at=datetime.now(UTC),
     )
     session.add(member)
     await session.flush()
     return member, True
 
 
-async def _get_or_create_brand_identity(session, brand_id, agency_id, approver: User) -> tuple[BrandIdentityProfile, bool]:
+async def _get_or_create_brand_identity(
+    session, brand_id, agency_id, approver: User
+) -> tuple[BrandIdentityProfile, bool]:
     result = await session.execute(
         select(BrandIdentityProfile).where(
             BrandIdentityProfile.brand_id == brand_id,
@@ -484,10 +520,13 @@ async def _get_or_create_brand_identity(session, brand_id, agency_id, approver: 
             {"name": "Kontrollü Turkuaz", "hex": "#0FB5AE", "usage": "Vurgu ve CTA elemanları"},
         ],
         "typography": [
-            {"role": "primary", "family": "Montserrat", "weight": "600",
-             "usage": "Başlıklar ve CTA"},
-            {"role": "secondary", "family": "Montserrat", "weight": "400",
-             "usage": "Gövde metni"},
+            {
+                "role": "primary",
+                "family": "Montserrat",
+                "weight": "600",
+                "usage": "Başlıklar ve CTA",
+            },
+            {"role": "secondary", "family": "Montserrat", "weight": "400", "usage": "Gövde metni"},
         ],
         "tone_of_voice": {
             "summary": "Güven veren, kurumsal, anlaşılır, modern",
@@ -524,7 +563,9 @@ async def _get_or_create_brand_identity(session, brand_id, agency_id, approver: 
             setattr(profile, key, value)
         return profile, False
 
-    profile = BrandIdentityProfile(id=uuid.uuid4(), brand_id=brand_id, agency_id=agency_id, **fields)
+    profile = BrandIdentityProfile(
+        id=uuid.uuid4(), brand_id=brand_id, agency_id=agency_id, **fields
+    )
     session.add(profile)
     await session.flush()
     return profile, True
@@ -553,9 +594,13 @@ async def _get_or_create_subscription(session, agency_id) -> tuple[Subscription 
         return sub, False
 
     sub = Subscription(
-        id=uuid.uuid4(), agency_id=agency_id, plan_id=plan.id,
-        status=SubscriptionStatus.ACTIVE.value, billing_provider="manual",
-        current_period_start=now, current_period_end=now + timedelta(days=365),
+        id=uuid.uuid4(),
+        agency_id=agency_id,
+        plan_id=plan.id,
+        status=SubscriptionStatus.ACTIVE.value,
+        billing_provider="manual",
+        current_period_start=now,
+        current_period_end=now + timedelta(days=365),
     )
     session.add(sub)
     await session.flush()
@@ -579,7 +624,9 @@ def _build_meta(cfg: dict) -> dict:
     return {k: v for k, v in meta.items() if v is not None}
 
 
-async def _get_or_create_brief(session, agency: Agency, brand: Brand, creator: User, cfg: dict) -> tuple[Brief, bool]:
+async def _get_or_create_brief(
+    session, agency: Agency, brand: Brand, creator: User, cfg: dict
+) -> tuple[Brief, bool]:
     result = await session.execute(
         select(Brief).where(
             Brief.agency_id == agency.id, Brief.title == cfg["title"], Brief.deleted_at.is_(None)
@@ -670,19 +717,29 @@ async def _create_demo_deliverable(
     session.add(asset)
     await session.flush()
 
-    session.add(AssetLink(id=uuid.uuid4(), asset_id=asset.id, brief_id=brief.id, deliverable_id=deliverable.id))
+    session.add(
+        AssetLink(
+            id=uuid.uuid4(), asset_id=asset.id, brief_id=brief.id, deliverable_id=deliverable.id
+        )
+    )
 
     annotations = [
         {
-            "x": 52.0, "y": 18.0, "body": "Başlık alanı mobil görünümde biraz daha güçlü olabilir.",
+            "x": 52.0,
+            "y": 18.0,
+            "body": "Başlık alanı mobil görünümde biraz daha güçlü olabilir.",
             "status": "open",
         },
         {
-            "x": 30.0, "y": 72.0, "body": "Alt açıklamanın kontrastını artırabilir miyiz?",
+            "x": 30.0,
+            "y": 72.0,
+            "body": "Alt açıklamanın kontrastını artırabilir miyiz?",
             "status": "open",
         },
         {
-            "x": 82.0, "y": 88.0, "body": "Logo çevresindeki güvenli alan uygun, bu nokta çözüldü.",
+            "x": 82.0,
+            "y": 88.0,
+            "body": "Logo çevresindeki güvenli alan uygun, bu nokta çözüldü.",
             "status": "resolved",
         },
     ]
@@ -711,21 +768,31 @@ async def _create_demo_deliverable(
         await session.flush()
 
         if a["status"] == "resolved":
-            session.add(AnnotationReply(
-                id=uuid.uuid4(), annotation_id=ann.id, author_user_id=designer.id,
-                author_name=designer.full_name,
-                body="Kontrastı ve güvenli alanı güncelledik, tekrar kontrol edebilir misiniz?",
-                visibility="client_visible",
-            ))
-            session.add(AnnotationReply(
-                id=uuid.uuid4(), annotation_id=ann.id, author_user_id=brand_user.id,
-                author_name=brand_user.full_name,
-                body="Teşekkürler, bu nokta artık uygun görünüyor.",
-                visibility="client_visible",
-            ))
+            session.add(
+                AnnotationReply(
+                    id=uuid.uuid4(),
+                    annotation_id=ann.id,
+                    author_user_id=designer.id,
+                    author_name=designer.full_name,
+                    body="Kontrastı ve güvenli alanı güncelledik, tekrar kontrol edebilir misiniz?",
+                    visibility="client_visible",
+                )
+            )
+            session.add(
+                AnnotationReply(
+                    id=uuid.uuid4(),
+                    annotation_id=ann.id,
+                    author_user_id=brand_user.id,
+                    author_name=brand_user.full_name,
+                    body="Teşekkürler, bu nokta artık uygun görünüyor.",
+                    visibility="client_visible",
+                )
+            )
 
 
-async def _get_or_create_approval(session, brief: Brief, requested_by: User, brand_user: User, brief_status: str) -> bool:
+async def _get_or_create_approval(
+    session, brief: Brief, requested_by: User, brand_user: User, brief_status: str
+) -> bool:
     target_status = _APPROVAL_STATUS_FOR_BRIEF_STATUS.get(brief_status)
     if target_status is None:
         return False
@@ -738,31 +805,42 @@ async def _get_or_create_approval(session, brief: Brief, requested_by: User, bra
 
     decided = target_status != ApprovalStatus.PENDING.value
     now = datetime.now(UTC)
-    session.add(Approval(
-        id=uuid.uuid4(),
-        brief_id=brief.id,
-        status=target_status,
-        channel="internal",
-        requested_by_id=requested_by.id,
-        assigned_to_user_id=brand_user.id,
-        decided_by_user_id=brand_user.id if decided else None,
-        decided_at=now if decided else None,
-        approved_by_name=brand_user.full_name if decided else None,
-    ))
+    session.add(
+        Approval(
+            id=uuid.uuid4(),
+            brief_id=brief.id,
+            status=target_status,
+            channel="internal",
+            requested_by_id=requested_by.id,
+            assigned_to_user_id=brand_user.id,
+            decided_by_user_id=brand_user.id if decided else None,
+            decided_at=now if decided else None,
+            approved_by_name=brand_user.full_name if decided else None,
+        )
+    )
     return True
 
 
 # ── Main orchestration ────────────────────────────────────────────────────────
 
+
 async def seed_ulusal_demo() -> None:
     _assert_safe_environment()
 
     counts = {
-        "agency_created": False, "brand_created": False, "identity_created": False,
-        "subscription_created": False, "users_created": 0, "users_updated": 0,
-        "agency_members_created": 0, "brand_members_created": 0,
-        "briefs_created": 0, "briefs_skipped": 0, "assignees_created": 0,
-        "approvals_created": 0, "deliverable_created": False,
+        "agency_created": False,
+        "brand_created": False,
+        "identity_created": False,
+        "subscription_created": False,
+        "users_created": 0,
+        "users_updated": 0,
+        "agency_members_created": 0,
+        "brand_members_created": 0,
+        "briefs_created": 0,
+        "briefs_skipped": 0,
+        "assignees_created": 0,
+        "approvals_created": 0,
+        "deliverable_created": False,
     }
 
     async with AsyncSessionLocal() as session:
@@ -798,7 +876,9 @@ async def seed_ulusal_demo() -> None:
             if brand_member_created:
                 counts["brand_members_created"] += 1
 
-            _, identity_created = await _get_or_create_brand_identity(session, brand.id, agency.id, efe)
+            _, identity_created = await _get_or_create_brand_identity(
+                session, brand.id, agency.id, efe
+            )
             counts["identity_created"] = identity_created
 
             _, sub_created = await _get_or_create_subscription(session, agency.id)
@@ -813,11 +893,16 @@ async def seed_ulusal_demo() -> None:
 
                 assignee = agency_user_by_email[cfg["assignee_email"]]
                 caps = default_caps_for_role(cfg["participant_role"])
-                session.add(BriefAssignee(
-                    id=uuid.uuid4(), brief_id=brief.id, user_id=assignee.id,
-                    role_label=assignee.full_name, participant_role=cfg["participant_role"],
-                    **caps,
-                ))
+                session.add(
+                    BriefAssignee(
+                        id=uuid.uuid4(),
+                        brief_id=brief.id,
+                        user_id=assignee.id,
+                        role_label=assignee.full_name,
+                        participant_role=cfg["participant_role"],
+                        **caps,
+                    )
+                )
                 counts["assignees_created"] += 1
 
                 if await _get_or_create_approval(session, brief, efe, brand_user, cfg["status"]):

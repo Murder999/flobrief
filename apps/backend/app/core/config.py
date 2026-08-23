@@ -1,4 +1,4 @@
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000"
     CORS_ALLOW_CREDENTIALS: bool = True
 
-    EMAIL_FROM: str = "noreply@flobrief.com"
-    EMAIL_FROM_NAME: str = "Flobrief"
+    EMAIL_FROM: str = "noreply@postpiloter.com"
+    EMAIL_FROM_NAME: str = "PostPiloter"
 
     STORAGE_BACKEND: str = "local"
 
@@ -93,7 +93,7 @@ class Settings(BaseSettings):
     # staging or production. See docs/DECISIONS.md.
     WHATSAPP_SANDBOX_FREEFORM_TEST_ENABLED: bool = False
 
-    # Resend email provider (env fallback; DB config takes priority)
+    # Resend email provider (production env is authoritative; DB-first outside production)
     RESEND_API_KEY: str = ""
     RESEND_TEST_MODE: bool = False
     RESEND_TEST_RECIPIENT: str = "delivered@resend.dev"
@@ -127,6 +127,26 @@ class Settings(BaseSettings):
                 "Only STORAGE_BACKEND=local is implemented; S3/R2 is not production-ready"
             )
         return normalized
+
+    @model_validator(mode="after")
+    def validate_production_public_configuration(self) -> "Settings":
+        if not self.is_production:
+            return self
+
+        expected_origin = "https://postpiloter.com"
+        for field_name in ("FRONTEND_URL", "FRONTEND_PUBLIC_URL", "BACKEND_PUBLIC_URL"):
+            value = getattr(self, field_name).rstrip("/")
+            if value != expected_origin:
+                raise ValueError(f"{field_name} must be {expected_origin} in production")
+        if expected_origin not in self.get_cors_origins():
+            raise ValueError(f"CORS_ORIGINS must include {expected_origin} in production")
+        if self.RESEND_TEST_MODE:
+            raise ValueError("RESEND_TEST_MODE must be false in production")
+        if self.EMAIL_FROM.lower() != "noreply@postpiloter.com":
+            raise ValueError("EMAIL_FROM must be noreply@postpiloter.com in production")
+        if self.EMAIL_FROM_NAME != "PostPiloter":
+            raise ValueError("EMAIL_FROM_NAME must be PostPiloter in production")
+        return self
 
     def get_cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]

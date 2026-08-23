@@ -87,4 +87,9 @@ export const settings = {
   "settings.mfa.done": "Done",
   "settings.mfa.processing": "Processing…",
   "settings.mfa.disableAction": "Disable",
+"brand.settings.notificationChannels": "Notification Channels",
+  "brand.settings.channel.inApp": "In-app",
+  "brand.settings.status.inactive": "Inactive",
+  "brand.settings.status.setupRequired": "Setup required",
+  "brand.settings.status.offline": "Off",
 } as const;

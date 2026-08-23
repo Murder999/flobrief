@@ -39,6 +39,7 @@ const navigationKeys: Record<string, TranslationKey> = {
   Diğer: "dashboard.navigation.other",
   "Marka Portalı": "dashboard.navigation.portal",
   Ayarlar: "dashboard.navigation.settings",
+  Yardım: "dashboard.navigation.help",
 };
 
 export function translateAppNavigationLabel(

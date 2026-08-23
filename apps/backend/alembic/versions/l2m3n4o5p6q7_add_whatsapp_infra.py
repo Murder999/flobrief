@@ -9,6 +9,7 @@ Revision ID: l2m3n4o5p6q7
 Revises: k1l2m3n4o5p6
 Create Date: 2026-07-10 14:00:00.000000
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -68,10 +69,18 @@ def upgrade() -> None:
 
     # ── users: WhatsApp / phone fields ─────────────────────────────────────────
     op.add_column("users", sa.Column("phone_number", sa.String(30), nullable=True))
-    op.add_column("users", sa.Column("phone_verified_at", sa.DateTime(timezone=True), nullable=True))
-    op.add_column("users", sa.Column("whatsapp_opt_in", sa.Boolean(), nullable=False, server_default="false"))
-    op.add_column("users", sa.Column("whatsapp_opt_in_at", sa.DateTime(timezone=True), nullable=True))
-    op.add_column("users", sa.Column("whatsapp_opt_out_at", sa.DateTime(timezone=True), nullable=True))
+    op.add_column(
+        "users", sa.Column("phone_verified_at", sa.DateTime(timezone=True), nullable=True)
+    )
+    op.add_column(
+        "users", sa.Column("whatsapp_opt_in", sa.Boolean(), nullable=False, server_default="false")
+    )
+    op.add_column(
+        "users", sa.Column("whatsapp_opt_in_at", sa.DateTime(timezone=True), nullable=True)
+    )
+    op.add_column(
+        "users", sa.Column("whatsapp_opt_out_at", sa.DateTime(timezone=True), nullable=True)
+    )
 
     # ── notification_deliveries: retry tracking ────────────────────────────────
     op.add_column(

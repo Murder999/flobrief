@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from io import BytesIO
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -73,8 +73,8 @@ async def create_report(
 async def list_reports(
     brand_id: uuid.UUID | None = None,
     report_type: str | None = None,
-    limit: int = 20,
-    offset: int = 0,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     workspace: WorkspaceContext = Depends(_workspace),
     svc: ReportService = Depends(_svc),
 ) -> ReportListResponse:
@@ -219,7 +219,7 @@ async def export_pdf(
             detail="Rapor verisi henüz oluşturulmamış",
         )
     pdf_bytes = ReportExportService.build_pdf_bytes(report, snapshot)
-    filename = f"flobrief-report-{report_id}.pdf"
+    filename = f"postpiloter-report-{report_id}.pdf"
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
@@ -260,7 +260,7 @@ async def download_public_pdf(
             detail="Bu link ile PDF indirme yetkisi yok",
         )
     pdf_bytes = ReportExportService.build_pdf_bytes(report, snapshot)
-    filename = f"flobrief-report-{report.id}.pdf"
+    filename = f"postpiloter-report-{report.id}.pdf"
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",

@@ -84,6 +84,8 @@ export const marketing = {
   "marketing.pricing.faq.5.q": "How does invoicing work?",
   "marketing.pricing.faq.5.a": "Payments are processed securely through Paddle (our Merchant of Record). Invoices are generated for each period and are available in your dashboard.",
   "marketing.pricing.loading": "Loading price...",
+  "marketing.pricing.loadingPrice": "Fetching localized price…",
+  "marketing.pricing.priceUnavailable": "Price temporarily unavailable",
 
   "marketing.legal.terms.title": "Terms of Service",
   "marketing.legal.terms.lastUpdated": "Last updated: August 21, 2026",

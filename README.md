@@ -4,15 +4,15 @@ Premium B2B SaaS platform for agency-brand brief management, approval workflows,
 
 ## Stack
 
-- **Backend**: Python 3.11+, FastAPI, PostgreSQL 16, SQLAlchemy 2.x async, Alembic, Pydantic Settings, JWT
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Backend**: Python 3.13, FastAPI, PostgreSQL 16, SQLAlchemy 2.x async, Alembic, Pydantic Settings, JWT
+- **Frontend**: Node.js 20, Next.js 14, TypeScript, Tailwind CSS
 - **Infra**: Docker Compose, PostgreSQL, Redis, MailHog
 
 ## Quick Start
 
 ### Prerequisites
-- Python 3.11+
-- Node.js 18+
+- Python 3.13
+- Node.js 20.x
 - Docker & Docker Compose
 
 ### Start Infrastructure
@@ -68,4 +68,5 @@ infra/        Nginx configs (production)
 - [UI/UX Design System](docs/UI_DNA.md)
 - [Security Rules](docs/SECURITY_RULES.md)
 - [Technical Decisions](docs/DECISIONS.md)
+- [Hetzner Deployment](docs/DEPLOYMENT.md)
 - [15-Part Development Plan](PART_PLAN.md)

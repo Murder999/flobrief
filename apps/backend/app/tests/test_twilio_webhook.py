@@ -194,9 +194,7 @@ class TestTwilioWebhookStatusParsing:
         params = {"MessageSid": sid, "MessageStatus": "delivered"}
         sig = _sign(params)
         with _decrypt_patch():
-            resp = await client.post(
-                WEBHOOK_PATH, data=params, headers={"X-Twilio-Signature": sig}
-            )
+            resp = await client.post(WEBHOOK_PATH, data=params, headers={"X-Twilio-Signature": sig})
         assert resp.status_code == 200
         body = resp.json()
         assert body["processed"] is True
@@ -207,17 +205,13 @@ class TestTwilioWebhookStatusParsing:
         assert delivery.delivered_at is not None
         assert delivery.read_at is None
 
-    async def test_read_status_sets_read_at(
-        self, client: AsyncClient, twilio_provider_row
-    ) -> None:
+    async def test_read_status_sets_read_at(self, client: AsyncClient, twilio_provider_row) -> None:
         sid = "SMread-" + uuid.uuid4().hex
         delivery_id = await self._make_delivery(sid)
         params = {"MessageSid": sid, "MessageStatus": "read"}
         sig = _sign(params)
         with _decrypt_patch():
-            resp = await client.post(
-                WEBHOOK_PATH, data=params, headers={"X-Twilio-Signature": sig}
-            )
+            resp = await client.post(WEBHOOK_PATH, data=params, headers={"X-Twilio-Signature": sig})
         assert resp.status_code == 200
         assert resp.json()["delivery_status"] == NotificationDeliveryStatus.READ.value
 
@@ -233,9 +227,7 @@ class TestTwilioWebhookStatusParsing:
         params = {"MessageSid": sid, "MessageStatus": "queued"}
         sig = _sign(params)
         with _decrypt_patch():
-            resp = await client.post(
-                WEBHOOK_PATH, data=params, headers={"X-Twilio-Signature": sig}
-            )
+            resp = await client.post(WEBHOOK_PATH, data=params, headers={"X-Twilio-Signature": sig})
         assert resp.status_code == 200
         assert resp.json()["delivery_status"] == NotificationDeliveryStatus.QUEUED.value
 
@@ -269,9 +261,7 @@ class TestTwilioWebhookStateMachine:
     async def _post(self, client: AsyncClient, params: dict[str, str]) -> object:
         sig = _sign(params)
         with _decrypt_patch():
-            return await client.post(
-                WEBHOOK_PATH, data=params, headers={"X-Twilio-Signature": sig}
-            )
+            return await client.post(WEBHOOK_PATH, data=params, headers={"X-Twilio-Signature": sig})
 
     async def test_duplicate_delivered_callback_second_call_not_applied(
         self, client: AsyncClient, twilio_provider_row

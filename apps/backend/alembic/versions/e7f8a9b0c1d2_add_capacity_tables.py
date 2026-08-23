@@ -4,6 +4,7 @@ Revision ID: e7f8a9b0c1d2
 Revises: d6e7f8a9b0c1
 Create Date: 2026-07-21
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -23,9 +24,7 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("agency_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column(
-            "timezone", sa.String(50), nullable=False, server_default="Europe/Istanbul"
-        ),
+        sa.Column("timezone", sa.String(50), nullable=False, server_default="Europe/Istanbul"),
         sa.Column("effective_from", sa.Date(), nullable=True),
         sa.Column(
             "created_at",
@@ -75,13 +74,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["work_schedule_id"], ["work_schedules.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["work_schedule_id"], ["work_schedules.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "work_schedule_id", "weekday", name="uq_work_schedule_day_weekday"
-        ),
+        sa.UniqueConstraint("work_schedule_id", "weekday", name="uq_work_schedule_day_weekday"),
         sa.CheckConstraint(
             "weekday >= 0 AND weekday <= 6", name="ck_work_schedule_day_weekday_range"
         ),
@@ -186,9 +181,7 @@ def upgrade() -> None:
         sa.Column("start_date", sa.Date(), nullable=False),
         sa.Column("end_date", sa.Date(), nullable=False),
         sa.Column("allocated_minutes", sa.Integer(), nullable=False),
-        sa.Column(
-            "allocation_source", sa.String(20), nullable=False, server_default="manual"
-        ),
+        sa.Column("allocation_source", sa.String(20), nullable=False, server_default="manual"),
         sa.Column("locked", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column("created_by_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column(
@@ -213,9 +206,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["created_by_id"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
         sa.CheckConstraint("end_date >= start_date", name="ck_work_allocation_end_after_start"),
-        sa.CheckConstraint(
-            "allocated_minutes > 0", name="ck_work_allocation_minutes_positive"
-        ),
+        sa.CheckConstraint("allocated_minutes > 0", name="ck_work_allocation_minutes_positive"),
     )
     op.create_index("ix_work_allocation_agency_id", "work_allocations", ["agency_id"])
     op.create_index("ix_work_allocation_user_id", "work_allocations", ["user_id"])
@@ -244,9 +235,7 @@ def upgrade() -> None:
             "capacity_near_threshold_pct", sa.Integer(), nullable=False, server_default="100"
         ),
         sa.Column("default_currency", sa.String(3), nullable=False, server_default="TRY"),
-        sa.Column(
-            "default_payment_terms_days", sa.Integer(), nullable=False, server_default="30"
-        ),
+        sa.Column("default_payment_terms_days", sa.Integer(), nullable=False, server_default="30"),
         sa.Column("invoice_number_seq", sa.Integer(), nullable=False, server_default="0"),
         sa.Column(
             "retainer_default_rollover",

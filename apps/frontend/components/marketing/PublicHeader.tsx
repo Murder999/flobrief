@@ -59,7 +59,7 @@ export function PublicHeader() {
               {t("auth.actions.login")}
             </button>
             <Link
-              href="/demo"
+              href={localize("/demo")}
               className="hidden min-h-11 items-center gap-1.5 rounded-xl bg-gradient-accent px-4 text-sm font-semibold text-white shadow-accent transition-transform hover:scale-[1.02] sm:flex"
             >
               {t("marketing.actions.demo")}
@@ -107,13 +107,13 @@ export function PublicHeader() {
               >
                 {t("auth.actions.login")}
               </button>
-              <Link
-                href="/demo"
-                className="flex min-h-11 items-center justify-center rounded-xl bg-gradient-accent text-sm font-semibold text-white"
-                onClick={() => setMenuOpen(false)}
-              >
-                {t("marketing.actions.demo")}
-              </Link>
+<Link
+                  href={localize("/demo")}
+                  className="flex min-h-11 items-center justify-center rounded-xl bg-gradient-accent text-sm font-semibold text-white"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t("marketing.actions.demo")}
+                </Link>
             </div>
           </div>
         )}

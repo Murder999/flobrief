@@ -7,6 +7,7 @@ Minimum 5 characters required. No API validation rules apply here.
 Usage (run from apps/backend/):
     python scripts/reset_admin_password.py --email admin@example.com
 """
+
 import argparse
 import asyncio
 import getpass
@@ -25,9 +26,7 @@ from app.models.user import User  # noqa: E402
 
 async def _reset(email: str, new_password: str) -> None:
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            select(User).where(User.email == email.lower())
-        )
+        result = await session.execute(select(User).where(User.email == email.lower()))
         user = result.scalar_one_or_none()
 
         if user is None:
