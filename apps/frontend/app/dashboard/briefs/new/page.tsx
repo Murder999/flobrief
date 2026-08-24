@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef, useContext, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/context/workspace-context";
 import { useLocale } from "@/context/locale-context";
@@ -282,11 +282,13 @@ export default function NewBriefPage() {
   const { activeAgency } = useWorkspace();
   const currentAgencyId = activeAgency?.id ?? null;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useLocale();
   const { toast } = useToast();
 
   // ── Form state (all fields from existing BriefCreate UI) ──────────────
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateRead | null>(null);
   const [brands, setBrands] = useState<BrandRead[]>([]);
   const [agencyMembers, setAgencyMembers] = useState<AgencyMemberRead[]>([]);
   const [brandMembers, setBrandMembers] = useState<BrandMemberRead[]>([]);
@@ -327,10 +329,41 @@ export default function NewBriefPage() {
   }, [accessToken, currentAgencyId]);
 
   // ── Selected template ──────────────────────────────────────────────
-  const selectedTemplate = useMemo((): TemplateRead | null => {
-    if (!selectedTemplateId) return null;
-    return null;
-  }, [selectedTemplateId]);
+  const requestedTemplateId = searchParams.get("templateId");
+
+useEffect(() => {
+  if (!requestedTemplateId) {
+    setSelectedTemplateId(null);
+    setSelectedTemplate(null);
+    return;
+  }
+
+  setSelectedTemplateId(requestedTemplateId);
+
+  if (!accessToken || !currentAgencyId) {
+    return;
+  }
+
+  let cancelled = false;
+
+  void templateApi
+    .get(requestedTemplateId, currentAgencyId, accessToken)
+    .then((template) => {
+      if (cancelled) return;
+
+      setSelectedTemplate(template);
+    })
+    .catch(() => {
+      if (cancelled) return;
+
+      setSelectedTemplate(null);
+      setSelectedTemplateId(null);
+    });
+
+  return () => {
+    cancelled = true;
+  };
+}, [requestedTemplateId, accessToken, currentAgencyId]);
 
   // ── Assignee candidates ────────────────────────────────────────────
   const assigneeCandidates: AssigneeCandidate[] = useMemo(() => {
