@@ -17,6 +17,7 @@ from app.models.agency_member import AgencyMember
 from app.models.brand import Brand
 from app.models.brand_member import BrandMember
 from app.models.brief import Brief, BriefAssignee
+from app.models.demo_sandbox import DemoSandbox
 from app.models.notification import NotificationPreference
 from app.models.user import User
 from app.models.user_token import UserToken
@@ -51,9 +52,20 @@ async def list_users(
             Agency.is_demo.is_(True),
         )
     )
+    demo_identity = select(DemoSandbox.id).where(
+        or_(
+            DemoSandbox.owner_user_id == User.id,
+            DemoSandbox.brand_user_id == User.id,
+        ),
+        DemoSandbox.deleted_at.is_(None),
+    )
     stmt = (
         select(User)
-        .where(User.deleted_at.is_(None), ~exists(demo_membership))
+        .where(
+            User.deleted_at.is_(None),
+            ~exists(demo_membership),
+            ~exists(demo_identity),
+        )
         .order_by(User.created_at.desc())
     )
     if user_type:

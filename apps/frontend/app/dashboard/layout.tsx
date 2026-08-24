@@ -24,7 +24,7 @@ import { translateAppNavigationLabel } from "@/lib/i18n/app-navigation";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 import {
   LayoutDashboard, FileText, Calendar, Layers, Building2, BarChart3,
-  Zap, Users, Mail, CreditCard, User, Bell, Settings2, LogOut,
+  Zap, Mail, User, Bell, Settings2, LogOut,
   Gauge, Clock, Wallet, Hourglass, Receipt, Repeat, Plug,
   TrendingUp, Info,
 } from "lucide-react";
@@ -72,7 +72,6 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Ekip",
     items: [
-      { href: "/dashboard/settings/members", label: "Ekip Üyeleri", icon: Users },
       { href: "/dashboard/capacity",         label: "Kapasite",     icon: Gauge },
       { href: "/dashboard/invitations",      label: "Davetlerim",   icon: Mail, badge: true },
     ],
@@ -104,9 +103,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Hesap",
     items: [
-      { href: "/dashboard/settings/billing",       label: "Faturalama",      icon: CreditCard, ownerOnly: true },
       { href: "/dashboard/settings/profile",       label: "Profilim",        icon: User },
-      { href: "/dashboard/settings/notifications", label: "Bildirimler",     icon: Bell },
       { href: "/dashboard/settings/agency",        label: "Ajans Ayarları",  icon: Settings2 },
     ],
   },
@@ -177,7 +174,8 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
 
   return (
     <aside
-      className="hidden lg:flex lg:flex-col w-56 flex-shrink-0 h-screen sticky top-0 overflow-hidden bg-surface-2"
+      data-testid="app-sidebar"
+      className="relative hidden h-dvh w-56 flex-shrink-0 flex-col overflow-hidden bg-surface-2 lg:sticky lg:top-0 lg:flex"
       style={{ boxShadow: "var(--shadow-sidebar)" }}
     >
       {/* Subtle gradient top accent */}
@@ -201,14 +199,16 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
       </div>
 
       {/* Workspace switcher */}
-      <div className="relative px-2.5 pb-2.5 flex-shrink-0">
+      <div className="relative flex-shrink-0 px-2.5">
         <div className="border-b border-border pb-2.5">
           <WorkspaceSwitcher />
         </div>
       </div>
 
+      <DemoPortalSwitcher portal="agency" />
+
       {/* Navigation */}
-      <nav className="relative flex-1 px-2.5 py-2 overflow-y-auto">
+      <nav data-testid="sidebar-navigation" className="relative min-h-0 flex-1 overflow-y-auto px-2.5 py-2">
         {NAV_GROUPS.map((group, gi) => {
           const visibleItems = group.items.filter((item) => !item.ownerOnly || isOwner);
           if (visibleItems.length === 0) return null;
@@ -262,14 +262,7 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
       </nav>
 
       {/* Footer — user + controls */}
-      <div
-        className="relative px-2.5 py-3 flex-shrink-0 border-t border-border"
-      >
-        {/* Demo Portal Switcher */}
-        <div className="mb-2.5">
-          <DemoPortalSwitcher />
-        </div>
-
+      <div data-testid="sidebar-utilities" className="relative flex-shrink-0 border-t border-border px-2.5 py-2">
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-hover transition-all">
           <Link href="/dashboard/settings/profile" className="flex-shrink-0" title="Profil">
             <div
@@ -418,6 +411,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         groups={navDrawerGroups}
         bottomNavItems={localizedBottomNavItems}
         brandTitle="Flobrief"
+        brandSubtitle={activeAgency?.name}
+        drawerTopContent={<DemoPortalSwitcher portal="agency" />}
         fallbackPageTitle="Flobrief"
         user={{ name: user.full_name, email: user.email, initials: getInitials(user.full_name) }}
         profileHref="/dashboard/settings/profile"

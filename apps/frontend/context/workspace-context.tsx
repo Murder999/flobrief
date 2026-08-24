@@ -59,14 +59,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [accessToken]);
 
   useEffect(() => {
-    if (user && user.user_type !== "platform_admin" && accessToken) {
+    if (user?.user_type === "agency_user" && accessToken) {
       refreshWorkspaces();
-    } else if (user?.user_type === "platform_admin") {
-      // platform_admin has no workspace — mark initialized immediately
-      setIsInitialized(true);
-    } else if (!user) {
+    } else if (user) {
+      // Brand and platform identities never carry agency workspace state.
       setAgencies([]);
       setActiveAgencyId(null);
+      setIsLoading(false);
+      setIsInitialized(true);
+    } else {
+      setAgencies([]);
+      setActiveAgencyId(null);
+      setIsLoading(false);
       setIsInitialized(false);
     }
   }, [user, accessToken, refreshWorkspaces]);

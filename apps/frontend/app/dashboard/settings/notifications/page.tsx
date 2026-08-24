@@ -9,8 +9,8 @@ import {
   type NotificationPreferenceUpdate,
 } from "@/lib/api-client";
 import { useEffect, useState } from "react";
-import { SettingsLayout } from "@/components/settings/SettingsLayout";
 import { InfoTooltip } from "@/components/contextual-help/InfoTooltip";
+import { useLocale } from "@/context/locale-context";
 import { useRef } from "react";
 
 // ── Toggle row ────────────────────────────────────────────────────────────────
@@ -71,6 +71,7 @@ function PreferenceSkeleton() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function NotificationPreferencesPage() {
+  const { t } = useLocale();
   const { accessToken } = useAuth();
   const { activeAgency } = useWorkspace();
 
@@ -87,9 +88,9 @@ export default function NotificationPreferencesPage() {
     notificationApi
       .getPreferences(accessToken)
       .then(setPrefs)
-      .catch(() => setErrorMsg("Tercihler yüklenemedi."))
+      .catch(() => setErrorMsg(t("settings.notifications.loadError")))
       .finally(() => setLoading(false));
-  }, [accessToken]);
+  }, [accessToken, t]);
 
   const update = async (patch: NotificationPreferenceUpdate) => {
     if (!accessToken || !prefs) return;
@@ -99,17 +100,17 @@ export default function NotificationPreferencesPage() {
     try {
       const updated = await notificationApi.updatePreferences(patch, accessToken);
       setPrefs(updated);
-      setSuccessMsg("Tercihler kaydedildi.");
+      setSuccessMsg(t("settings.notifications.saveSuccess"));
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch {
-      setErrorMsg("Kaydedilemedi. Lütfen tekrar deneyin.");
+      setErrorMsg(t("settings.notifications.saveError"));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <SettingsLayout portal="agency" title="Bildirim Tercihleri">
+    <div>
       {/* Feedback banners */}
       {successMsg && (
         <div className="mb-3 bg-emerald-500/10 border border-emerald-200 rounded-xl px-3 py-2 text-sm text-emerald-400">
@@ -123,23 +124,25 @@ export default function NotificationPreferencesPage() {
       )}
 
       {/* Preferences grid - channel based compact layout */}
-      <div className="mt-6 space-y-4">
+      <div className="space-y-4">
         {/* Email / in-app preferences card */}
         <div className="bg-surface border border-border rounded-xl p-4">
           {loading ? (
             <PreferenceSkeleton />
           ) : !prefs ? (
-            <div className="py-6 text-center text-sm text-text-muted">Tercihler yüklenemedi.</div>
+            <div className="py-6 text-center text-sm text-text-muted">
+              {t("settings.notifications.loadError")}
+            </div>
           ) : (
             <>
               <InfoTooltip
   targetRef={emailRef}
-  text="E-posta bildirimleri: Brief onayları, revizyon istekleri ve önemli güncellemeler size e-postalar olarak gönderilir. E-posta ayarlarınızı profil sayfasından yönetebilirsiniz."
-  title="E-posta Bildirimleri"
-/>
+                text={t("settings.notifications.emailTooltip")}
+                title={t("settings.notifications.emailTitle")}
+              />
               <ToggleRow
-                label="E-posta bildirimleri"
-                description="Brief onayları, revizyon istekleri ve önemli güncellemeler için e-posta alırsınız."
+                label={t("settings.notifications.emailTitle")}
+                description={t("settings.notifications.emailDescription")}
                 checked={prefs.email_enabled}
                 saving={saving}
                 onChange={(val) =>
@@ -152,12 +155,12 @@ export default function NotificationPreferencesPage() {
               />
               <InfoTooltip
                 targetRef={inAppRef}
-                text="Uygulama içi bildirimler: Sayfa üstü uyarılar ve sidebar'daki bildirim ziliyle anlık bildirimler alırsınız. Uygulama açıkken görünür."
-                title="Uygulama İçi Bildirimleri"
+                text={t("settings.notifications.inAppTooltip")}
+                title={t("settings.notifications.inAppTitle")}
               />
               <ToggleRow
-                label="Uygulama içi bildirimler"
-                description="Sidebar'daki bildirim ziliyle anlık bildirimler alırsınız."
+                label={t("settings.notifications.inAppTitle")}
+                description={t("settings.notifications.inAppDescription")}
                 checked={prefs.in_app_enabled}
                 saving={saving}
                 onChange={(val) =>
@@ -174,7 +177,9 @@ export default function NotificationPreferencesPage() {
 
         {/* WhatsApp - compact status + preference switch */}
         <div className="bg-surface border border-border rounded-xl p-4">
-          <h2 className="text-sm font-semibold text-text mb-2">WhatsApp</h2>
+          <h2 className="text-sm font-semibold text-text mb-2">
+            {t("settings.notifications.whatsappTitle")}
+          </h2>
           <WhatsAppPreferencesPanel
             accessToken={accessToken}
             agencyId={activeAgency?.id ?? null}
@@ -183,6 +188,6 @@ export default function NotificationPreferencesPage() {
           />
         </div>
       </div>
-    </SettingsLayout>
+    </div>
   );
 }

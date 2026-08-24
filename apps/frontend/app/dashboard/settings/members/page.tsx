@@ -7,6 +7,7 @@ import { useWorkspace } from "@/context/workspace-context";
 import { Button } from "@/components/ui/button";
 import { RoleBadge } from "@/components/team/role-badge";
 import { InviteModal } from "@/components/team/invite-modal";
+import { useLocale } from "@/context/locale-context";
 
 function SkeletonRow() {
   return (
@@ -22,6 +23,7 @@ function SkeletonRow() {
 }
 
 export default function MembersPage() {
+  const { intlLocale, t } = useLocale();
   const { user, accessToken } = useAuth();
   const { activeAgency, isLoading: workspaceLoading, isInitialized: workspaceReady } = useWorkspace();
 
@@ -75,46 +77,42 @@ export default function MembersPage() {
 
   if (!isLoading && !activeAgency) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col items-center justify-center py-20 text-center">
+      <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="w-14 h-14 bg-surface-2 rounded-2xl flex items-center justify-center mb-4">
           <span className="text-2xl">◓</span>
         </div>
-        <p className="text-base font-medium text-text">Ajans seçilmedi</p>
-        <p className="text-sm text-text-muted mt-1 mb-4">Ekibi yönetmek için bir ajans seçin.</p>
-        <a href="/onboarding/create-agency" className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors">Ajans Oluştur</a>
+        <p className="text-base font-medium text-text">{t("settings.members.noAgencyTitle")}</p>
+        <p className="text-sm text-text-muted mt-1 mb-4">{t("settings.members.noAgencyDescription")}</p>
+        <a href="/onboarding/create-agency" className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors">
+          {t("settings.members.createAgency")}
+        </a>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Ekip Yönetimi</h1>
-          <p className="mt-1 text-sm text-text-muted">
-            Ajansınızın ekip üyelerini yönetin.
-          </p>
-        </div>
+    <div>
+      <div className="mb-6 flex justify-end">
         {canManageMembers && (
           <Button onClick={() => setShowInviteModal(true)}>
-            + Üye Davet Et
+            {t("settings.members.invite")}
           </Button>
         )}
       </div>
 
       <div className="flex gap-1 p-1 bg-surface-2 rounded-xl mb-6 w-fit">
-        {(["members", "invitations"] as const).map((t) => (
+        {(["members", "invitations"] as const).map((tabKey) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              tab === t
+              tab === tabKey
                 ? "bg-surface shadow-sm text-text"
                 : "text-text-muted hover:text-text"
             }`}
           >
-            {t === "members" ? "Üyeler" : "Davetler"}
-            {t === "invitations" && pendingCount > 0 && (
+            {t(tabKey === "members" ? "settings.members.tab.members" : "settings.members.tab.invitations")}
+            {tabKey === "invitations" && pendingCount > 0 && (
               <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 bg-accent text-white text-xs rounded-full">
                 {pendingCount}
               </span>
@@ -130,7 +128,7 @@ export default function MembersPage() {
               Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
             ) : members.length === 0 ? (
               <div className="px-6 py-12 text-center">
-                <p className="text-sm text-text-muted">Henüz üye yok.</p>
+                <p className="text-sm text-text-muted">{t("settings.members.empty")}</p>
               </div>
             ) : (
               members.map((member) => (
@@ -156,11 +154,14 @@ export default function MembersPage() {
                   <div className="flex items-center gap-2">
                     <RoleBadge role={member.role} />
                     {member.status === "inactive" && (
-                      <span className="text-xs text-text-muted">(Pasif)</span>
+                      <span className="text-xs text-text-muted">{t("settings.members.inactive")}</span>
                     )}
                   </div>
                   {canManageMembers && member.user_id !== user?.id && member.role !== "owner" && (
-                    <button className="text-text-muted hover:text-danger transition-colors p-1 ml-1">
+                    <button
+                      aria-label={t("settings.members.removeMember")}
+                      className="text-text-muted hover:text-danger transition-colors p-1 ml-1"
+                    >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                           d="M6 18L18 6M6 6l12 12" />
@@ -179,7 +180,7 @@ export default function MembersPage() {
               Array.from({ length: 2 }).map((_, i) => <SkeletonRow key={i} />)
             ) : invitations.length === 0 ? (
               <div className="px-6 py-12 text-center">
-                <p className="text-sm text-text-muted">Bekleyen davet yok.</p>
+                <p className="text-sm text-text-muted">{t("settings.members.noInvitations")}</p>
               </div>
             ) : (
               invitations.map((inv) => {
@@ -200,12 +201,18 @@ export default function MembersPage() {
                       <p className="text-sm font-medium text-text truncate">{inv.email}</p>
                       <p className="text-xs text-text-muted">
                         {inv.accepted_at
-                          ? `Kabul edildi: ${new Date(inv.accepted_at).toLocaleDateString("tr-TR")}`
+                          ? t("settings.members.invitation.accepted", {
+                              date: new Date(inv.accepted_at).toLocaleDateString(intlLocale),
+                            })
                           : inv.revoked_at
-                          ? `İptal edildi: ${new Date(inv.revoked_at).toLocaleDateString("tr-TR")}`
-                          : isExpired
-                          ? "Süresi doldu"
-                          : `Son: ${new Date(inv.expires_at).toLocaleDateString("tr-TR")}`}
+                            ? t("settings.members.invitation.revoked", {
+                                date: new Date(inv.revoked_at).toLocaleDateString(intlLocale),
+                              })
+                            : isExpired
+                              ? t("settings.members.invitation.expired")
+                              : t("settings.members.invitation.expires", {
+                                  date: new Date(inv.expires_at).toLocaleDateString(intlLocale),
+                                })}
                       </p>
                     </div>
                     <RoleBadge role={inv.role} />
@@ -215,13 +222,13 @@ export default function MembersPage() {
                           onClick={() => handleResend(inv.id)}
                           className="text-xs text-text-muted hover:text-accent transition-colors px-2 py-1 rounded hover:bg-surface-2"
                         >
-                          Tekrar Gönder
+                          {t("settings.members.resend")}
                         </button>
                         <button
                           onClick={() => handleRevoke(inv.id)}
                           className="text-xs text-text-muted hover:text-danger transition-colors px-2 py-1 rounded hover:bg-surface-2"
                         >
-                          İptal
+                          {t("settings.members.cancel")}
                         </button>
                       </div>
                     )}

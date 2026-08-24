@@ -264,9 +264,11 @@ export const dashboard = {
   "dashboard.onboarding.createBrief": "Create brief",
 
   // Demo
-  "dashboard.demo.mode": "Demo Mode",
+  "dashboard.demo.mode": "Demo Workspace",
   "dashboard.demo.switchPortal": "Switch demo portal",
   "dashboard.demo.loading": "Loading…",
+  "dashboard.demo.switching": "Switching portal…",
+  "dashboard.demo.switchError": "Portal switch failed. Please try again.",
   "dashboard.demo.agencyPortal": "Agency Portal",
   "dashboard.demo.brandPortal": "Brand Portal",
   "dashboard.demo.agencyDesc": "Agency operations",

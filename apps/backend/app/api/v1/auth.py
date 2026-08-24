@@ -67,12 +67,20 @@ _REFRESH_COOKIE = "refresh_token"
 _REFRESH_COOKIE_PATH = "/api/v1/auth"
 
 
-def _set_refresh_cookie(response: Response, token: str, user_type: str) -> None:
-    max_age = (
-        settings.PLATFORM_ADMIN_REFRESH_TOKEN_EXPIRE_HOURS * 3600
-        if user_type == "platform_admin"
-        else settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
-    )
+def _set_refresh_cookie(
+    response: Response,
+    token: str,
+    user_type: str,
+    expires_at: datetime | None = None,
+) -> None:
+    if expires_at is not None:
+        max_age = max(1, int((expires_at - datetime.now(UTC)).total_seconds()))
+    else:
+        max_age = (
+            settings.PLATFORM_ADMIN_REFRESH_TOKEN_EXPIRE_HOURS * 3600
+            if user_type == "platform_admin"
+            else settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
+        )
     response.set_cookie(
         key=_REFRESH_COOKIE,
         value=token,
@@ -138,15 +146,15 @@ async def refresh_tokens(
             detail="Oturum bulunamadı",
         )
     svc = AuthService(db)
-    new_access, new_refresh, user_type = await svc.refresh_tokens(
+    new_access, new_refresh, user_type, refresh_expires_at, expires_in = await svc.refresh_tokens(
         cookie_token,
         ip=get_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
-    _set_refresh_cookie(response, new_refresh, user_type)
+    _set_refresh_cookie(response, new_refresh, user_type, refresh_expires_at)
     return RefreshResponse(
         access_token=new_access,
-        expires_in=get_access_token_expire_minutes(user_type) * 60,
+        expires_in=expires_in,
     )
 
 

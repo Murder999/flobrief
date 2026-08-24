@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -72,10 +73,13 @@ class DemoSessionStatus(BaseModel):
 
 
 class DemoPortalSwitchRequest(BaseModel):
-    portal: str  # "agency" | "brand"
+    portal: Literal["agency", "brand"]
 
 
 class DemoPortalSwitchResponse(BaseModel):
     portal: str
     redirect_to: str
     expires_at: str
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int

@@ -13,6 +13,7 @@ export const marketing = {
   "marketing.navigation.homeLabel": "PostPiloter home",
   "marketing.actions.demo": "View demo",
   "marketing.actions.freeSignup": "Start free",
+  "marketing.footer.legal": "LEGAL",
   "marketing.footer.solutions": "Solutions",
   "marketing.footer.getStarted": "Get started",
   "marketing.footer.rights": "All rights reserved.",

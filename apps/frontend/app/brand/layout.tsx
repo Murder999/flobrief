@@ -14,6 +14,7 @@ import type { BottomNavItem, NavDrawerGroup, NavIcon } from "@/components/shell/
 import { useLocale } from "@/context/locale-context";
 import { translateAppNavigationLabel } from "@/lib/i18n/app-navigation";
 import { LanguageSelector } from "@/components/i18n/language-selector";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -127,12 +128,13 @@ function routeOnboardingStep(pathname: string): string | null {
 interface BrandSidebarProps {
   isManager: boolean;
   membershipRole: string | null;
+  brandName: string | null;
   notificationSource: NotificationFeedSource | null;
   pathname: string;
   navSections: NavSection[];
 }
 
-function BrandSidebar({ isManager, membershipRole, notificationSource, pathname, navSections }: BrandSidebarProps) {
+function BrandSidebar({ isManager, membershipRole, brandName, notificationSource, pathname, navSections }: BrandSidebarProps) {
   const { user, logout, accessToken } = useAuth();
   const { locale, t } = useLocale();
   const [seatWarning, setSeatWarning] = useState<string | null>(null);
@@ -153,14 +155,15 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
 
   return (
     <aside
-      className="hidden lg:flex lg:flex-col w-56 flex-shrink-0 bg-surface-2 h-screen sticky top-0 overflow-hidden"
+      data-testid="app-sidebar"
+      className="relative hidden h-dvh w-56 flex-shrink-0 flex-col overflow-hidden bg-surface-2 lg:sticky lg:top-0 lg:flex"
       style={{ boxShadow: "var(--shadow-sidebar)" }}
     >
       {/* Top glow */}
       <div className="absolute inset-x-0 top-0 h-32 bg-gradient-sidebar pointer-events-none" />
 
       {/* Logo */}
-      <div className="relative flex items-center gap-2.5 px-4 py-4 border-b border-border">
+      <div className="relative flex shrink-0 items-center gap-2.5 border-b border-border px-4 py-4">
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 shadow-glow-sm"
           style={{ background: "var(--gradient-accent)" }}
@@ -169,19 +172,23 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
         </div>
         <div className="flex-1 min-w-0">
           <span className="font-semibold text-text text-sm tracking-tight block leading-tight">Flobrief</span>
-          <span className="text-[10px] text-text-muted leading-tight">{t("dashboard.navigation.portal")}</span>
+          <span className="block truncate text-[10px] leading-tight text-text-muted">
+            {brandName ?? t("dashboard.navigation.portal")}
+          </span>
         </div>
         <NotificationBell source={notificationSource} basePath="/brand/notifications" />
       </div>
 
+      <DemoPortalSwitcher portal="brand" />
+
       {seatWarning && (
-        <div className="relative mx-2.5 mt-2.5 px-2.5 py-2 rounded-lg bg-warning/10 border border-warning/30 text-[11px] text-warning font-medium">
+        <div className="relative mx-2.5 mt-2.5 shrink-0 rounded-lg border border-warning/30 bg-warning/10 px-2.5 py-2 text-[11px] font-medium text-warning">
           {seatWarning}
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="relative flex-1 px-2.5 py-3 overflow-y-auto space-y-3">
+      <nav data-testid="sidebar-navigation" className="relative min-h-0 flex-1 space-y-3 overflow-y-auto px-2.5 py-3">
         {navSections.map((section) => (
           <div key={section.title}>
             <p className="px-2 mb-1.5 text-[10px] font-semibold text-text-muted/60 tracking-widest uppercase">
@@ -216,12 +223,7 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
       </nav>
 
       {/* Footer */}
-      <div className="px-2.5 py-3 border-t border-border">
-        {/* Demo Portal Switcher */}
-        <div className="mb-2.5">
-          <DemoPortalSwitcher />
-        </div>
-
+      <div data-testid="sidebar-utilities" className="relative flex-shrink-0 border-t border-border px-2.5 py-2">
         <div className="flex items-center gap-2 px-2 py-2 rounded-lg">
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center ring-2 ring-accent/30 flex-shrink-0"
@@ -237,14 +239,17 @@ function BrandSidebar({ isManager, membershipRole, notificationSource, pathname,
               {membershipRole ? ROLE_LABELS[membershipRole] ?? membershipRole : user?.email}
             </p>
           </div>
-          <button
-            onClick={logout}
-            className="p-1.5 rounded-lg text-text-muted hover:text-danger transition-colors flex-shrink-0"
-            title={t("auth.actions.logout")}
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
-          <LanguageSelector compact />
+          <div className="flex flex-shrink-0 items-center gap-0.5">
+            <LanguageSelector compact />
+            <ThemeToggle menuPosition="up" />
+            <button
+              onClick={logout}
+              className="flex-shrink-0 rounded-lg p-1.5 text-text-muted transition-colors hover:text-danger"
+              title={t("auth.actions.logout")}
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </aside>
@@ -259,6 +264,7 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [membershipRole, setMembershipRole] = useState<string | null>(null);
+  const [brandName, setBrandName] = useState<string | null>(null);
 
   const isLoginPage = pathname === "/brand/login";
   const isManager = membershipRole ? BRAND_MANAGER_ROLES.has(membershipRole) : false;
@@ -270,8 +276,21 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    if (!accessToken) return;
-    brandPortalApi.me(accessToken).then((me) => setMembershipRole(me.membership_role)).catch(() => {});
+    if (!accessToken) {
+      setMembershipRole(null);
+      setBrandName(null);
+      return;
+    }
+    brandPortalApi
+      .me(accessToken)
+      .then((me) => {
+        setMembershipRole(me.membership_role);
+        setBrandName(me.brand_name);
+      })
+      .catch(() => {
+        setMembershipRole(null);
+        setBrandName(null);
+      });
   }, [accessToken]);
 
   const notificationSource: NotificationFeedSource | null = useMemo(() => {
@@ -355,6 +374,7 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
           <BrandSidebar
             isManager={isManager}
             membershipRole={membershipRole}
+            brandName={brandName}
             notificationSource={notificationSource}
             pathname={pathname}
             navSections={navSections}
@@ -363,7 +383,8 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
         groups={navDrawerGroups}
         bottomNavItems={localizedBottomNavItems}
         brandTitle="Flobrief"
-        brandSubtitle={t("dashboard.navigation.portal")}
+        brandSubtitle={brandName ?? t("dashboard.navigation.portal")}
+        drawerTopContent={<DemoPortalSwitcher portal="brand" />}
         fallbackPageTitle="Flobrief"
         user={{ name: user.full_name, email: user.email, initials: getInitials(user.full_name) }}
         profileHref="/brand/settings"

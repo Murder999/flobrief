@@ -7,6 +7,13 @@ const englishPages = [
   { path: "/contact", heading: "Contact Us", title: "Contact PostPiloter" },
 ] as const;
 
+const footerLinks = [
+  { label: "Terms of Service", path: "/terms", trLabel: "Kullanım Koşulları" },
+  { label: "Privacy Policy", path: "/privacy", trLabel: "Gizlilik Politikası" },
+  { label: "Refund Policy", path: "/refund-policy", trLabel: "İade Politikası" },
+  { label: "Contact", path: "/contact", trLabel: "İletişim" },
+] as const;
+
 async function stabilizePublicPage(page: Page) {
   await page.route("**/api/v1/auth/refresh", (route) => route.fulfill({ status: 204 }));
   await page.route("**/api/v1/public/branding/platform-defaults", (route) => route.fulfill({
@@ -41,7 +48,10 @@ test.describe("legal and Paddle-readiness pages", () => {
       await expect(page).toHaveTitle(legalPage.title);
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://postpiloter.com${legalPage.path}`);
       await expect(page.locator('meta[name="description"]')).not.toHaveAttribute("content", "Legal page");
-      await expect(page.getByTestId("public-footer").getByRole("link", { name: "Privacy Policy" })).toBeVisible();
+      const footer = page.getByTestId("public-footer");
+      for (const link of footerLinks) {
+        await expect(footer.getByRole("link", { name: link.label, exact: true })).toHaveAttribute("href", link.path);
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     }
   });
@@ -55,6 +65,10 @@ test.describe("legal and Paddle-readiness pages", () => {
     await expect(page.getByText("Bu sayfada", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "GDPR (AB) Kapsamında Değerlendirmeler" })).toBeVisible();
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://postpiloter.com/tr/privacy");
+    const footer = page.getByTestId("public-footer");
+    for (const link of footerLinks) {
+      await expect(footer.getByRole("link", { name: link.trLabel, exact: true })).toHaveAttribute("href", `/tr${link.path}`);
+    }
 
     await page.goto("/contact");
     for (const email of ["support@postpiloter.com", "legal@postpiloter.com", "sales@postpiloter.com"]) {

@@ -14,12 +14,15 @@ from app.core.config import settings
 from app.core.security import create_access_token, hash_password
 from app.models.agency import Agency
 from app.models.agency_member import AgencyMember
+from app.models.brand_member import BrandMember
 from app.models.demo_sandbox import DemoSandbox, PlatformDemoSettings
 from app.models.enums import (
     AgencyMemberRole,
     AgencyMemberStatus,
     AgencyStatus,
     BillingProvider,
+    BrandMemberRole,
+    BrandMemberStatus,
     PlanCode,
     SubscriptionStatus,
     UserType,
@@ -189,6 +192,18 @@ class DemoSandboxService:
             )
         )
 
+        brand_user = User(
+            email=f"demo-brand-{suffix}@sandbox.flobrief.invalid",
+            password_hash=hash_password(secrets.token_urlsafe(32)),
+            full_name="Demo Marka Kullanıcısı",
+            user_type=UserType.BRAND_USER.value,
+            is_active=False,
+            is_verified=True,
+            job_title="Marka Yöneticisi",
+        )
+        self.db.add(brand_user)
+        await self.db.flush()
+
         if plan is not None:
             self.db.add(
                 Subscription(
@@ -205,24 +220,35 @@ class DemoSandboxService:
         sandbox = DemoSandbox(
             agency_id=agency.id,
             owner_user_id=user.id,
+            brand_user_id=brand_user.id,
             status="active",
             expires_at=expires_at,
             ip_hash=ip_hash,
             user_agent=(user_agent or "")[:1000] or None,
         )
         self.db.add(sandbox)
-        await seed_demo_workspace(
+        demo_brand = await seed_demo_workspace(
             self.db,
             agency_id=agency.id,
             owner_user_id=user.id,
         )
+        self.db.add(
+            BrandMember(
+                brand_id=demo_brand.id,
+                user_id=brand_user.id,
+                role=BrandMemberRole.BRAND_MANAGER.value,
+                status=BrandMemberStatus.ACTIVE.value,
+                joined_at=now,
+            )
+        )
 
         refresh_plaintext = generate_token()
+        token_family = new_token_family()
         self.db.add(
             UserToken(
                 user_id=user.id,
                 token_hash=hash_token(refresh_plaintext),
-                token_family=new_token_family(),
+                token_family=token_family,
                 token_type=TOKEN_TYPE_REFRESH,
                 expires_at=expires_at,
                 ip_address=ip_address,
@@ -233,14 +259,18 @@ class DemoSandboxService:
         await self.db.commit()
         await self.db.refresh(sandbox)
 
-        access_minutes = max(
-            1,
-            min(settings.ACCESS_TOKEN_EXPIRE_MINUTES, config.duration_hours * 60),
+        access_expires_at = min(
+            now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            sandbox.expires_at,
         )
         access_token = create_access_token(
             subject=str(user.id),
-            extra_claims={"user_type": user.user_type, "demo": True},
-            expire_minutes=access_minutes,
+            extra_claims={
+                "user_type": user.user_type,
+                "demo": True,
+                "demo_session_id": str(token_family),
+            },
+            expires_at=access_expires_at,
         )
         return sandbox, access_token, refresh_plaintext
 
@@ -263,15 +293,18 @@ class DemoSandboxService:
             agency.demo_expires_at = min(agency.demo_expires_at or now, now)
             self.db.add(agency)
 
-        user = await self.db.get(User, sandbox.owner_user_id)
-        if user is not None:
+        user_ids = [sandbox.owner_user_id]
+        if sandbox.brand_user_id is not None:
+            user_ids.append(sandbox.brand_user_id)
+        users = (await self.db.execute(select(User).where(User.id.in_(user_ids)))).scalars()
+        for user in users:
             user.is_active = False
             self.db.add(user)
 
         await self.db.execute(
             update(UserToken)
             .where(
-                UserToken.user_id == sandbox.owner_user_id,
+                UserToken.user_id.in_(user_ids),
                 UserToken.revoked_at.is_(None),
             )
             .values(revoked_at=now)

@@ -2,17 +2,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth_dependencies import require_verified
 from app.core.rbac import Permission, get_permissions_for_brand_role
 from app.db.session import get_db
+from app.models.agency import Agency
 from app.models.brand import Brand
 from app.models.brand_member import BrandMember
 from app.models.enums import BrandMemberStatus, UserType
 from app.models.user import User
+from app.services.demo_access import enforce_demo_workspace_request
 
 
 @dataclass
@@ -34,6 +36,7 @@ class BrandPortalContext:
 
 
 async def get_brand_portal_context(
+    request: Request,
     current_user: User = Depends(require_verified),
     db: AsyncSession = Depends(get_db),
 ) -> BrandPortalContext:
@@ -83,5 +86,16 @@ async def get_brand_portal_context(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Markanız bulunamadı",
         )
+
+    if brand.agency_id is not None:
+        agency = await db.scalar(
+            select(Agency).where(
+                Agency.id == brand.agency_id,
+                Agency.deleted_at.is_(None),
+            )
+        )
+        if agency is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Ajans bulunamadı")
+        enforce_demo_workspace_request(agency, request)
 
     return BrandPortalContext(user=current_user, brand=brand, membership=membership)

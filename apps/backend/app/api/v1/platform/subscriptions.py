@@ -5,13 +5,15 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.core.dependencies import get_platform_admin_user
 from app.core.rate_limiter import get_client_ip
 from app.db.session import get_db
 from app.models.agency import Agency
+from app.models.brand import Brand
 from app.models.plan import Plan
 from app.models.subscription import Subscription
 from app.models.user import User
@@ -28,11 +30,24 @@ async def list_subscriptions(
     admin: User = Depends(get_platform_admin_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[PlatformSubscriptionRead]:
+    brand_agency = aliased(Agency)
+    commercial_tenant = or_(
+        and_(
+            Subscription.agency_id.is_not(None),
+            Agency.is_demo.is_(False),
+        ),
+        and_(
+            Subscription.brand_id.is_not(None),
+            or_(Brand.agency_id.is_(None), brand_agency.is_demo.is_(False)),
+        ),
+    )
     stmt = (
         select(Subscription, Plan, Agency)
         .join(Plan, Plan.id == Subscription.plan_id)
         .outerjoin(Agency, Agency.id == Subscription.agency_id)
-        .where(Subscription.deleted_at.is_(None))
+        .outerjoin(Brand, Brand.id == Subscription.brand_id)
+        .outerjoin(brand_agency, brand_agency.id == Brand.agency_id)
+        .where(Subscription.deleted_at.is_(None), commercial_tenant)
         .order_by(Subscription.created_at.desc())
         .limit(limit)
         .offset(offset)

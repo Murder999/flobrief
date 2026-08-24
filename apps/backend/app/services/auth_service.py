@@ -1,7 +1,8 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -20,7 +21,7 @@ from app.schemas.auth import (
     ResendVerificationRequest,
 )
 from app.services import email_service
-from app.services.demo_access import ensure_demo_user_access
+from app.services.demo_access import ensure_demo_user_access, get_demo_sandbox_for_user
 from app.services.token_service import (
     TOKEN_TYPE_EMAIL_VERIFY,
     TOKEN_TYPE_PASSWORD_RESET,
@@ -194,10 +195,19 @@ class AuthService:
         refresh_token_plaintext: str,
         ip: str | None = None,
         user_agent: str | None = None,
-    ) -> tuple[str, str, str]:
+    ) -> tuple[str, str, str, datetime, int]:
         token_hash = hash_token(refresh_token_plaintext)
-        db_token = await self.token_repo.get_by_hash(token_hash)
+        token_candidate = await self.token_repo.get_by_hash(token_hash)
 
+        if token_candidate is None or token_candidate.token_type != TOKEN_TYPE_REFRESH:
+            raise HTTPException(status_code=_ERR_401, detail="Geçersiz oturum")
+
+        demo_sandbox = await get_demo_sandbox_for_user(
+            self.db,
+            token_candidate.user_id,
+            lock=True,
+        )
+        db_token = await self.token_repo.get_by_hash(token_hash, lock=True)
         if db_token is None or db_token.token_type != TOKEN_TYPE_REFRESH:
             raise HTTPException(status_code=_ERR_401, detail="Geçersiz oturum")
 
@@ -209,18 +219,34 @@ class AuthService:
         if not self.token_repo.is_valid(db_token):
             raise HTTPException(status_code=_ERR_401, detail="Oturum süresi doldu")
 
-        user = await self.user_repo.get_by_id(db_token.user_id)
+        user = await self.db.scalar(
+            select(User)
+            .where(User.id == db_token.user_id, User.deleted_at.is_(None))
+            .with_for_update()
+        )
         if user is None or not user.is_active or user.is_deleted:
             raise HTTPException(status_code=_ERR_401, detail="Kullanıcı bulunamadı")
-        await ensure_demo_user_access(self.db, user.id)
+        await ensure_demo_user_access(
+            self.db,
+            user.id,
+            str(db_token.token_family) if demo_sandbox is not None else None,
+        )
 
         await self.token_repo.revoke(db_token)
 
-        expire_minutes = get_access_token_expire_minutes(user.user_type)
+        now = datetime.now(UTC)
+        access_expires_at = now + timedelta(minutes=get_access_token_expire_minutes(user.user_type))
+        refresh_expires_at = get_refresh_token_expires(user.user_type)
+        extra_claims = {"user_type": user.user_type}
+        if demo_sandbox is not None:
+            access_expires_at = min(access_expires_at, demo_sandbox.expires_at)
+            refresh_expires_at = min(refresh_expires_at, demo_sandbox.expires_at)
+            extra_claims["demo"] = True
+            extra_claims["demo_session_id"] = str(db_token.token_family)
         new_access_token = create_access_token(
             subject=str(user.id),
-            extra_claims={"user_type": user.user_type},
-            expire_minutes=expire_minutes,
+            extra_claims=extra_claims,
+            expires_at=access_expires_at,
         )
 
         new_refresh_plaintext = generate_token()
@@ -229,13 +255,20 @@ class AuthService:
             token_hash=hash_token(new_refresh_plaintext),
             token_family=db_token.token_family,
             token_type=TOKEN_TYPE_REFRESH,
-            expires_at=get_refresh_token_expires(user.user_type),
+            expires_at=refresh_expires_at,
             ip_address=ip,
             user_agent=user_agent,
         )
         await self.db.commit()
 
-        return new_access_token, new_refresh_plaintext, user.user_type
+        expires_in = max(1, int((access_expires_at - now).total_seconds()))
+        return (
+            new_access_token,
+            new_refresh_plaintext,
+            user.user_type,
+            refresh_expires_at,
+            expires_in,
+        )
 
     async def logout(self, refresh_token_plaintext: str) -> None:
         token_hash = hash_token(refresh_token_plaintext)

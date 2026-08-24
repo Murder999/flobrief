@@ -232,6 +232,9 @@ export interface DemoPortalSwitchResponse {
   portal: "agency" | "brand";
   redirect_to: string;
   expires_at: string;
+  access_token: string;
+  token_type: "bearer";
+  expires_in: number;
 }
 
 export const demoApi = {

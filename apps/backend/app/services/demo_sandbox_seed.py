@@ -19,7 +19,7 @@ async def seed_demo_workspace(
     *,
     agency_id: uuid.UUID,
     owner_user_id: uuid.UUID,
-) -> None:
+) -> Brand:
     """Create a compact but realistic dashboard, brief and calendar dataset."""
     brands = [
         Brand(
@@ -95,7 +95,6 @@ async def seed_demo_workspace(
             ),
         ]
     )
-
     today = datetime.now(UTC).date()
     briefs = [
         Brief(
@@ -187,3 +186,4 @@ async def seed_demo_workspace(
             for brand, brief, title, platform, offset in calendar_specs
         ]
     )
+    return brands[0]

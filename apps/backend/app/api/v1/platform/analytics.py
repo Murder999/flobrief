@@ -15,6 +15,7 @@ from app.db.session import get_db
 from app.models.agency import Agency
 from app.models.agency_member import AgencyMember
 from app.models.brand import Brand
+from app.models.demo_sandbox import DemoSandbox
 from app.models.enums import AgencyStatus
 from app.models.plan import Plan
 from app.models.platform_audit_log import PlatformAuditLog
@@ -40,7 +41,14 @@ def _is_commercial_user() -> object:
             Agency.is_demo.is_(True),
         )
     )
-    return ~exists(demo_membership)
+    demo_identity = select(DemoSandbox.id).where(
+        or_(
+            DemoSandbox.owner_user_id == User.id,
+            DemoSandbox.brand_user_id == User.id,
+        ),
+        DemoSandbox.deleted_at.is_(None),
+    )
+    return and_(~exists(demo_membership), ~exists(demo_identity))
 
 
 def _commercial_subscription_query() -> Select[tuple[Subscription]]:

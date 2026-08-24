@@ -4,9 +4,12 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models.agency import Agency
+from app.models.demo_sandbox import DemoSandbox
 from app.models.invitation import Invitation
 from app.models.user import User
 from app.repositories.agency import AgencyRepository
@@ -40,6 +43,33 @@ class InvitationService:
         self.brand_member_repo = BrandMemberRepository(db)
         self.user_repo = UserRepository(db)
 
+    async def _ensure_external_invitation_allowed(
+        self,
+        agency_id: uuid.UUID,
+        actor: User,
+    ) -> None:
+        demo_agency = await self.db.scalar(
+            select(Agency.id).where(
+                Agency.id == agency_id,
+                Agency.is_demo.is_(True),
+                Agency.deleted_at.is_(None),
+            )
+        )
+        demo_actor = await self.db.scalar(
+            select(DemoSandbox.id).where(
+                or_(
+                    DemoSandbox.owner_user_id == actor.id,
+                    DemoSandbox.brand_user_id == actor.id,
+                ),
+                DemoSandbox.deleted_at.is_(None),
+            )
+        )
+        if demo_agency is not None or demo_actor is not None:
+            raise HTTPException(
+                _403,
+                "Demo ortamında davet işlemleri kullanılamaz",
+            )
+
     async def create_agency_invite(
         self,
         agency_id: uuid.UUID,
@@ -52,6 +82,7 @@ class InvitationService:
         agency = await self.agency_repo.get_by_id(agency_id)
         if agency is None:
             raise HTTPException(_404, "Agency bulunamadı")
+        await self._ensure_external_invitation_allowed(agency_id, inviter)
 
         inviter_member = await self.agency_member_repo.get_membership(agency_id, inviter.id)
         if inviter_member is None:
@@ -137,6 +168,7 @@ class InvitationService:
         brand = await self.brand_repo.get_by_id_and_agency(brand_id, agency_id)
         if brand is None:
             raise HTTPException(_404, "Marka bulunamadı")
+        await self._ensure_external_invitation_allowed(agency_id, inviter)
 
         from app.models.enums import AgencyMemberRole, BrandMemberRole
 
@@ -239,6 +271,7 @@ class InvitationService:
         from app.models.enums import AgencyMemberStatus, BrandMemberStatus
 
         invitation = await self.get_by_token(token)
+        await self._ensure_external_invitation_allowed(invitation.agency_id, user)
 
         if not invitation.is_pending:
             if invitation.is_accepted:
@@ -361,6 +394,7 @@ class InvitationService:
         invitation = await self.invite_repo.get_by_id(invitation_id)
         if invitation is None:
             raise HTTPException(_404, "Davet bulunamadı")
+        await self._ensure_external_invitation_allowed(invitation.agency_id, actor)
 
         if not await self._can_manage_invitation(invitation, actor):
             raise HTTPException(_403, "Davet yeniden gönderme yetkiniz yok")
@@ -486,6 +520,7 @@ class InvitationService:
         invitation = await self.invite_repo.get_by_id(invitation_id)
         if invitation is None:
             raise HTTPException(_404, "Davet bulunamadı")
+        await self._ensure_external_invitation_allowed(invitation.agency_id, user)
 
         if not invitation.is_pending:
             if invitation.is_accepted:
@@ -609,6 +644,7 @@ class InvitationService:
         from datetime import UTC, datetime, timedelta
 
         invitation = await self.get_by_token(token)
+        await self._ensure_external_invitation_allowed(invitation.agency_id, actor)
 
         inviter_member = await self.agency_member_repo.get_membership(
             invitation.agency_id, actor.id

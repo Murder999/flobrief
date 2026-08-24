@@ -80,7 +80,7 @@ export function PublicFooter() {
         </div>
 
         <div>
-          <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-text">{t("common.navigation.legal")}</h2>
+          <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-text">{t("marketing.footer.legal")}</h2>
           <ul className="space-y-3">
             {legalLinks.map((item) => (
               <li key={item.href}>

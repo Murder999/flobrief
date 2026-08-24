@@ -38,10 +38,11 @@ class UserTokenRepository:
         await self.session.refresh(token)
         return token
 
-    async def get_by_hash(self, token_hash: str) -> UserToken | None:
-        result = await self.session.execute(
-            select(UserToken).where(UserToken.token_hash == token_hash)
-        )
+    async def get_by_hash(self, token_hash: str, *, lock: bool = False) -> UserToken | None:
+        stmt = select(UserToken).where(UserToken.token_hash == token_hash)
+        if lock:
+            stmt = stmt.with_for_update()
+        result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def revoke(self, token: UserToken) -> None:

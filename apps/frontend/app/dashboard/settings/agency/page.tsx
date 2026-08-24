@@ -1,16 +1,14 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { User, Bell, Palette, CreditCard } from "lucide-react";
 import { agencyApi, type AgencyRead, ApiError } from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/context/workspace-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-import { SettingsLayout } from "@/components/settings/SettingsLayout";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useLocale } from "@/context/locale-context";
+import type { TranslationKey } from "@/messages";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -25,11 +23,11 @@ function SkeletonField() {
   );
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  trial: "Deneme",
-  active: "Aktif",
-  suspended: "Askıya Alındı",
-  cancelled: "İptal Edildi",
+const STATUS_LABEL_KEYS: Record<string, TranslationKey> = {
+  trial: "settings.agency.status.trial",
+  active: "settings.agency.status.active",
+  suspended: "settings.agency.status.suspended",
+  cancelled: "settings.agency.status.cancelled",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -39,40 +37,10 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "text-text-muted bg-surface-2",
 };
 
-const SETTINGS_SECTIONS = [
-  {
-    href: "/dashboard/settings/profile",
-    label: "Profil & Güvenlik",
-    description: "Ad, unvan, şifre, 2FA, tema, WhatsApp",
-    icon: User,
-    iconColor: "bg-indigo-500/10 text-indigo-500",
-  },
-  {
-    href: "/dashboard/settings/notifications",
-    label: "Bildirimler",
-    description: "E-posta ve uygulama içi bildirim ayarları",
-    icon: Bell,
-    iconColor: "bg-amber-500/10 text-amber-500",
-  },
-  {
-    href: "/dashboard/settings/branding",
-    label: "White-label & Marka",
-    description: "Logo, renkler, özel alan adı",
-    icon: Palette,
-    iconColor: "bg-purple-500/10 text-purple-500",
-  },
-  {
-    href: "/dashboard/settings/billing",
-    label: "Abonelik & Faturalama",
-    description: "Plan bilgileri, kullanım limitleri, faturalar",
-    icon: CreditCard,
-    iconColor: "bg-emerald-500/10 text-emerald-500",
-  },
-];
-
 function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
   agency: AgencyRead; agencyId: string; accessToken: string; onUpdated: (a: AgencyRead) => void;
 }) {
+  const { t } = useLocale();
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -83,9 +51,9 @@ function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
     try {
       const updated = await agencyApi.uploadAgencyLogo(agencyId, file, accessToken);
       onUpdated(updated);
-      toast("Logo güncellendi.", "success");
+      toast(t("settings.agency.logo.updated"), "success");
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : "Logo yüklenemedi.", "error");
+      toast(err instanceof ApiError ? err.message : t("settings.agency.logo.uploadError"), "error");
     } finally { setUploading(false); }
   }
 
@@ -94,15 +62,15 @@ function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
     try {
       const updated = await agencyApi.deleteAgencyLogo(agencyId, accessToken);
       onUpdated(updated);
-      toast("Logo silindi.", "success");
-    } catch { toast("Logo silinemedi.", "error"); } finally { setUploading(false); }
+      toast(t("settings.agency.logo.deleted"), "success");
+    } catch { toast(t("settings.agency.logo.deleteError"), "error"); } finally { setUploading(false); }
   }
 
   return (
     <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-5">
       <div className="px-5 py-4 border-b border-border">
-        <h2 className="text-sm font-semibold text-text">Ajans Logosu</h2>
-        <p className="text-xs text-text-muted mt-0.5">PNG, JPEG, WebP veya SVG · Maks. 5 MB</p>
+        <h2 className="text-sm font-semibold text-text">{t("settings.agency.logo.title")}</h2>
+        <p className="text-xs text-text-muted mt-0.5">{t("settings.agency.logo.help")}</p>
       </div>
       <div className="px-5 py-6 flex items-center gap-5">
         <div className="relative group/logo">
@@ -123,7 +91,9 @@ function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
           </div>
           {!uploading && (
             <div className="absolute inset-0 rounded-2xl bg-black/50 opacity-0 group-hover/logo:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer" onClick={() => inputRef.current?.click()}>
-              <span className="text-white text-[10px] font-semibold">{logoSrc ? "Değiştir" : "Yükle"}</span>
+              <span className="text-white text-[10px] font-semibold">
+                {t(logoSrc ? "settings.agency.logo.change" : "settings.agency.logo.upload")}
+              </span>
             </div>
           )}
           <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden"
@@ -132,12 +102,12 @@ function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
         <div className="flex flex-col gap-2">
           <button onClick={() => inputRef.current?.click()} disabled={uploading}
             className="px-3 py-1.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50">
-            {logoSrc ? "Logoyu Değiştir" : "Logo Yükle"}
+            {t(logoSrc ? "settings.agency.logo.changeAction" : "settings.agency.logo.uploadAction")}
           </button>
           {logoSrc && (
             <button onClick={handleDelete} disabled={uploading}
               className="px-3 py-1.5 text-danger border border-danger/30 text-sm font-medium rounded-lg hover:bg-danger/5 transition-colors disabled:opacity-50">
-              Logoyu Sil
+              {t("settings.agency.logo.deleteAction")}
             </button>
           )}
         </div>
@@ -147,15 +117,13 @@ function AgencyLogoCard({ agency, agencyId, accessToken, onUpdated }: {
 }
 
 export default function AgencySettingsPage() {
+  const { intlLocale, t } = useLocale();
   const { accessToken } = useAuth();
   const { activeAgency, refreshWorkspaces } = useWorkspace();
-  const router = useRouter();
-
   const [agency, setAgency] = useState<AgencyRead | null>(null);
   const [name, setName] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errorMsg, setErrorMsg] = useState<string>("");
-  const [pendingUpgrade, setPendingUpgrade] = useState(false);
 
   useEffect(() => {
     if (!activeAgency || !accessToken) return;
@@ -166,10 +134,10 @@ export default function AgencySettingsPage() {
         setName(data.name);
       })
       .catch(() => {
-        setErrorMsg("Ajans bilgileri yüklenemedi.");
+        setErrorMsg(t("settings.agency.loadError"));
       })
       .finally(() => {});
-  }, [activeAgency, accessToken]);
+  }, [activeAgency, accessToken, t]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,7 +157,7 @@ export default function AgencySettingsPage() {
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 2500);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : "Kaydedilemedi");
+      setErrorMsg(err instanceof Error ? err.message : t("settings.agency.saveError"));
       setSaveState("error");
     }
   };
@@ -197,7 +165,7 @@ export default function AgencySettingsPage() {
   const isDirty = agency && name !== agency.name;
 
   return (
-    <SettingsLayout portal="agency" title="Ajans Ayarları">
+    <div>
       {/* Logo upload */}
       {agency && activeAgency && accessToken && (
         <AgencyLogoCard
@@ -211,71 +179,71 @@ export default function AgencySettingsPage() {
       {/* Agency name form */}
       <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-4">
         <div className="px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-semibold text-text">Genel Bilgiler</h2>
+          <h2 className="text-sm font-semibold text-text">{t("settings.agency.generalTitle")}</h2>
         </div>
 
-        <form onSubmit={handleSave} className="px-5 py-4 space-y-3">
-              <Input
-                label="Ajans Adı"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-text-muted uppercase tracking-wide">
-                  Slug
-                </label>
-                <div className="h-9 px-3 flex items-center bg-surface-2 border border-border rounded-lg">
-                  <span className="text-sm text-text-muted">{agency?.slug}</span>
-                </div>
-                <p className="text-xs text-text-muted">Slug değiştirilemez.</p>
-              </div>
-            </form>
-            <div className="px-2 py-1.5 bg-danger/10 border border-danger/20 rounded-lg">
+        <form onSubmit={handleSave} className="space-y-3 px-5 py-4">
+          <Input
+            label={t("settings.agency.name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium uppercase tracking-wide text-text-muted">
+              {t("settings.agency.slug")}
+            </label>
+            <div className="flex h-9 items-center rounded-lg border border-border bg-surface-2 px-3">
+              <span className="text-sm text-text-muted">{agency?.slug}</span>
+            </div>
+            <p className="text-xs text-text-muted">{t("settings.agency.slugImmutable")}</p>
+          </div>
+
+          {errorMsg ? (
+            <div className="rounded-lg border border-danger/20 bg-danger/10 px-2 py-1.5">
               <p className="text-sm text-danger">{errorMsg}</p>
             </div>
+          ) : null}
 
           <div className="flex items-center justify-between">
             {saveState === "saved" ? (
-              <p className="text-sm text-success">Değişiklikler kaydedildi.</p>
+              <p className="text-sm text-success">{t("settings.agency.saved")}</p>
             ) : (
               <div />
             )}
-            <Button
-              type="submit"
-              disabled={!isDirty || saveState === "saving"}
-            >
-              {saveState === "saving" ? "Kaydediliyor…" : "Değişiklikleri Kaydet"}
+            <Button type="submit" disabled={!isDirty || saveState === "saving"}>
+              {t(saveState === "saving" ? "settings.agency.saving" : "settings.agency.saveAction")}
             </Button>
           </div>
+        </form>
         </div>
 
       {/* Agency info card */}
       {agency && (
         <div className="bg-surface border border-border rounded-2xl overflow-hidden mb-4">
           <div className="px-5 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold text-text">Ajans Bilgileri</h2>
+            <h2 className="text-sm font-semibold text-text">{t("settings.agency.infoTitle")}</h2>
           </div>
           <div className="px-5 py-4 grid grid-cols-2 gap-3">
             <div>
-              <p className="text-xs text-text-muted mb-0.5">Oluşturulma</p>
+              <p className="text-xs text-text-muted mb-0.5">{t("settings.agency.created")}</p>
               <p className="text-sm text-text">
-                {new Date(agency.created_at).toLocaleDateString("tr-TR")}
+                {new Date(agency.created_at).toLocaleDateString(intlLocale)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-text-muted mb-0.5">Durum</p>
+              <p className="text-xs text-text-muted mb-0.5">{t("settings.agency.status")}</p>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                   STATUS_COLORS[agency.status] ?? "text-text-muted bg-surface-2"
                 }`}
               >
-                {STATUS_LABELS[agency.status] ?? agency.status}
+                {STATUS_LABEL_KEYS[agency.status] ? t(STATUS_LABEL_KEYS[agency.status]) : agency.status}
               </span>
             </div>
           </div>
         </div>
       )}
-    </SettingsLayout>
+    </div>
   );
 }

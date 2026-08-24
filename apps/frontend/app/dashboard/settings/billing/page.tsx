@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   billingApi,
@@ -17,13 +17,15 @@ import { useWorkspace } from "@/context/workspace-context";
 import { EntitlementBar } from "@/components/billing/entitlement-bar";
 import { PlanCard } from "@/components/billing/plan-card";
 import { useToast } from "@/components/ui/toast";
+import { useLocale } from "@/context/locale-context";
+import type { TranslationKey } from "@/messages";
 
-const STATUS_LABELS: Record<string, string> = {
-  trialing: "Deneme",
-  active: "Aktif",
-  past_due: "Ödeme Gecikmiş",
-  cancelled: "İptal Edildi",
-  expired: "Süresi Doldu",
+const STATUS_LABEL_KEYS: Record<string, TranslationKey> = {
+  trialing: "settings.billing.status.trialing",
+  active: "settings.billing.status.active",
+  past_due: "settings.billing.status.pastDue",
+  cancelled: "settings.billing.status.cancelled",
+  expired: "settings.billing.status.expired",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -43,9 +45,9 @@ function formatCents(cents: number, currency: string): string {
   }).format(cents / 100);
 }
 
-function formatDate(iso: string | null): string {
+function formatDate(iso: string | null, locale: "en-US" | "tr-TR"): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("tr-TR");
+  return new Date(iso).toLocaleDateString(locale);
 }
 
 function SkeletonCard({ lines = 3 }: { lines?: number }) {
@@ -63,22 +65,23 @@ function SkeletonCard({ lines = 3 }: { lines?: number }) {
 }
 
 function SandboxBanner({ response }: { response: CheckoutResponse }) {
+  const { t } = useLocale();
+
   return (
     <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-300">
-      <p className="font-semibold">Sandbox Modu</p>
+      <p className="font-semibold">{t("settings.billing.sandbox.title")}</p>
       <p className="mt-1 text-amber-400/80">
-        iyzico API anahtarları yapılandırılmamış. Gerçek ödeme sayfası yerine simüle edilmiş
-        oturum oluşturuldu (token: {response.token}).
+        {t("settings.billing.sandbox.description", { token: response.token })}
       </p>
     </div>
   );
 }
 
 function BillingPageInner() {
+  const { intlLocale, t } = useLocale();
   const { accessToken } = useAuth();
   const { activeAgency } = useWorkspace();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const agencyId = activeAgency?.id ?? null;
   const { confirm, toast } = useToast();
 
@@ -144,7 +147,7 @@ function BillingPageInner() {
         window.location.href = resp.payment_page_url;
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Bir hata oluştu");
+      setError(e instanceof Error ? e.message : t("settings.billing.genericError"));
     } finally {
       setActionLoading(false);
     }
@@ -153,9 +156,9 @@ function BillingPageInner() {
   async function handleCancel() {
     if (!accessToken || !agencyId) return;
     const ok = await confirm({
-      title: "Aboneliği İptal Et",
-      message: "Aboneliğinizi iptal etmek istediğinizden emin misiniz? Mevcut döneminiz sonuna kadar erişiminiz devam eder.",
-      confirmLabel: "İptal Et",
+      title: t("settings.billing.cancel.title"),
+      message: t("settings.billing.cancel.message"),
+      confirmLabel: t("settings.billing.cancel.action"),
       destructive: true,
     });
     if (!ok) return;
@@ -163,10 +166,10 @@ function BillingPageInner() {
     setError(null);
     try {
       await billingApi.cancelSubscription(accessToken, agencyId);
-      toast("Abonelik iptal edildi.", "success");
+      toast(t("settings.billing.cancel.success"), "success");
       await load();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "İptal edilemedi");
+      setError(e instanceof Error ? e.message : t("settings.billing.cancel.error"));
     } finally {
       setActionLoading(false);
     }
@@ -207,21 +210,21 @@ function BillingPageInner() {
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-xl border border-border bg-surface p-1 w-fit">
-        {(["overview", "upgrade", "invoices"] as const).map((t) => (
+        {(["overview", "upgrade", "invoices"] as const).map((tabKey) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
-              tab === t
+              tab === tabKey
                 ? "bg-surface-2 text-text"
                 : "text-text-muted hover:text-text"
             }`}
           >
-            {t === "overview"
-              ? "Genel Bakış"
-              : t === "upgrade"
-                ? "Plan Değiştir"
-                : "Faturalar"}
+            {tabKey === "overview"
+              ? t("settings.billing.tab.overview")
+              : tabKey === "upgrade"
+                ? t("settings.billing.tab.upgrade")
+                : t("settings.billing.tab.invoices")}
           </button>
         ))}
       </div>
@@ -232,9 +235,9 @@ function BillingPageInner() {
           <div className="rounded-2xl border border-border bg-surface p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-text-muted">Mevcut Plan</p>
+                <p className="text-sm text-text-muted">{t("settings.billing.currentPlan")}</p>
                 <h2 className="mt-1 text-2xl font-bold text-text">
-                  {subscription?.plan.name ?? "Plan Yok"}
+                  {subscription?.plan.name ?? t("settings.billing.noPlan")}
                 </h2>
                 {subscription && (
                   <span
@@ -243,7 +246,9 @@ function BillingPageInner() {
                       "text-text-muted bg-surface-2"
                     }`}
                   >
-                    {STATUS_LABELS[subscription.status] ?? subscription.status}
+                    {STATUS_LABEL_KEYS[subscription.status]
+                      ? t(STATUS_LABEL_KEYS[subscription.status])
+                      : subscription.status}
                   </span>
                 )}
               </div>
@@ -267,19 +272,19 @@ function BillingPageInner() {
             {subscription && (
               <div className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
                 <div>
-                  <p className="text-text-muted">Dönem Başlangıcı</p>
+                  <p className="text-text-muted">{t("settings.billing.periodStart")}</p>
                   <p className="mt-0.5 font-medium text-text">
-                    {formatDate(subscription.current_period_start)}
+                    {formatDate(subscription.current_period_start, intlLocale)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-text-muted">Dönem Bitişi</p>
+                  <p className="text-text-muted">{t("settings.billing.periodEnd")}</p>
                   <p className="mt-0.5 font-medium text-text">
-                    {formatDate(subscription.current_period_end)}
+                    {formatDate(subscription.current_period_end, intlLocale)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-text-muted">Sağlayıcı</p>
+                  <p className="text-text-muted">{t("settings.billing.provider")}</p>
                   <p className="mt-0.5 font-medium capitalize text-text">
                     {subscription.billing_provider}
                   </p>
@@ -292,7 +297,7 @@ function BillingPageInner() {
                 onClick={() => setTab("upgrade")}
                 className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
               >
-                Plan Değiştir
+                {t("settings.billing.changePlan")}
               </button>
               {subscription?.status === "active" && (
                 <button
@@ -300,7 +305,7 @@ function BillingPageInner() {
                   disabled={actionLoading}
                   className="rounded-xl border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-60"
                 >
-                  Aboneliği İptal Et
+                  {t("settings.billing.cancel.action")}
                 </button>
               )}
             </div>
@@ -323,26 +328,26 @@ function BillingPageInner() {
                     d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
                   />
                 </svg>
-                <h3 className="font-semibold text-text">Kullanım</h3>
+                <h3 className="font-semibold text-text">{t("settings.billing.usage")}</h3>
               </div>
               <div className="space-y-5">
                 <EntitlementBar
-                  label="Markalar"
+                  label={t("settings.billing.usage.brands")}
                   used={usage.brands.used}
                   limit={usage.brands.limit}
                 />
                 <EntitlementBar
-                  label="Kullanıcılar"
+                  label={t("settings.billing.usage.users")}
                   used={usage.users.used}
                   limit={usage.users.limit}
                 />
                 <EntitlementBar
-                  label="Brief Şablonları"
+                  label={t("settings.billing.usage.templates")}
                   used={usage.brief_templates.used}
                   limit={usage.brief_templates.limit}
                 />
                 <EntitlementBar
-                  label="Depolama (GB)"
+                  label={t("settings.billing.usage.storage")}
                   used={usage.storage_gb.used}
                   limit={usage.storage_gb.limit}
                 />
@@ -366,13 +371,13 @@ function BillingPageInner() {
                 />
               </svg>
               <p className="mt-3 text-sm text-text-muted">
-                Aktif abonelik bulunamadı.
+                {t("settings.billing.noSubscription")}
               </p>
               <button
                 onClick={() => setTab("upgrade")}
                 className="mt-4 rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
               >
-                Bir Plan Seç
+                {t("settings.billing.selectPlan")}
               </button>
             </div>
           )}
@@ -383,7 +388,7 @@ function BillingPageInner() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <p className="text-sm text-text-muted">
-              Değiştirmek istediğiniz planı seçin.
+              {t("settings.billing.choosePlan")}
             </p>
             <div className="flex items-center rounded-xl border border-border bg-surface p-1">
               <button
@@ -392,7 +397,7 @@ function BillingPageInner() {
                   !yearly ? "bg-surface-2 text-text" : "text-text-muted"
                 }`}
               >
-                Aylık
+                {t("settings.billing.monthly")}
               </button>
               <button
                 onClick={() => setYearly(true)}
@@ -400,7 +405,7 @@ function BillingPageInner() {
                   yearly ? "bg-surface-2 text-text" : "text-text-muted"
                 }`}
               >
-                Yıllık −20%
+                {t("settings.billing.yearly")}
               </button>
             </div>
           </div>
@@ -425,8 +430,7 @@ function BillingPageInner() {
           </div>
 
           <p className="text-center text-xs text-text-muted">
-            Ödeme iyzico tarafından işlenir. Kart bilgileriniz Flobrief sunucularında
-            saklanmaz.
+            {t("settings.billing.paymentNotice")}
           </p>
         </div>
       )}
@@ -447,7 +451,7 @@ function BillingPageInner() {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <h3 className="font-semibold text-text">Faturalar</h3>
+            <h3 className="font-semibold text-text">{t("settings.billing.tab.invoices")}</h3>
           </div>
 
           {invoices.length === 0 ? (
@@ -466,7 +470,7 @@ function BillingPageInner() {
                 />
               </svg>
               <p className="mt-3 text-sm text-text-muted">
-                Henüz fatura oluşturulmamış.
+                {t("settings.billing.invoices.empty")}
               </p>
             </div>
           ) : (
@@ -474,17 +478,17 @@ function BillingPageInner() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs text-text-muted">
-                  <th className="px-6 py-3 font-medium">Tarih</th>
-                  <th className="px-6 py-3 font-medium">Tutar</th>
-                  <th className="px-6 py-3 font-medium">Durum</th>
-                  <th className="px-6 py-3 font-medium">Dönem</th>
+                  <th className="px-6 py-3 font-medium">{t("settings.billing.invoices.date")}</th>
+                  <th className="px-6 py-3 font-medium">{t("settings.billing.invoices.amount")}</th>
+                  <th className="px-6 py-3 font-medium">{t("settings.billing.invoices.status")}</th>
+                  <th className="px-6 py-3 font-medium">{t("settings.billing.invoices.period")}</th>
                   <th className="px-6 py-3 font-medium" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {invoices.map((inv) => (
                   <tr key={inv.id} className="hover:bg-surface-2/50 transition-colors">
-                    <td className="px-6 py-4 text-text">{formatDate(inv.created_at)}</td>
+                    <td className="px-6 py-4 text-text">{formatDate(inv.created_at, intlLocale)}</td>
                     <td className="px-6 py-4 font-medium text-text">
                       {formatCents(inv.amount_cents, inv.currency)}
                     </td>
@@ -499,14 +503,14 @@ function BillingPageInner() {
                         }`}
                       >
                         {inv.status === "paid"
-                          ? "Ödendi"
+                          ? t("settings.billing.invoices.paid")
                           : inv.status === "open"
-                            ? "Bekliyor"
+                            ? t("settings.billing.invoices.open")
                             : inv.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-text-muted">
-                      {formatDate(inv.period_start)} — {formatDate(inv.period_end)}
+                      {formatDate(inv.period_start, intlLocale)} — {formatDate(inv.period_end, intlLocale)}
                     </td>
                     <td className="px-6 py-4">
                       {inv.hosted_invoice_url && (
@@ -516,7 +520,7 @@ function BillingPageInner() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition-colors"
                         >
-                          Görüntüle
+                          {t("settings.billing.invoices.view")}
                           <svg
                             className="h-3 w-3"
                             fill="none"
@@ -546,19 +550,17 @@ function BillingPageInner() {
 }
 
 export default function BillingPage() {
+  const { t } = useLocale();
+
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-text">Abonelik & Faturalama</h1>
-        <p className="mt-1 text-sm text-text-muted">
-          Planınızı yönetin, kullanımınızı takip edin ve faturalarınıza erişin.{" "}
-          <Link
-            href="/pricing"
-            className="text-indigo-400 hover:text-indigo-300 transition-colors"
-          >
-            Tüm planları karşılaştır →
-          </Link>
-        </p>
+    <div>
+      <div className="mb-6 flex justify-end">
+        <Link
+          href="/pricing"
+          className="text-sm text-indigo-400 transition-colors hover:text-indigo-300"
+        >
+          {t("settings.billing.comparePlans")}
+        </Link>
       </div>
       <Suspense
         fallback={

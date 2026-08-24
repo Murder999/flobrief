@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -15,6 +15,7 @@ from app.db.session import get_db
 from app.models.agency import Agency
 from app.models.brand import Brand
 from app.models.brief import Brief
+from app.models.demo_sandbox import DemoSandbox
 from app.models.enums import UserType
 from app.models.platform_seo_settings import PlatformGrowthSettings, PlatformSeoPageSettings
 from app.models.user import User
@@ -36,6 +37,17 @@ from app.services import pagespeed_service, seo_audit_service
 
 platform_seo_router = APIRouter(prefix="/seo", tags=["platform-seo"])
 platform_growth_router = APIRouter(prefix="/growth", tags=["platform-growth"])
+
+
+def _is_commercial_growth_user() -> object:
+    demo_identity = select(DemoSandbox.id).where(
+        or_(
+            DemoSandbox.owner_user_id == User.id,
+            DemoSandbox.brand_user_id == User.id,
+        ),
+        DemoSandbox.deleted_at.is_(None),
+    )
+    return ~exists(demo_identity)
 
 
 @platform_seo_router.get("/audit", response_model=list[PlatformSeoAuditIssue])
@@ -445,27 +457,44 @@ async def get_growth_metrics(
 ) -> PlatformGrowthMetrics:
     # Total & active agencies
     total_agencies_result = await db.execute(
-        select(func.count()).select_from(Agency).where(Agency.deleted_at.is_(None))
+        select(func.count())
+        .select_from(Agency)
+        .where(Agency.deleted_at.is_(None), Agency.is_demo.is_(False))
     )
     total_agencies = total_agencies_result.scalar_one()
 
     active_agencies_result = await db.execute(
         select(func.count())
         .select_from(Agency)
-        .where(Agency.deleted_at.is_(None), Agency.status == "active")
+        .where(
+            Agency.deleted_at.is_(None),
+            Agency.is_demo.is_(False),
+            Agency.status == "active",
+        )
     )
     active_agencies = active_agencies_result.scalar_one()
 
     # Total & active brands
     total_brands_result = await db.execute(
-        select(func.count()).select_from(Brand).where(Brand.deleted_at.is_(None))
+        select(func.count())
+        .select_from(Brand)
+        .outerjoin(Agency, Agency.id == Brand.agency_id)
+        .where(
+            Brand.deleted_at.is_(None),
+            or_(Brand.agency_id.is_(None), Agency.is_demo.is_(False)),
+        )
     )
     total_brands = total_brands_result.scalar_one()
 
     active_brands_result = await db.execute(
         select(func.count())
         .select_from(Brand)
-        .where(Brand.deleted_at.is_(None), Brand.status == "active")
+        .outerjoin(Agency, Agency.id == Brand.agency_id)
+        .where(
+            Brand.deleted_at.is_(None),
+            Brand.status == "active",
+            or_(Brand.agency_id.is_(None), Agency.is_demo.is_(False)),
+        )
     )
     active_brands = active_brands_result.scalar_one()
 
@@ -476,6 +505,7 @@ async def get_growth_metrics(
         .where(
             User.deleted_at.is_(None),
             User.user_type != UserType.PLATFORM_ADMIN.value,
+            _is_commercial_growth_user(),
         )
     )
     total_users = total_users_result.scalar_one()
@@ -487,7 +517,11 @@ async def get_growth_metrics(
     new_agencies_result = await db.execute(
         select(func.count())
         .select_from(Agency)
-        .where(Agency.deleted_at.is_(None), Agency.created_at >= month_start)
+        .where(
+            Agency.deleted_at.is_(None),
+            Agency.is_demo.is_(False),
+            Agency.created_at >= month_start,
+        )
     )
     new_agencies_this_month = new_agencies_result.scalar_one()
 
@@ -499,6 +533,7 @@ async def get_growth_metrics(
             User.deleted_at.is_(None),
             User.user_type != UserType.PLATFORM_ADMIN.value,
             User.created_at >= month_start,
+            _is_commercial_growth_user(),
         )
     )
     new_users_this_month = new_users_result.scalar_one()
@@ -507,7 +542,12 @@ async def get_growth_metrics(
     agencies_with_brand_result = await db.execute(
         select(func.count(func.distinct(Brand.agency_id)))
         .select_from(Brand)
-        .where(Brand.deleted_at.is_(None), Brand.agency_id.is_not(None))
+        .join(Agency, Agency.id == Brand.agency_id)
+        .where(
+            Brand.deleted_at.is_(None),
+            Brand.agency_id.is_not(None),
+            Agency.is_demo.is_(False),
+        )
     )
     agencies_with_first_brand = agencies_with_brand_result.scalar_one()
 
@@ -515,7 +555,8 @@ async def get_growth_metrics(
     agencies_with_brief_result = await db.execute(
         select(func.count(func.distinct(Brief.agency_id)))
         .select_from(Brief)
-        .where(Brief.deleted_at.is_(None))
+        .join(Agency, Agency.id == Brief.agency_id)
+        .where(Brief.deleted_at.is_(None), Agency.is_demo.is_(False))
     )
     agencies_with_first_brief = agencies_with_brief_result.scalar_one()
 

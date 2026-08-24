@@ -16,6 +16,7 @@ interface ResponsiveAppShellProps {
   bottomNavItems: BottomNavItem[];
   brandTitle: string;
   brandSubtitle?: string;
+  drawerTopContent?: ReactNode;
   fallbackPageTitle: string;
   user: { name: string; email: string; initials: string } | null;
   profileHref: string;
@@ -30,8 +31,9 @@ interface ResponsiveAppShellProps {
  * Composition shared by the agency and brand layouts: desktop sidebar
  * (untouched, CSS-hidden below `lg`) + a mobile/tablet column of sticky
  * header, page content, and fixed bottom nav, plus the portal-rendered nav
- * drawer. Desktop DOM/CSS output is unchanged from the pre-4A layout — the
- * only addition is a neutral flex-column wrapper around `main`.
+ * drawer. The viewport and content column use an explicit min-height and
+ * overflow contract so navigation and utility footers remain independently
+ * usable at short desktop heights.
  */
 export function ResponsiveAppShell({
   sidebar,
@@ -39,6 +41,7 @@ export function ResponsiveAppShell({
   bottomNavItems,
   brandTitle,
   brandSubtitle,
+  drawerTopContent,
   fallbackPageTitle,
   user,
   profileHref,
@@ -66,10 +69,10 @@ export function ResponsiveAppShell({
   );
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-dvh min-h-0 overflow-hidden bg-background">
       {sidebar}
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <ResponsivePageHeader
           onMenuClick={() => setDrawerOpen(true)}
           menuOpen={drawerOpen}
@@ -83,7 +86,7 @@ export function ResponsiveAppShell({
           profileInitials={user?.initials ?? "?"}
         />
 
-        <main className="flex-1 overflow-auto min-w-0 pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
           {children}
         </main>
 
@@ -100,6 +103,7 @@ export function ResponsiveAppShell({
         groups={groups}
         brandTitle={brandTitle}
         brandSubtitle={brandSubtitle}
+        topContent={drawerTopContent}
         user={user}
         profileHref={profileHref}
         onLogout={onLogout}

@@ -34,12 +34,16 @@ def create_access_token(
     subject: str | Any,
     extra_claims: dict[str, Any] | None = None,
     expire_minutes: int | None = None,
+    expires_at: datetime | None = None,
 ) -> str:
-    minutes = expire_minutes if expire_minutes is not None else settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    expire = datetime.now(UTC) + timedelta(minutes=minutes)
+    if expires_at is None:
+        minutes = (
+            expire_minutes if expire_minutes is not None else settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+        expires_at = datetime.now(UTC) + timedelta(minutes=minutes)
     payload: dict[str, Any] = {
         "sub": str(subject),
-        "exp": expire,
+        "exp": expires_at,
         "iat": datetime.now(UTC),
         "type": "access",
     }

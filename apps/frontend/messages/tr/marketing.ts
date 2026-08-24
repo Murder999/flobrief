@@ -13,6 +13,7 @@ export const marketing = {
   "marketing.navigation.homeLabel": "PostPiloter ana sayfa",
   "marketing.actions.demo": "Demoyu İncele",
   "marketing.actions.freeSignup": "Ücretsiz Kayıt",
+  "marketing.footer.legal": "YASAL",
   "marketing.footer.solutions": "Çözümler",
   "marketing.footer.getStarted": "Başlangıç",
   "marketing.footer.rights": "Tüm hakları saklıdır.",

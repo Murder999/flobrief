@@ -9,7 +9,6 @@ import { applyTheme, getTheme, type Theme } from "@/lib/theme";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 import { useLocale } from "@/context/locale-context";
 import { formatLocalizedDate } from "@/lib/i18n/format";
-import { SettingsLayout } from "@/components/settings/SettingsLayout";
 
 function formatDate(iso: string | null, locale: "en" | "tr"): string {
   if (!iso) return "—";
@@ -158,8 +157,8 @@ export default function ProfilePage() {
   const isDirty = fullName !== (user?.full_name ?? "") || jobTitle !== (user?.job_title ?? "");
   const isWhatsAppDirty = phoneNumber !== (user?.phone_number ?? "");
 
-return (
-    <SettingsLayout portal="agency" title="Profil">
+  return (
+    <div>
       {/* Section: Profil Bilgileri */}
       <section className="mb-6 rounded-2xl border border-border bg-surface p-5">
         <div className="flex items-center gap-5 mb-5">
@@ -318,7 +317,7 @@ return (
         </div>
       </section>
 
-      {/* Section: Hesap & Güvenlik */}
+      {/* Section: Account & Security */}
       <section className="rounded-2xl border border-border bg-surface p-5">
         <PasswordChangeForm accessToken={accessToken} onCompleted={() => void logout()} />
 
@@ -390,6 +389,6 @@ return (
           </button>
         </div>
       </section>
-    </SettingsLayout>
+    </div>
   );
 }

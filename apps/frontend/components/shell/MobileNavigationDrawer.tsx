@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
@@ -21,6 +21,7 @@ interface MobileNavigationDrawerProps {
   groups: NavDrawerGroup[];
   brandTitle: string;
   brandSubtitle?: string;
+  topContent?: ReactNode;
   user: { name: string; email: string; initials: string } | null;
   profileHref: string;
   onLogout: () => void;
@@ -47,6 +48,7 @@ export function MobileNavigationDrawer({
   groups,
   brandTitle,
   brandSubtitle,
+  topContent,
   user,
   profileHref,
   onLogout,
@@ -160,6 +162,8 @@ export function MobileNavigationDrawer({
                   <X className="w-4.5 h-4.5" />
                 </button>
               </div>
+
+              {topContent ? <div className="shrink-0 border-b border-border">{topContent}</div> : null}
 
               {/* Nav groups */}
               <nav className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3">

@@ -12,6 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/context/workspace-context";
 import { useToast } from "@/components/ui/toast";
 import { InfoTooltip } from "@/components/contextual-help/InfoTooltip";
+import { useLocale } from "@/context/locale-context";
+import type { TranslationKey } from "@/messages";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -29,13 +31,9 @@ function Skeleton({ className }: { className?: string }) {
 
 function PageSkeleton() {
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1.5">
-          <Skeleton className="h-7 w-64" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <Skeleton className="h-9 w-24" />
+    <div className="space-y-8">
+      <div className="flex justify-end">
+        <Skeleton className="h-9 w-52" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Skeleton className="h-96" />
@@ -104,6 +102,7 @@ function LogoUploadField({
   disabled: boolean;
   onUploaded: (settings: AgencyBrandingRead) => void;
 }) {
+  const { t } = useLocale();
   const { accessToken } = useAuth();
   const { activeAgency } = useWorkspace();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -118,7 +117,7 @@ function LogoUploadField({
       const result = await brandingApi.uploadAsset(file, assetType, activeAgency.id, accessToken);
       onUploaded(result);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Yükleme başarısız.");
+      setError(e instanceof ApiError ? e.message : t("settings.branding.uploadError"));
     } finally {
       setUploading(false);
     }
@@ -153,12 +152,12 @@ function LogoUploadField({
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Yükleniyor...
+            {t("settings.branding.uploading")}
           </span>
         ) : resolvedUrl ? (
-          "Değiştir"
+          t("settings.branding.change")
         ) : (
-          "Dosya Seç"
+          t("settings.branding.selectFile")
         )}
       </button>
       {error && <p className="text-xs text-red-500">{error}</p>}
@@ -186,17 +185,20 @@ function LivePreview({
   branding: AgencyBrandingRead;
   form: BrandingSettingsUpdate;
 }) {
+  const { t } = useLocale();
   const primary = form.primary_color || branding.primary_color || "#6366F1";
   const secondary = form.secondary_color || branding.secondary_color || "#818CF8";
   const accent = form.accent_color || branding.accent_color || "#4F46E5";
-  const brandName = form.brand_name_override ?? branding.brand_name_override ?? "Ajans Adı";
+  const brandName = form.brand_name_override ?? branding.brand_name_override ?? t("settings.branding.preview.fallbackName");
   const logoUrl = publicAssetUrl(branding.logo_url);
 
   return (
     <div className="bg-surface-2 border border-border rounded-2xl p-5 space-y-4">
       <div className="flex items-center gap-2 mb-1">
         <div className="w-2 h-2 rounded-full bg-border" />
-        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">Canlı Önizleme</span>
+        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
+          {t("settings.branding.preview.title")}
+        </span>
       </div>
 
       {/* Simulated approval portal card */}
@@ -207,7 +209,7 @@ function LivePreview({
           style={{ background: `linear-gradient(135deg, ${primary}15, ${secondary}10)`, borderBottom: `2px solid ${primary}30` }}
         >
           {logoUrl ? (
-            <img src={logoUrl} alt="Logo" className="h-6 w-auto max-w-[80px] object-contain" />
+            <img src={logoUrl} alt={t("settings.branding.preview.logoAlt")} className="h-6 w-auto max-w-[80px] object-contain" />
           ) : (
             <div
               className="w-7 h-7 rounded-md flex items-center justify-center text-white font-bold text-xs"
@@ -229,13 +231,13 @@ function LivePreview({
               className="flex-1 py-2 rounded-lg text-white text-xs font-medium"
               style={{ background: primary }}
             >
-              Onayla
+              {t("settings.branding.preview.approve")}
             </button>
             <button
               className="flex-1 py-2 rounded-lg text-xs font-medium border"
               style={{ borderColor: accent, color: accent }}
             >
-              Revizyon İste
+              {t("settings.branding.preview.requestRevision")}
             </button>
           </div>
         </div>
@@ -243,9 +245,9 @@ function LivePreview({
 
       <div className="grid grid-cols-3 gap-2 text-xs">
         {[
-          { label: "Birincil", color: primary },
-          { label: "İkincil", color: secondary },
-          { label: "Vurgu", color: accent },
+          { label: t("settings.branding.color.primary"), color: primary },
+          { label: t("settings.branding.color.secondary"), color: secondary },
+          { label: t("settings.branding.color.accent"), color: accent },
         ].map(({ label, color }) => (
           <div key={label} className="text-center space-y-1">
             <div className="w-full h-6 rounded-md border border-border" style={{ background: color }} />
@@ -260,6 +262,8 @@ function LivePreview({
 // ── Entitlement locked state ──────────────────────────────────────────────────
 
 function EntitlementLockedBanner() {
+  const { t } = useLocale();
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-2xl p-6">
       <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-100 rounded-full -translate-y-1/2 translate-x-1/4 opacity-40" />
@@ -272,13 +276,14 @@ function EntitlementLockedBanner() {
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-indigo-900 text-sm mb-1">White-label bu planda kullanılamaz</h3>
+            <h3 className="font-semibold text-indigo-900 text-sm mb-1">
+              {t("settings.branding.locked.title")}
+            </h3>
             <p className="text-xs text-indigo-700 leading-relaxed">
-              Ajans markanızı müşterilerinize yansıtmak, kendi logonuzu ve renklerinizi kullanmak için
-              planınızı yükseltin. Agency Plus ve Enterprise planlarda kullanılabilir.
+              {t("settings.branding.locked.description")}
             </p>
             <button className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors">
-              Planı Yükselt
+              {t("settings.branding.locked.upgrade")}
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -293,16 +298,17 @@ function EntitlementLockedBanner() {
 // ── Domain status badge ───────────────────────────────────────────────────────
 
 function DomainStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    pending: { label: "Doğrulama Bekleniyor", cls: "text-amber-700 bg-amber-50 border-amber-200" },
-    verified: { label: "Doğrulandı", cls: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-    failed: { label: "Başarısız", cls: "text-red-700 bg-red-50 border-red-200" },
-    disabled: { label: "Devre Dışı", cls: "text-text-muted bg-surface-2 border-border" },
+  const { t } = useLocale();
+  const map: Record<string, { labelKey: TranslationKey; cls: string }> = {
+    pending: { labelKey: "settings.branding.domainStatus.pending", cls: "text-amber-700 bg-amber-50 border-amber-200" },
+    verified: { labelKey: "settings.branding.domainStatus.verified", cls: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+    failed: { labelKey: "settings.branding.domainStatus.failed", cls: "text-red-700 bg-red-50 border-red-200" },
+    disabled: { labelKey: "settings.branding.domainStatus.disabled", cls: "text-text-muted bg-surface-2 border-border" },
   };
-  const m = map[status] ?? { label: status, cls: "text-text-muted bg-surface-2 border-border" };
+  const config = map[status];
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${m.cls}`}>
-      {m.label}
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${config?.cls ?? "text-text-muted bg-surface-2 border-border"}`}>
+      {config ? t(config.labelKey) : status}
     </span>
   );
 }
@@ -310,6 +316,7 @@ function DomainStatusBadge({ status }: { status: string }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function BrandingSettingsPage() {
+  const { t } = useLocale();
   const { accessToken } = useAuth();
   const { activeAgency } = useWorkspace();
   const { confirm, toast } = useToast();
@@ -368,22 +375,22 @@ export default function BrandingSettingsPage() {
       setTimeout(() => setSaveState("idle"), 2500);
     } catch (e) {
       setSaveState("error");
-      setSaveError(e instanceof ApiError ? e.message : "Kaydetme başarısız.");
+      setSaveError(e instanceof ApiError ? e.message : t("settings.branding.saveError"));
     }
   }
 
   async function handleReset() {
     if (!accessToken || !activeAgency) return;
     const ok = await confirm({
-      title: "Marka Ayarlarını Sıfırla",
-      message: "Tüm marka ayarları varsayılana sıfırlanacak. Emin misiniz?",
-      confirmLabel: "Sıfırla",
+      title: t("settings.branding.resetTitle"),
+      message: t("settings.branding.resetMessage"),
+      confirmLabel: t("settings.branding.resetAction"),
       destructive: true,
     });
     if (!ok) return;
     try {
       const updated = await brandingApi.reset(activeAgency.id, accessToken);
-      toast("Marka ayarları sıfırlandı.", "success");
+      toast(t("settings.branding.resetSuccess"), "success");
       setBranding(updated);
       setForm({
         brand_name_override: null,
@@ -406,7 +413,7 @@ export default function BrandingSettingsPage() {
       setDomainToken(result.verification_token);
       setDomainInput("");
     } catch (e) {
-      setDomainError(e instanceof ApiError ? e.message : "Hata oluştu.");
+      setDomainError(e instanceof ApiError ? e.message : t("settings.branding.genericError"));
     } finally {
       setDomainSaving(false);
     }
@@ -417,22 +424,14 @@ export default function BrandingSettingsPage() {
   const locked = !branding.white_label_entitlement;
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
-      {/* Page header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Ajans Markalaşma</h1>
-          <p className="text-sm text-text-muted mt-1">
-            Müşterilerinize sunduğunuz onay ve rapor sayfalarını markanıza göre özelleştirin.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             onClick={handleReset}
             className="px-4 py-2 text-sm text-zinc-600 hover:text-red-600 transition-colors"
           >
-            Sıfırla
+            {t("settings.branding.resetAction")}
           </button>
           <button
             type="button"
@@ -446,9 +445,12 @@ export default function BrandingSettingsPage() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             )}
-            {saveState === "saved" ? "Kaydedildi" : saveState === "saving" ? "Kaydediliyor..." : "Kaydet"}
+            {saveState === "saved"
+              ? t("settings.branding.saved")
+              : saveState === "saving"
+                ? t("settings.branding.saving")
+                : t("settings.branding.saveAction")}
           </button>
-        </div>
       </div>
 
       {saveState === "error" && saveError && (
@@ -467,11 +469,11 @@ export default function BrandingSettingsPage() {
           <div className="bg-surface border border-border rounded-2xl p-6 space-y-5">
             <div className="flex items-center justify-between">
               <div ref={brandingRef}>
-                <h2 className="text-sm font-semibold text-text">White-label Modu</h2>
+                <h2 className="text-sm font-semibold text-text">{t("settings.branding.whiteLabel.title")}</h2>
                 <InfoTooltip
                   targetRef={brandingRef}
-                  text="White-label modu: Müşterilerinize gösterilen onay ve rapor sayfalarınızı markanızla özelleştirir. Logonuz, renk paletiniz ve custom footer metni gösterilir. Agency Plus ve Enterprise planlarda kullanılabilir."
-                  title="White-label Modu"
+                  text={t("settings.branding.whiteLabel.help")}
+                  title={t("settings.branding.whiteLabel.title")}
                 />
               </div>
               <button
@@ -493,22 +495,22 @@ export default function BrandingSettingsPage() {
 
           {/* Brand identity */}
           <div className="bg-surface border border-border rounded-2xl p-6 space-y-5">
-            <h2 className="text-sm font-semibold text-text">Marka Kimliği</h2>
+            <h2 className="text-sm font-semibold text-text">{t("settings.branding.identity.title")}</h2>
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-text-muted uppercase tracking-wide">
-                Marka Adı (Opsiyonel)
+                {t("settings.branding.identity.nameOptional")}
               </label>
               <InfoTooltip
-                text="Marka adı: Müşterileriniz onay ve rapor sayfalarında görürülen ajans adınız. Varsayılan olarak sistem adı kullanılır."
-                title="Marka Adı"
+                text={t("settings.branding.identity.nameTooltip")}
+                title={t("settings.branding.identity.nameTooltipTitle")}
               >
                 <input
                   type="text"
                   value={form.brand_name_override ?? ""}
                   onChange={(e) => setForm((f) => ({ ...f, brand_name_override: e.target.value || null }))}
                   disabled={locked}
-                  placeholder="Ajans adınız veya müşteri markanız"
+                  placeholder={t("settings.branding.identity.namePlaceholder")}
                   className="w-full px-3 py-2.5 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed bg-surface text-text"
                 />
               </InfoTooltip>
@@ -516,22 +518,22 @@ export default function BrandingSettingsPage() {
 
             <div className="space-y-3">
               <label className="text-xs font-medium text-text-muted uppercase tracking-wide">
-                Renkler
+                {t("settings.branding.identity.colors")}
               </label>
               <ColorField
-                label="Birincil"
+                label={t("settings.branding.color.primary")}
                 value={form.primary_color ?? ""}
                 onChange={(v) => setForm((f) => ({ ...f, primary_color: v }))}
                 disabled={locked}
               />
               <ColorField
-                label="İkincil"
+                label={t("settings.branding.color.secondary")}
                 value={form.secondary_color ?? ""}
                 onChange={(v) => setForm((f) => ({ ...f, secondary_color: v }))}
                 disabled={locked}
               />
               <ColorField
-                label="Vurgu"
+                label={t("settings.branding.color.accent")}
                 value={form.accent_color ?? ""}
                 onChange={(v) => setForm((f) => ({ ...f, accent_color: v }))}
                 disabled={locked}
@@ -540,14 +542,14 @@ export default function BrandingSettingsPage() {
 
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-text-muted uppercase tracking-wide">
-                Footer Metni
+                {t("settings.branding.identity.footer")}
               </label>
               <input
                 type="text"
                 value={form.custom_footer_text ?? ""}
                 onChange={(e) => setForm((f) => ({ ...f, custom_footer_text: e.target.value || null }))}
                 disabled={locked}
-                placeholder="© 2026 Ajans Adı. Tüm hakları saklıdır."
+                placeholder={t("settings.branding.identity.footerPlaceholder")}
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed bg-surface text-text"
               />
             </div>
@@ -555,12 +557,12 @@ export default function BrandingSettingsPage() {
 
           {/* Logo uploads */}
           <div className="bg-surface border border-border rounded-2xl p-6 space-y-5">
-            <h2 className="text-sm font-semibold text-text">Logo Dosyaları</h2>
-            <p className="text-xs text-text-muted">PNG, JPEG, WebP veya GIF. Maksimum 5 MB.</p>
+            <h2 className="text-sm font-semibold text-text">{t("settings.branding.assets.title")}</h2>
+            <p className="text-xs text-text-muted">{t("settings.branding.assets.help")}</p>
 
             <LogoUploadField
-              label="Ana Logo"
-              hint="Onay ve rapor sayfası başlığında görünür."
+              label={t("settings.branding.assets.mainLogo")}
+              hint={t("settings.branding.assets.mainLogoHint")}
               currentUrl={branding.logo_url}
               assetType="logo"
               disabled={locked}
@@ -570,8 +572,8 @@ export default function BrandingSettingsPage() {
             <div className="border-t border-border" />
 
             <LogoUploadField
-              label="E-posta Logosu"
-              hint="Bildirim e-postalarında kullanılır."
+              label={t("settings.branding.assets.emailLogo")}
+              hint={t("settings.branding.assets.emailLogoHint")}
               currentUrl={branding.email_logo_url}
               assetType="email_logo"
               disabled={locked}
@@ -581,8 +583,8 @@ export default function BrandingSettingsPage() {
             <div className="border-t border-border" />
 
             <LogoUploadField
-              label="Favicon"
-              hint="Tarayıcı sekmesinde gösterilir."
+              label={t("settings.branding.assets.favicon")}
+              hint={t("settings.branding.assets.faviconHint")}
               currentUrl={branding.favicon_url}
               assetType="favicon"
               disabled={locked}
@@ -592,9 +594,9 @@ export default function BrandingSettingsPage() {
 
           {/* Custom domain */}
           <div className="bg-surface border border-border rounded-2xl p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-text">Özel Domain</h2>
+            <h2 className="text-sm font-semibold text-text">{t("settings.branding.domain.title")}</h2>
             <p className="text-xs text-text-muted leading-relaxed">
-              Onay portalını kendi domain&apos;inizde barındırın. DNS TXT kaydı doğrulaması gerekir.
+              {t("settings.branding.domain.description")}
             </p>
 
             <div className="flex gap-2">
@@ -603,7 +605,7 @@ export default function BrandingSettingsPage() {
                 value={domainInput}
                 onChange={(e) => setDomainInput(e.target.value)}
                 disabled={locked || domainSaving}
-                placeholder="portal.ajans.com"
+                placeholder={t("settings.branding.domain.placeholder")}
                 className="flex-1 px-3 py-2.5 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed font-mono bg-surface text-text"
               />
               <button
@@ -612,7 +614,7 @@ export default function BrandingSettingsPage() {
                 onClick={handleCreateDomain}
                 className="px-4 py-2 bg-text text-surface text-sm font-medium rounded-xl hover:opacity-80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {domainSaving ? "..." : "Kaydet"}
+                {domainSaving ? "…" : t("settings.branding.domain.save")}
               </button>
             </div>
 
@@ -620,9 +622,9 @@ export default function BrandingSettingsPage() {
 
             {domainToken && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-                <p className="text-xs font-semibold text-amber-800">DNS Doğrulama Token&apos;ı</p>
+                <p className="text-xs font-semibold text-amber-800">{t("settings.branding.domain.dnsTitle")}</p>
                 <p className="text-xs text-amber-700 leading-relaxed">
-                  Aşağıdaki değeri domain&apos;inize DNS TXT kaydı olarak ekleyin. Bu token bir kez görünür.
+                  {t("settings.branding.domain.dnsHelp")}
                 </p>
                 <code className="block text-xs font-mono bg-amber-100 rounded-lg px-3 py-2 text-amber-900 break-all">
                   {domainToken}
@@ -640,13 +642,13 @@ export default function BrandingSettingsPage() {
           {/* Info card */}
           <div className="bg-surface border border-border rounded-2xl p-5 space-y-3">
             <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-              Bu Ayarlar Nereye Uygulanır?
+              {t("settings.branding.applies.title")}
             </h3>
             <ul className="space-y-2">
               {[
-                "Müşteri onay portali (/approve/...)",
-                "Paylaşımlı rapor sayfası (/report/...)",
-                "E-posta bildirimleri",
+                t("settings.branding.applies.approvalPortal"),
+                t("settings.branding.applies.sharedReport"),
+                t("settings.branding.applies.emailNotifications"),
               ].map((label) => (
                 <li key={label} className="flex items-center gap-2.5 text-xs text-text-muted">
                   <svg className="w-3.5 h-3.5 text-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

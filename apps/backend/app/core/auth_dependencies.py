@@ -77,7 +77,7 @@ async def get_current_user(
             detail="Kullanıcı bulunamadı veya devre dışı",
         )
 
-    await ensure_demo_user_access(db, user.id)
+    await ensure_demo_user_access(db, user.id, payload.get("demo_session_id"))
     return user
 
 
