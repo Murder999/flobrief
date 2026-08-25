@@ -220,6 +220,7 @@ test.describe("platform admin — agency management", () => {
     const ownerRow = memberRow("E2E Owner A");
     const ownerRoleSelect = ownerRow.locator("select").first();
     await ownerRoleSelect.selectOption("admin");
+    await page.getByTestId("confirm-action-submit").click();
     // Backend rejects (400) -> UI shows an error toast, role select should not
     // silently show "admin" as persisted after a reload.
     await expect(page.getByText("Ajansın en az bir aktif sahibi")).toBeVisible({ timeout: 10_000 });
@@ -233,6 +234,7 @@ test.describe("platform admin — agency management", () => {
     const adminRow = memberRow("E2E Admin A");
     const adminRoleSelect = adminRow.locator("select").first();
     await adminRoleSelect.selectOption("viewer");
+    await page.getByTestId("confirm-action-submit").click();
     await expect(page.getByText("Rol güncellendi.")).toBeVisible({ timeout: 10_000 });
     await page.reload();
     await page.getByText("E2E Beyaz Etiket Ajansı").click();

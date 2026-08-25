@@ -6,6 +6,7 @@ import { help } from "./help";
 import { marketing } from "./marketing";
 import { notifications } from "./notifications";
 import { portal } from "./portal";
+import { platform } from "./platform";
 import { reports } from "./reports";
 import { settings } from "./settings";
 
@@ -17,6 +18,7 @@ export const enMessages = {
   ...help,
   ...briefs,
   ...portal,
+  ...platform,
   ...reports,
   ...notifications,
   ...settings,

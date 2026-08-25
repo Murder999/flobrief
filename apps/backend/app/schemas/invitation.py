@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, ValidationInfo, field_validator
 
 from app.models.enums import AgencyMemberRole, BrandMemberRole
+from app.schemas.auth import _validate_password_strength
 
 
 class AgencyInviteRequest(BaseModel):
@@ -72,13 +74,70 @@ class InvitationPreview(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: uuid.UUID
-    agency_id: uuid.UUID
     agency_name: str
-    brand_id: uuid.UUID | None
     brand_name: str | None
-    invitation_type: str
+    invitation_type: Literal["agency", "brand"]
     email: str
     role: str
     expires_at: datetime
-    is_pending: bool
+    state: Literal["pending", "accepted", "expired", "revoked", "declined"]
+    account_exists: bool | None
+    account_type_compatible: bool | None
+
+
+class InvitationSignupRequest(BaseModel):
+    full_name: str
+    password: str
+    password_confirmation: str
+    phone_number: str | None = None
+    whatsapp_opt_in: bool = False
+    locale: Literal["en", "tr"] = "en"
+
+    @field_validator("full_name", mode="before")
+    @classmethod
+    def strip_name(cls, value: str) -> str:
+        stripped = value.strip()
+        if len(stripped) < 2:
+            raise ValueError("Ad en az 2 karakter olmalıdır")
+        return stripped
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        return _validate_password_strength(value)
+
+    @field_validator("password_confirmation")
+    @classmethod
+    def validate_password_confirmation(cls, value: str) -> str:
+        return _validate_password_strength(value)
+
+    @field_validator("phone_number", mode="before")
+    @classmethod
+    def normalize_phone(cls, value: str | None) -> str | None:
+        import re
+
+        if value is None:
+            return None
+        normalized = re.sub(r"[\s\-\(\)]", "", value.strip())
+        if not normalized:
+            return None
+        if not normalized.startswith("+"):
+            normalized = "+" + normalized
+        if not re.match(r"^\+[1-9]\d{6,14}$", normalized):
+            raise ValueError("Telefon numarası E.164 formatında olmalı (+90...)")
+        return normalized
+
+    @field_validator("password_confirmation")
+    @classmethod
+    def passwords_match(cls, value: str, info: ValidationInfo) -> str:
+        password = info.data.get("password")
+        if password is not None and value != password:
+            raise ValueError("Şifreler eşleşmiyor")
+        return value
+
+
+class InvitationSignupResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    redirect_to: Literal["/dashboard", "/brand/dashboard"]

@@ -11,11 +11,13 @@ from app.repositories.base import BaseRepository
 class InvitationRepository(BaseRepository[Invitation]):
     model = Invitation
 
-    async def get_by_token_hash(self, token_hash: str) -> Invitation | None:
+    async def get_by_token_hash(self, token_hash: str, *, lock: bool = False) -> Invitation | None:
         stmt = select(Invitation).where(
             Invitation.token_hash == token_hash,
             Invitation.deleted_at.is_(None),
         )
+        if lock:
+            stmt = stmt.with_for_update()
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 

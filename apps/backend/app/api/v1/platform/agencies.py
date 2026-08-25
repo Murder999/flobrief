@@ -18,6 +18,7 @@ from app.models.brand import Brand
 from app.models.brief import Brief
 from app.models.comment import Comment, CommentThread
 from app.models.enums import AgencyMemberRole, AgencyMemberStatus, AgencyStatus, SubscriptionStatus
+from app.models.invitation import Invitation
 from app.models.plan import Plan
 from app.models.platform_audit_log import PlatformAuditLog
 from app.models.subscription import Subscription
@@ -26,6 +27,8 @@ from app.repositories.platform_audit_log import PlatformAuditLogRepository
 from app.schemas.platform import (
     AgencySuspendRequest,
     PlatformAgencyBrandingRead,
+    PlatformAgencyCreateRequest,
+    PlatformAgencyCreateResponse,
     PlatformAgencyDetail,
     PlatformAgencyMemberRead,
     PlatformAgencyMemberUpdate,
@@ -33,8 +36,13 @@ from app.schemas.platform import (
     PlatformAgencyRead,
     PlatformAgencyUpdate,
     PlatformAgencyUsage,
+    PlatformInvitationRead,
+    PlatformMemberAttachRequest,
+    PlatformMemberInviteRequest,
 )
 from app.services.branding_service import BrandingService
+from app.services.invitation_service import InvitationService
+from app.services.platform_provisioning_service import PlatformProvisioningService
 
 platform_agencies_router = APIRouter(prefix="/agencies", tags=["platform-agencies"])
 
@@ -86,6 +94,55 @@ async def _get_subscription_info(
         return None, None, None, None
     sub, plan = row
     return sub.status, plan.name, plan.code, plan.monthly_price_cents
+
+
+def _platform_invitation_read(invitation: Invitation) -> PlatformInvitationRead:
+    return PlatformInvitationRead(
+        id=invitation.id,
+        invitation_type=invitation.invitation_type,
+        email=invitation.email,
+        role=invitation.role,
+        state=InvitationService.invitation_state(invitation),
+        expires_at=invitation.expires_at,
+        resent_count=invitation.resent_count,
+        created_at=invitation.created_at,
+    )
+
+
+@platform_agencies_router.post(
+    "",
+    response_model=PlatformAgencyCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_agency_by_platform(
+    body: PlatformAgencyCreateRequest,
+    request: Request,
+    admin: User = Depends(get_platform_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> PlatformAgencyCreateResponse:
+    result = await PlatformProvisioningService(db).create_agency(
+        body,
+        admin=admin,
+        ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    agency = result.agency
+    return PlatformAgencyCreateResponse(
+        agency=PlatformAgencyRead(
+            id=agency.id,
+            name=agency.name,
+            slug=agency.slug,
+            status=agency.status,
+            owner_user_id=agency.owner_user_id,
+            plan_id=agency.plan_id,
+            member_count=await _count_members(db, agency.id),
+            brand_count=0,
+            created_at=agency.created_at,
+            updated_at=agency.updated_at,
+        ),
+        owner_action=result.owner_action,
+        owner_email=result.owner_email,
+    )
 
 
 @platform_agencies_router.get("", response_model=list[PlatformAgencyRead])
@@ -651,3 +708,123 @@ async def get_agency_audit_feed(
     ]
     entries.sort(key=lambda e: e["created_at"], reverse=True)
     return entries[:limit]
+
+
+@platform_agencies_router.get(
+    "/{agency_id}/invitations", response_model=list[PlatformInvitationRead]
+)
+async def list_platform_agency_invitations(
+    agency_id: uuid.UUID,
+    admin: User = Depends(get_platform_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[PlatformInvitationRead]:
+    await _get_agency_or_404(db, agency_id)
+    invitations = await db.scalars(
+        select(Invitation)
+        .where(
+            Invitation.agency_id == agency_id,
+            Invitation.invitation_type == "agency",
+            Invitation.deleted_at.is_(None),
+        )
+        .order_by(Invitation.created_at.desc())
+        .limit(100)
+    )
+    return [_platform_invitation_read(invitation) for invitation in invitations.all()]
+
+
+@platform_agencies_router.post(
+    "/{agency_id}/invitations",
+    response_model=PlatformInvitationRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def invite_agency_user_by_platform(
+    agency_id: uuid.UUID,
+    body: PlatformMemberInviteRequest,
+    request: Request,
+    admin: User = Depends(get_platform_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> PlatformInvitationRead:
+    invitation = await PlatformProvisioningService(db).invite_agency_member(
+        agency_id,
+        body,
+        admin=admin,
+        ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    return _platform_invitation_read(invitation)
+
+
+@platform_agencies_router.post(
+    "/{agency_id}/members/attach",
+    response_model=PlatformAgencyMemberRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def attach_agency_user_by_platform(
+    agency_id: uuid.UUID,
+    body: PlatformMemberAttachRequest,
+    request: Request,
+    admin: User = Depends(get_platform_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> PlatformAgencyMemberRead:
+    member = await PlatformProvisioningService(db).attach_agency_member(
+        agency_id,
+        body,
+        admin=admin,
+        ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    user = await db.get(User, member.user_id)
+    return PlatformAgencyMemberRead(
+        id=member.id,
+        user_id=member.user_id,
+        user_email=user.email if user else None,
+        user_full_name=user.full_name if user else None,
+        role=member.role,
+        status=member.status,
+        joined_at=member.joined_at,
+        created_at=member.created_at,
+    )
+
+
+@platform_agencies_router.post(
+    "/{agency_id}/invitations/{invitation_id}/resend",
+    response_model=PlatformInvitationRead,
+)
+async def resend_agency_invitation_by_platform(
+    agency_id: uuid.UUID,
+    invitation_id: uuid.UUID,
+    request: Request,
+    admin: User = Depends(get_platform_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> PlatformInvitationRead:
+    service = PlatformProvisioningService(db)
+    invitation = await service.scoped_invitation(invitation_id, agency_id=agency_id, lock=True)
+    invitation = await service.resend_invitation(
+        invitation,
+        admin=admin,
+        ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    return _platform_invitation_read(invitation)
+
+
+@platform_agencies_router.post(
+    "/{agency_id}/invitations/{invitation_id}/revoke",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def revoke_agency_invitation_by_platform(
+    agency_id: uuid.UUID,
+    invitation_id: uuid.UUID,
+    request: Request,
+    admin: User = Depends(get_platform_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    service = PlatformProvisioningService(db)
+    invitation = await service.scoped_invitation(invitation_id, agency_id=agency_id, lock=True)
+    await service.revoke_invitation(
+        invitation,
+        admin=admin,
+        ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )

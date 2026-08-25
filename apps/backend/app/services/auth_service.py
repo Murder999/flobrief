@@ -128,6 +128,23 @@ class AuthService:
             raise _INVALID_CREDENTIALS
 
         await ensure_demo_user_access(self.db, user.id)
+        access_token, refresh_plaintext = await self.create_session(
+            user,
+            ip=ip,
+            user_agent=user_agent,
+        )
+        await self.db.commit()
+
+        return user, access_token, refresh_plaintext
+
+    async def create_session(
+        self,
+        user: User,
+        *,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[str, str]:
+        """Stage a tenant login session without committing the surrounding transaction."""
         expire_minutes = get_access_token_expire_minutes(user.user_type)
         access_token = create_access_token(
             subject=str(user.id),
@@ -148,9 +165,8 @@ class AuthService:
 
         user.last_login_at = datetime.now(UTC)
         self.db.add(user)
-        await self.db.commit()
-
-        return user, access_token, refresh_plaintext
+        await self.db.flush()
+        return access_token, refresh_plaintext
 
     async def platform_admin_login(
         self,

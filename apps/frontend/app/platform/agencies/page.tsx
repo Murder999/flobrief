@@ -6,6 +6,7 @@ import {
   ApiError,
   platformApi,
   type PlatformAgencyRead,
+  type PlatformAgencyMemberRead,
   type PlatformAgencyDetail,
   type PlatformBrandRead,
   type PlatformBrandMemberRead,
@@ -14,6 +15,10 @@ import {
   type PlanRead,
 } from "@/lib/api-client";
 import { platformAuthStorage } from "@/lib/platform-auth";
+import { useLocale } from "@/context/locale-context";
+import { ConfirmActionModal, type ConfirmActionDetails } from "@/components/platform/ConfirmActionModal";
+import { MembershipRecoveryPanel } from "@/components/platform/MembershipRecoveryPanel";
+import { AgencyProvisioningModal, BrandProvisioningModal } from "@/components/platform/ProvisioningModals";
 
 // ── Role / permission matrix (mirrors app/core/rbac.py agency role sets) ───────
 
@@ -50,6 +55,8 @@ const ROLE_PERMISSIONS: Record<string, Set<string>> = {
   social_media_manager: new Set(["brief_view", "brief_create", "calendar_manage", "reporting_view"]),
   viewer: new Set(["brief_view"]),
 };
+
+const BRAND_ROLES = ["brand_owner", "brand_manager", "brand_viewer", "external_approver"];
 
 function PermissionMatrix() {
   const roles = Object.keys(ROLE_LABELS);
@@ -124,8 +131,9 @@ interface AgencyDrawerProps {
 }
 
 function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
+  const { t } = useLocale();
   const [detail, setDetail] = useState<PlatformAgencyDetail | null>(null);
-  const [members, setMembers] = useState<{ id: string; user_id: string; user_email: string; user_full_name: string; role: string; status: string; joined_at: string | null; created_at: string }[]>([]);
+  const [members, setMembers] = useState<PlatformAgencyMemberRead[]>([]);
   const [brands, setBrands] = useState<PlatformBrandRead[]>([]);
   const [branding, setBranding] = useState<AgencyBrandingRead | null>(null);
   const [domain, setDomain] = useState<CustomDomainRead | null>(null);
@@ -140,6 +148,12 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
   const [tab, setTab] = useState<"genel" | "white_label" | "uyeler" | "plan" | "markalar" | "audit">("genel");
   const [memberSaving, setMemberSaving] = useState<string | null>(null);
   const [planSaving, setPlanSaving] = useState(false);
+  const [showBrandProvisioning, setShowBrandProvisioning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    details: ConfirmActionDetails;
+    run: () => Promise<void>;
+    destructive?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const token = platformAuthStorage.getToken();
@@ -263,7 +277,7 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/50" onClick={onClose} />
-      <div className="w-[520px] bg-surface border-l border-border flex flex-col overflow-hidden shadow-2xl">
+      <div className="w-full sm:max-w-[520px] bg-surface border-l border-border flex flex-col overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
             <p className="text-xs text-text-muted mb-0.5">Ajans</p>
@@ -391,7 +405,11 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
                       className="w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-placeholder focus:outline-none focus:border-danger resize-none mb-2"
                     />
                     <button
-                      onClick={handleSuspend}
+                      onClick={() => setPendingAction({
+                        details: { action: t("platform.confirm.suspend"), agency: agency.name },
+                        run: handleSuspend,
+                        destructive: true,
+                      })}
                       disabled={!suspendReason.trim() || saving}
                       className="w-full py-2 status-danger hover:bg-danger/20 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
                     >
@@ -400,7 +418,10 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
                   </div>
                 ) : agency.status === "suspended" ? (
                   <button
-                    onClick={handleReactivate}
+                    onClick={() => setPendingAction({
+                      details: { action: t("platform.confirm.reactivate"), agency: agency.name },
+                      run: handleReactivate,
+                    })}
                     disabled={saving}
                     className="w-full py-2 status-success hover:bg-success/20 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
                   >
@@ -430,7 +451,14 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
                             <select
                               value={m.role}
                               disabled={memberSaving === m.id}
-                              onChange={(e) => handleMemberRoleChange(m.id, e.target.value)}
+                              onChange={(e) => {
+                                const role = e.target.value;
+                                e.target.value = m.role;
+                                setPendingAction({
+                                  details: { action: t("platform.confirm.changeRole"), agency: agency.name, user: m.user_email ?? undefined, role },
+                                  run: () => handleMemberRoleChange(m.id, role),
+                                });
+                              }}
                               className="bg-surface border border-border rounded-lg px-2 py-1.5 text-xs text-text-secondary focus:outline-none focus:border-accent disabled:opacity-50"
                             >
                               {Object.entries(ROLE_LABELS).map(([v, label]) => (
@@ -440,7 +468,10 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
                             {m.status === "suspended" ? (
                               <button
                                 disabled={memberSaving === m.id}
-                                onClick={() => handleMemberStatusChange(m.id, "active")}
+                                onClick={() => setPendingAction({
+                                  details: { action: t("platform.confirm.changeStatus"), agency: agency.name, user: m.user_email ?? undefined, role: "active" },
+                                  run: () => handleMemberStatusChange(m.id, "active"),
+                                })}
                                 className="text-xs px-2 py-1.5 rounded-lg status-success disabled:opacity-50"
                               >
                                 Aktive Et
@@ -448,7 +479,11 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
                             ) : (
                               <button
                                 disabled={memberSaving === m.id}
-                                onClick={() => handleMemberStatusChange(m.id, "suspended")}
+                                onClick={() => setPendingAction({
+                                  details: { action: t("platform.confirm.changeStatus"), agency: agency.name, user: m.user_email ?? undefined, role: "suspended" },
+                                  run: () => handleMemberStatusChange(m.id, "suspended"),
+                                  destructive: true,
+                                })}
                                 className="text-xs px-2 py-1.5 rounded-lg status-danger disabled:opacity-50"
                               >
                                 Askıya Al
@@ -460,6 +495,14 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
                     ))}
                   </div>
                 )}
+
+                <MembershipRecoveryPanel
+                  onMemberAdded={(member) => {
+                    setMembers((items) => [...items, member as PlatformAgencyMemberRead]);
+                    onUpdated({ ...agency, member_count: agency.member_count + 1 });
+                  }}
+                  target={{ type: "agency", id: agency.id, agencyName: agency.name }}
+                />
 
                 <div>
                   <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
@@ -604,6 +647,13 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
 
             {tab === "markalar" && (
               <div className="px-6 py-5">
+                <button
+                  className="mb-4 w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover"
+                  onClick={() => setShowBrandProvisioning(true)}
+                  type="button"
+                >
+                  {t("platform.provision.newBrand")}
+                </button>
                 {brands.length === 0 ? (
                   <p className="text-sm text-text-muted opacity-60 text-center py-8">Marka bulunamadı.</p>
                 ) : (
@@ -629,6 +679,28 @@ function AgencyDrawer({ agency, onClose, onUpdated }: AgencyDrawerProps) {
           </div>
         )}
       </div>
+      <ConfirmActionModal
+        destructive={pendingAction?.destructive}
+        details={pendingAction?.details ?? { action: "" }}
+        loading={saving || memberSaving !== null}
+        onClose={() => setPendingAction(null)}
+        onConfirm={() => {
+          if (!pendingAction) return;
+          void pendingAction.run().finally(() => setPendingAction(null));
+        }}
+        open={Boolean(pendingAction)}
+      />
+      {showBrandProvisioning && (
+        <BrandProvisioningModal
+          agencies={[agency]}
+          onClose={() => setShowBrandProvisioning(false)}
+          onCreated={({ brand }) => {
+            setBrands((items) => [brand, ...items]);
+            onUpdated({ ...agency, brand_count: agency.brand_count + 1 });
+            setShowBrandProvisioning(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -642,12 +714,19 @@ interface BrandDrawerProps {
 }
 
 function BrandDrawer({ brand, onClose, onUpdated }: BrandDrawerProps) {
+  const { t } = useLocale();
   const [members, setMembers] = useState<PlatformBrandMemberRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [editName, setEditName] = useState(brand.name);
   const [editStatus, setEditStatus] = useState(brand.status);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+  const [memberSaving, setMemberSaving] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    details: ConfirmActionDetails;
+    run: () => Promise<void>;
+    destructive?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const token = platformAuthStorage.getToken();
@@ -675,10 +754,25 @@ function BrandDrawer({ brand, onClose, onUpdated }: BrandDrawerProps) {
     }
   }
 
+  async function handleMemberUpdate(memberId: string, change: { role?: string; status?: string }) {
+    const token = platformAuthStorage.getToken();
+    if (!token) return;
+    setMemberSaving(memberId);
+    try {
+      const updated = await platformApi.updateBrandMember(brand.id, memberId, change, token);
+      setMembers((items) => items.map((member) => member.id === memberId ? updated : member));
+      showToast("ok", change.role ? "Rol güncellendi." : "Durum güncellendi.");
+    } catch (err) {
+      showToast("err", err instanceof ApiError ? err.message : "Üye güncellenemedi.");
+    } finally {
+      setMemberSaving(null);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/50" onClick={onClose} />
-      <div className="w-[480px] bg-surface border-l border-border flex flex-col overflow-hidden shadow-2xl">
+      <div className="w-full sm:max-w-[520px] bg-surface border-l border-border flex flex-col overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div>
             <p className="text-xs text-text-muted mb-0.5">Marka</p>
@@ -749,7 +843,11 @@ function BrandDrawer({ brand, onClose, onUpdated }: BrandDrawerProps) {
                 <option value="suspended">Askıya Alındı</option>
               </select>
               <button
-                onClick={handleSave}
+                onClick={() => setPendingAction({
+                  details: { action: t("platform.confirm.changeStatus"), agency: brand.agency_name ?? undefined, brand: brand.name, role: editStatus },
+                  run: handleSave,
+                  destructive: editStatus !== "active",
+                })}
                 disabled={saving || (editName === brand.name && editStatus === brand.status)}
                 className="w-full py-2 bg-accent hover:bg-accent-hover disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
               >
@@ -769,23 +867,71 @@ function BrandDrawer({ brand, onClose, onUpdated }: BrandDrawerProps) {
               <div className="space-y-2">
                 {members.map((m) => (
                   <div key={m.id} className="bg-surface-2 border border-border rounded-xl px-4 py-3">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
                         <p className="text-sm font-medium text-text">{m.user_full_name}</p>
-                        <p className="text-xs text-text-muted">{m.user_email}</p>
+                        <p className="truncate text-xs text-text-muted">{m.user_email}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-warning font-medium">{m.role}</p>
-                        <StatusBadge status={m.status} />
+                      <div className="flex items-center gap-2">
+                        <select
+                          className="rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-text-secondary"
+                          disabled={memberSaving === m.id}
+                          onChange={(event) => {
+                            const role = event.target.value;
+                            event.target.value = m.role;
+                            setPendingAction({
+                              details: { action: t("platform.confirm.changeRole"), agency: brand.agency_name ?? undefined, brand: brand.name, user: m.user_email ?? undefined, role },
+                              run: () => handleMemberUpdate(m.id, { role }),
+                            });
+                          }}
+                          value={m.role}
+                        >
+                          {BRAND_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+                        </select>
+                        <button
+                          className={`rounded-lg px-2 py-1.5 text-xs font-medium ${m.status === "active" ? "status-danger" : "status-success"}`}
+                          disabled={memberSaving === m.id}
+                          onClick={() => {
+                            const status = m.status === "active" ? "suspended" : "active";
+                            setPendingAction({
+                              details: { action: t("platform.confirm.changeStatus"), agency: brand.agency_name ?? undefined, brand: brand.name, user: m.user_email ?? undefined, role: status },
+                              run: () => handleMemberUpdate(m.id, { status }),
+                              destructive: status === "suspended",
+                            });
+                          }}
+                          type="button"
+                        >
+                          {m.status === "active" ? "Askıya Al" : "Aktive Et"}
+                        </button>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+            <div className="mt-5">
+              <MembershipRecoveryPanel
+                onMemberAdded={(member) => {
+                  setMembers((items) => [...items, member as PlatformBrandMemberRead]);
+                  onUpdated({ ...brand, member_count: brand.member_count + 1 });
+                }}
+                target={{ type: "brand", id: brand.id, agencyName: brand.agency_name ?? undefined, brandName: brand.name }}
+              />
+            </div>
           </div>
         </div>
       </div>
+      <ConfirmActionModal
+        destructive={pendingAction?.destructive}
+        details={pendingAction?.details ?? { action: "" }}
+        loading={saving || memberSaving !== null}
+        onClose={() => setPendingAction(null)}
+        onConfirm={() => {
+          if (!pendingAction) return;
+          void pendingAction.run().finally(() => setPendingAction(null));
+        }}
+        open={Boolean(pendingAction)}
+      />
     </div>
   );
 }
@@ -794,6 +940,7 @@ function BrandDrawer({ brand, onClose, onUpdated }: BrandDrawerProps) {
 
 export default function PlatformAgenciesPage() {
   const router = useRouter();
+  const { t } = useLocale();
 
   // Tab
   const [activeTab, setActiveTab] = useState<"ajanslar" | "markalar">("ajanslar");
@@ -804,6 +951,7 @@ export default function PlatformAgenciesPage() {
   const [agencyError, setAgencyError] = useState<string | null>(null);
   const [agencyStatusFilter, setAgencyStatusFilter] = useState("");
   const [selectedAgency, setSelectedAgency] = useState<PlatformAgencyRead | null>(null);
+  const [showAgencyProvisioning, setShowAgencyProvisioning] = useState(false);
 
   // Brand state
   const [brands, setBrands] = useState<PlatformBrandRead[]>([]);
@@ -813,6 +961,7 @@ export default function PlatformAgenciesPage() {
   const [brandSearchInput, setBrandSearchInput] = useState("");
   const [brandStatusFilter, setBrandStatusFilter] = useState("");
   const [selectedBrand, setSelectedBrand] = useState<PlatformBrandRead | null>(null);
+  const [showBrandProvisioning, setShowBrandProvisioning] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function loadAgencies(filter?: string) {
@@ -856,23 +1005,35 @@ export default function PlatformAgenciesPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="mb-8">
-        <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-0.5">Platform Yönetimi</p>
-        <h1 className="text-2xl font-bold text-text">Ajanslar & Markalar</h1>
-        <p className="text-sm text-text-muted mt-1">Platformdaki tüm ajans ve markaları yönetin.</p>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-0.5">Platform Yönetimi</p>
+          <h1 className="text-2xl font-bold text-text">Ajanslar & Markalar</h1>
+          <p className="text-sm text-text-muted mt-1">Platformdaki tüm ajans ve markaları yönetin.</p>
+        </div>
+        <button
+          className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover sm:w-auto"
+          data-testid="new-tenant-button"
+          onClick={() => activeTab === "ajanslar" ? setShowAgencyProvisioning(true) : setShowBrandProvisioning(true)}
+          type="button"
+        >
+          {activeTab === "ajanslar" ? t("platform.provision.newAgency") : t("platform.provision.newBrand")}
+        </button>
       </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-6 bg-surface-2 border border-border rounded-xl p-1 w-fit">
         <button
+          data-testid="platform-tab-agencies"
           onClick={() => setActiveTab("ajanslar")}
           className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "ajanslar" ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"}`}
         >
           Ajanslar {!agencyLoading && `(${agencies.length})`}
         </button>
         <button
+          data-testid="platform-tab-brands"
           onClick={() => setActiveTab("markalar")}
           className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "markalar" ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"}`}
         >
@@ -883,7 +1044,7 @@ export default function PlatformAgenciesPage() {
       {/* Ajanslar tab */}
       {activeTab === "ajanslar" && (
         <>
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex flex-wrap items-center gap-3 mb-5">
             <select
               value={agencyStatusFilter}
               onChange={(e) => setAgencyStatusFilter(e.target.value)}
@@ -900,8 +1061,8 @@ export default function PlatformAgenciesPage() {
             <div className="mb-5 status-danger rounded-xl p-4 text-sm">{agencyError}</div>
           )}
 
-          <div className="bg-surface border border-border rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-surface border border-border rounded-xl overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-2">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Ajans</th>
@@ -951,8 +1112,8 @@ export default function PlatformAgenciesPage() {
       {/* Markalar tab */}
       {activeTab === "markalar" && (
         <>
-          <div className="flex items-center gap-3 mb-5">
-            <div className="relative flex-1 max-w-xs">
+          <div className="flex flex-col gap-3 mb-5 sm:flex-row sm:items-center">
+            <div className="relative flex-1 sm:max-w-xs">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -979,8 +1140,8 @@ export default function PlatformAgenciesPage() {
             <div className="mb-5 status-danger rounded-xl p-4 text-sm">{brandError}</div>
           )}
 
-          <div className="bg-surface border border-border rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-surface border border-border rounded-xl overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-2">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Marka</th>
@@ -1045,6 +1206,27 @@ export default function PlatformAgenciesPage() {
           onUpdated={(updated) => {
             setBrands((prev) => prev.map((b) => (b.id === updated.id ? { ...b, ...updated } : b)));
             setSelectedBrand((prev) => prev ? { ...prev, ...updated } : prev);
+          }}
+        />
+      )}
+      {showAgencyProvisioning && (
+        <AgencyProvisioningModal
+          onClose={() => setShowAgencyProvisioning(false)}
+          onCreated={({ agency }) => {
+            setAgencies((items) => [agency, ...items]);
+            setShowAgencyProvisioning(false);
+            setSelectedAgency(agency);
+          }}
+        />
+      )}
+      {showBrandProvisioning && (
+        <BrandProvisioningModal
+          agencies={agencies.filter((agency) => agency.status === "active")}
+          onClose={() => setShowBrandProvisioning(false)}
+          onCreated={({ brand }) => {
+            setBrands((items) => [brand, ...items]);
+            setShowBrandProvisioning(false);
+            setSelectedBrand(brand);
           }}
         />
       )}

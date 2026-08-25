@@ -2,25 +2,31 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.auth import set_refresh_cookie
 from app.core.auth_dependencies import (
     WorkspaceContext,
     get_workspace_context,
     require_verified,
 )
+from app.core.rate_limiter import get_client_ip, rate_limit_invitation_signup
 from app.db.session import get_db
 from app.models.user import User
 from app.repositories.agency import AgencyRepository
 from app.repositories.brand import BrandRepository
+from app.repositories.user import UserRepository
 from app.schemas.invitation import (
     AgencyInviteRequest,
     BrandInviteRequest,
     InvitationPreview,
     InvitationRead,
+    InvitationSignupRequest,
+    InvitationSignupResponse,
 )
 from app.services.invitation_service import InvitationService
+from app.services.token_service import get_access_token_expire_minutes
 
 invitation_router = APIRouter(prefix="/invitations", tags=["invitations"])
 
@@ -80,17 +86,51 @@ async def preview_invitation(
         brand = await brand_repo.get_by_id(invitation.brand_id)
         brand_name = brand.name if brand else None
 
+    existing_user = (
+        await UserRepository(db).get_by_email(invitation.email) if invitation.is_pending else None
+    )
     return InvitationPreview(
-        id=invitation.id,
-        agency_id=invitation.agency_id,
         agency_name=agency_name,
-        brand_id=invitation.brand_id,
         brand_name=brand_name,
         invitation_type=invitation.invitation_type,
         email=invitation.email,
         role=invitation.role,
         expires_at=invitation.expires_at,
-        is_pending=invitation.is_pending,
+        state=svc.invitation_state(invitation),
+        account_exists=existing_user is not None if invitation.is_pending else None,
+        account_type_compatible=(
+            existing_user.user_type == svc.expected_user_type(invitation)
+            if existing_user is not None
+            else None
+        ),
+    )
+
+
+@invitation_router.post(
+    "/signup/{token}",
+    response_model=InvitationSignupResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def signup_and_accept_invitation(
+    token: str,
+    data: InvitationSignupRequest,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit_invitation_signup),
+) -> InvitationSignupResponse:
+    svc = InvitationService(db)
+    user, access_token, refresh_token, redirect_to = await svc.signup_and_accept(
+        token,
+        data,
+        ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    set_refresh_cookie(response, refresh_token, user.user_type)
+    return InvitationSignupResponse(
+        access_token=access_token,
+        expires_in=get_access_token_expire_minutes(user.user_type) * 60,
+        redirect_to=redirect_to,
     )
 
 

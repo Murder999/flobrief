@@ -67,7 +67,7 @@ _REFRESH_COOKIE = "refresh_token"
 _REFRESH_COOKIE_PATH = "/api/v1/auth"
 
 
-def _set_refresh_cookie(
+def set_refresh_cookie(
     response: Response,
     token: str,
     user_type: str,
@@ -125,7 +125,7 @@ async def login(
         user_agent=request.headers.get("user-agent"),
     )
     await reset_login_rate_limit(request, data.email)
-    _set_refresh_cookie(response, refresh_token, user.user_type)
+    set_refresh_cookie(response, refresh_token, user.user_type)
     return TokenResponse(
         access_token=access_token,
         expires_in=get_access_token_expire_minutes(user.user_type) * 60,
@@ -151,7 +151,7 @@ async def refresh_tokens(
         ip=get_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )
-    _set_refresh_cookie(response, new_refresh, user_type, refresh_expires_at)
+    set_refresh_cookie(response, new_refresh, user_type, refresh_expires_at)
     return RefreshResponse(
         access_token=new_access,
         expires_in=expires_in,

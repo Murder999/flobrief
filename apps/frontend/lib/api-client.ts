@@ -526,17 +526,31 @@ export interface BriefParticipantUpdate {
 }
 
 export interface InvitationPreview {
-  id: string;
-  agency_id: string;
   agency_name: string;
-  brand_id: string | null;
   brand_name: string | null;
-  invitation_type: string;
+  invitation_type: "agency" | "brand";
   email: string;
   role: string;
   expires_at: string;
-  is_pending: boolean;
-  message?: string | null;
+  state: "pending" | "accepted" | "expired" | "revoked" | "declined";
+  account_exists: boolean | null;
+  account_type_compatible: boolean | null;
+}
+
+export interface InvitationSignupRequest {
+  full_name: string;
+  password: string;
+  password_confirmation: string;
+  phone_number?: string | null;
+  whatsapp_opt_in?: boolean;
+  locale: "en" | "tr";
+}
+
+export interface InvitationSignupResponse {
+  access_token: string;
+  token_type: "bearer";
+  expires_in: number;
+  redirect_to: "/dashboard" | "/brand/dashboard";
 }
 
 export interface WorkspaceAgencyItem {
@@ -705,6 +719,12 @@ export const invitationApi = {
 
   getPreview: (token: string) =>
     request<InvitationPreview>(`/api/v1/invitations/preview/${token}`),
+
+  signup: (token: string, data: InvitationSignupRequest) =>
+    request<InvitationSignupResponse>(`/api/v1/invitations/signup/${token}`, {
+      method: "POST",
+      body: data,
+    }),
 
   accept: (token: string, accessToken: string) =>
     request<void>(
@@ -2873,6 +2893,40 @@ export interface PlatformAgencyDetail extends PlatformAgencyRead {
   monthly_price_cents: number | null;
 }
 
+export interface PlatformAgencyMemberRead {
+  id: string;
+  user_id: string;
+  user_email: string | null;
+  user_full_name: string | null;
+  role: string;
+  status: string;
+  joined_at: string | null;
+  created_at: string;
+}
+
+export interface PlatformInvitationRead {
+  id: string;
+  invitation_type: "agency" | "brand";
+  email: string;
+  role: string;
+  state: "pending" | "accepted" | "expired" | "revoked" | "declined";
+  expires_at: string;
+  resent_count: number;
+  created_at: string;
+}
+
+export interface PlatformAgencyCreateResponse {
+  agency: PlatformAgencyRead;
+  owner_action: "invited" | "attached" | "none";
+  owner_email: string | null;
+}
+
+export interface PlatformBrandCreateResponse {
+  brand: PlatformBrandRead;
+  contact_action: "invited" | "attached" | "none";
+  contact_email: string | null;
+}
+
 export interface PlatformUserRead {
   id: string;
   email: string;
@@ -3186,6 +3240,23 @@ export const platformApi = {
   getAgency: (agencyId: string, accessToken: string) =>
     request<PlatformAgencyDetail>(`/api/v1/platform/agencies/${agencyId}`, {}, accessToken),
 
+  createAgency: (
+    data: {
+      name: string;
+      status: "active" | "suspended";
+      plan_id: string;
+      locale: "en" | "tr";
+      owner_mode: "invite" | "attach" | "none";
+      owner_email?: string | null;
+      confirm_existing_user?: boolean;
+    },
+    accessToken: string
+  ) => request<PlatformAgencyCreateResponse>(
+    "/api/v1/platform/agencies",
+    { method: "POST", body: data },
+    accessToken
+  ),
+
   suspendAgency: (agencyId: string, reason: string, accessToken: string) =>
     request<void>(`/api/v1/platform/agencies/${agencyId}/suspend`, {
       method: "POST",
@@ -3281,8 +3352,47 @@ export const platformApi = {
     request<PlatformAgencyRead>(`/api/v1/platform/agencies/${agencyId}`, { method: "PATCH", body: data }, accessToken),
 
   getAgencyMembers: (agencyId: string, accessToken: string) =>
-    request<{ id: string; user_id: string; user_email: string; user_full_name: string; role: string; status: string; joined_at: string | null; created_at: string }[]>(
+    request<PlatformAgencyMemberRead[]>(
       `/api/v1/platform/agencies/${agencyId}/members`, {}, accessToken
+    ),
+
+  listAgencyInvitations: (agencyId: string, accessToken: string) =>
+    request<PlatformInvitationRead[]>(
+      `/api/v1/platform/agencies/${agencyId}/invitations`, {}, accessToken
+    ),
+
+  inviteAgencyMemberByPlatform: (
+    agencyId: string,
+    data: { email: string; role: string; locale: "en" | "tr" },
+    accessToken: string
+  ) => request<PlatformInvitationRead>(
+    `/api/v1/platform/agencies/${agencyId}/invitations`,
+    { method: "POST", body: data },
+    accessToken
+  ),
+
+  attachAgencyMemberByPlatform: (
+    agencyId: string,
+    data: { email: string; role: string; confirm_existing_user: true },
+    accessToken: string
+  ) => request<PlatformAgencyMemberRead>(
+    `/api/v1/platform/agencies/${agencyId}/members/attach`,
+    { method: "POST", body: data },
+    accessToken
+  ),
+
+  resendAgencyInvitation: (agencyId: string, invitationId: string, accessToken: string) =>
+    request<PlatformInvitationRead>(
+      `/api/v1/platform/agencies/${agencyId}/invitations/${invitationId}/resend`,
+      { method: "POST" },
+      accessToken
+    ),
+
+  revokeAgencyInvitation: (agencyId: string, invitationId: string, accessToken: string) =>
+    request<void>(
+      `/api/v1/platform/agencies/${agencyId}/invitations/${invitationId}/revoke`,
+      { method: "POST" },
+      accessToken
     ),
 
   getAgencyBrands: (agencyId: string, accessToken: string) =>
@@ -3337,11 +3447,79 @@ export const platformApi = {
   getBrand: (brandId: string, accessToken: string) =>
     request<PlatformBrandRead>(`/api/v1/platform/brands/${brandId}`, {}, accessToken),
 
+  createBrandPlatform: (
+    data: {
+      agency_id: string;
+      name: string;
+      status: "active" | "suspended" | "archived";
+      default_language: "en" | "tr";
+      contact_mode: "invite" | "attach" | "none";
+      contact_email?: string | null;
+      contact_role: string;
+      confirm_existing_user?: boolean;
+    },
+    accessToken: string
+  ) => request<PlatformBrandCreateResponse>(
+    "/api/v1/platform/brands",
+    { method: "POST", body: data },
+    accessToken
+  ),
+
   updateBrandPlatform: (brandId: string, data: { name?: string; status?: string }, accessToken: string) =>
     request<PlatformBrandRead>(`/api/v1/platform/brands/${brandId}`, { method: "PATCH", body: data }, accessToken),
 
   getBrandMembers: (brandId: string, accessToken: string) =>
     request<PlatformBrandMemberRead[]>(`/api/v1/platform/brands/${brandId}/members`, {}, accessToken),
+
+  updateBrandMember: (
+    brandId: string,
+    memberId: string,
+    data: { role?: string; status?: string },
+    accessToken: string
+  ) => request<PlatformBrandMemberRead>(
+    `/api/v1/platform/brands/${brandId}/members/${memberId}`,
+    { method: "PATCH", body: data },
+    accessToken
+  ),
+
+  listBrandInvitations: (brandId: string, accessToken: string) =>
+    request<PlatformInvitationRead[]>(
+      `/api/v1/platform/brands/${brandId}/invitations`, {}, accessToken
+    ),
+
+  inviteBrandMemberByPlatform: (
+    brandId: string,
+    data: { email: string; role: string; locale: "en" | "tr" },
+    accessToken: string
+  ) => request<PlatformInvitationRead>(
+    `/api/v1/platform/brands/${brandId}/invitations`,
+    { method: "POST", body: data },
+    accessToken
+  ),
+
+  attachBrandMemberByPlatform: (
+    brandId: string,
+    data: { email: string; role: string; confirm_existing_user: true },
+    accessToken: string
+  ) => request<PlatformBrandMemberRead>(
+    `/api/v1/platform/brands/${brandId}/members/attach`,
+    { method: "POST", body: data },
+    accessToken
+  ),
+
+  resendBrandInvitation: (brandId: string, invitationId: string, accessToken: string) =>
+    request<PlatformInvitationRead>(
+      `/api/v1/platform/brands/${brandId}/invitations/${invitationId}/resend`,
+      { method: "POST" },
+      accessToken
+    ),
+
+  revokeBrandInvitation: (brandId: string, invitationId: string, accessToken: string) =>
+    request<void>(
+      `/api/v1/platform/brands/${brandId}/invitations/${invitationId}/revoke`,
+      { method: "POST" },
+      accessToken
+    ),
 
   getBrandBriefs: (brandId: string, accessToken: string) =>
     request<Record<string, unknown>[]>(`/api/v1/platform/brands/${brandId}/briefs`, {}, accessToken),

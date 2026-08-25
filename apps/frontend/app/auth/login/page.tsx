@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useAuth } from "@/hooks/useAuth";
-import { getRedirectAfterLogin } from "@/lib/auth";
+import { getRedirectAfterLogin, isSafeReturnTo } from "@/lib/auth";
 
 function LoginPopupRoute() {
   const router = useRouter();
@@ -15,8 +15,13 @@ function LoginPopupRoute() {
 
   useEffect(() => {
     if (!isInitialized || isLoading || !user) return;
-    router.replace(getRedirectAfterLogin(user.user_type));
-  }, [isInitialized, isLoading, router, user]);
+    const returnTo = searchParams.get("redirect");
+    router.replace(
+      returnTo && isSafeReturnTo(returnTo)
+        ? returnTo
+        : getRedirectAfterLogin(user.user_type)
+    );
+  }, [isInitialized, isLoading, router, searchParams, user]);
 
   function closeLogin() {
     setOpen(false);

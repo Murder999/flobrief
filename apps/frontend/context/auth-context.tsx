@@ -25,6 +25,7 @@ interface AuthContextValue extends AuthState {
   login: (data: LoginRequest, returnTo?: string) => Promise<void>;
   register: (data: RegisterRequest) => Promise<AuthUser>;
   logout: () => Promise<void>;
+  logoutTo: (returnTo: string) => Promise<void>;
   refreshSession: () => Promise<boolean>;
   refreshUser: () => Promise<void>;
 }
@@ -134,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [applyUserLocale, state.accessToken]);
 
-  const logout = useCallback(async (): Promise<void> => {
+  const logoutTo = useCallback(async (returnTo?: string): Promise<void> => {
     try {
       await authApi.logout();
     } catch {
@@ -146,9 +147,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         isInitialized: true,
       });
-      router.push("/auth/login");
+      const destination =
+        returnTo && isSafeReturnTo(returnTo)
+          ? `/auth/login?redirect=${encodeURIComponent(returnTo)}`
+          : "/auth/login";
+      router.push(destination);
     }
   }, [router]);
+
+  const logout = useCallback(async (): Promise<void> => {
+    await logoutTo();
+  }, [logoutTo]);
 
   return (
     <AuthContext.Provider
@@ -157,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        logoutTo,
         refreshSession,
         refreshUser,
       }}

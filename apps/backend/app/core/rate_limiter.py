@@ -189,6 +189,22 @@ async def rate_limit_password_reset(request: Request, data: PasswordResetRequest
     )
 
 
+async def rate_limit_invitation_signup(request: Request, token: str) -> None:
+    """Limit public invite onboarding without placing plaintext tokens in Redis keys."""
+    ip = get_client_ip(request)
+    token_digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    await _enforce(
+        key=f"ratelimit:invite-signup:ip:{ip}",
+        max_attempts=settings.AUTH_RATE_LIMIT_ATTEMPTS,
+        window_seconds=settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+    await _enforce(
+        key=f"ratelimit:invite-signup:token:{token_digest}",
+        max_attempts=settings.AUTH_RATE_LIMIT_ATTEMPTS,
+        window_seconds=settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+
+
 # ── Mention candidate search ─────────────────────────────────────────────────
 # Fails open like login/password-reset: this is an authenticated, read-only,
 # tenant-scoped lookup (not a credential surface), so a Redis blip must not

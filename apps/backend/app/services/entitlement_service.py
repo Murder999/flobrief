@@ -94,34 +94,46 @@ class EntitlementService:
         )
         return result.scalar_one() or 0
 
-    async def _count_pending_agency_invites(self, agency_id: uuid.UUID) -> int:
+    async def _count_pending_agency_invites(
+        self,
+        agency_id: uuid.UUID,
+        *,
+        exclude_invitation_id: uuid.UUID | None = None,
+    ) -> int:
         now = func.now()
-        result = await self.db.execute(
-            select(func.count(Invitation.id)).where(
-                Invitation.agency_id == agency_id,
-                Invitation.invitation_type == "agency",
-                Invitation.accepted_at.is_(None),
-                Invitation.revoked_at.is_(None),
-                Invitation.rejected_at.is_(None),
-                Invitation.deleted_at.is_(None),
-                Invitation.expires_at > now,
-            )
+        stmt = select(func.count(Invitation.id)).where(
+            Invitation.agency_id == agency_id,
+            Invitation.invitation_type == "agency",
+            Invitation.accepted_at.is_(None),
+            Invitation.revoked_at.is_(None),
+            Invitation.rejected_at.is_(None),
+            Invitation.deleted_at.is_(None),
+            Invitation.expires_at > now,
         )
+        if exclude_invitation_id is not None:
+            stmt = stmt.where(Invitation.id != exclude_invitation_id)
+        result = await self.db.execute(stmt)
         return result.scalar_one() or 0
 
-    async def _count_pending_brand_invites(self, brand_id: uuid.UUID) -> int:
+    async def _count_pending_brand_invites(
+        self,
+        brand_id: uuid.UUID,
+        *,
+        exclude_invitation_id: uuid.UUID | None = None,
+    ) -> int:
         now = func.now()
-        result = await self.db.execute(
-            select(func.count(Invitation.id)).where(
-                Invitation.brand_id == brand_id,
-                Invitation.invitation_type == "brand",
-                Invitation.accepted_at.is_(None),
-                Invitation.revoked_at.is_(None),
-                Invitation.rejected_at.is_(None),
-                Invitation.deleted_at.is_(None),
-                Invitation.expires_at > now,
-            )
+        stmt = select(func.count(Invitation.id)).where(
+            Invitation.brand_id == brand_id,
+            Invitation.invitation_type == "brand",
+            Invitation.accepted_at.is_(None),
+            Invitation.revoked_at.is_(None),
+            Invitation.rejected_at.is_(None),
+            Invitation.deleted_at.is_(None),
+            Invitation.expires_at > now,
         )
+        if exclude_invitation_id is not None:
+            stmt = stmt.where(Invitation.id != exclude_invitation_id)
+        result = await self.db.execute(stmt)
         return result.scalar_one() or 0
 
     async def _resolve_limit(
@@ -155,7 +167,9 @@ class EntitlementService:
 
     # ── Limit checks ──────────────────────────────────────────────────────────
 
-    async def check_brand_limit(self, agency_id: uuid.UUID) -> None:
+    async def check_brand_limit(self, agency_id: uuid.UUID, *, lock: bool = False) -> None:
+        if lock:
+            await self._lock_agency(agency_id)
         plan = await self.get_plan(agency_id)
         if plan is None or plan.max_brands is None:
             return  # No plan or unlimited
@@ -167,7 +181,13 @@ class EntitlementService:
                 "Planınızı yükselterek daha fazla marka ekleyebilirsiniz.",
             )
 
-    async def check_user_limit(self, agency_id: uuid.UUID, *, lock: bool = False) -> None:
+    async def check_user_limit(
+        self,
+        agency_id: uuid.UUID,
+        *,
+        lock: bool = False,
+        exclude_invitation_id: uuid.UUID | None = None,
+    ) -> None:
         if lock:
             await self._lock_agency(agency_id)
         plan = await self.get_plan(agency_id)
@@ -178,7 +198,9 @@ class EntitlementService:
         if limit is None:
             return
         active = await self._count_active_members(agency_id)
-        pending = await self._count_pending_agency_invites(agency_id)
+        pending = await self._count_pending_agency_invites(
+            agency_id, exclude_invitation_id=exclude_invitation_id
+        )
         used = active + pending
         if used >= limit:
             raise HTTPException(
@@ -195,7 +217,12 @@ class EntitlementService:
             )
 
     async def check_brand_user_limit(
-        self, agency_id: uuid.UUID, brand_id: uuid.UUID, *, lock: bool = False
+        self,
+        agency_id: uuid.UUID,
+        brand_id: uuid.UUID,
+        *,
+        lock: bool = False,
+        exclude_invitation_id: uuid.UUID | None = None,
     ) -> None:
         if lock:
             await self._lock_brand(brand_id)
@@ -207,7 +234,9 @@ class EntitlementService:
         if limit is None:
             return
         active = await self._count_active_brand_members(brand_id)
-        pending = await self._count_pending_brand_invites(brand_id)
+        pending = await self._count_pending_brand_invites(
+            brand_id, exclude_invitation_id=exclude_invitation_id
+        )
         used = active + pending
         if used >= limit:
             raise HTTPException(

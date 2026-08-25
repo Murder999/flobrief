@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 # ── MFA ──────────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,30 @@ class PlatformAgencyRead(BaseModel):
     updated_at: datetime
 
 
+class PlatformAgencyCreateRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=255)
+    status: Literal["active", "suspended"] = "active"
+    plan_id: uuid.UUID
+    locale: Literal["en", "tr"] = "en"
+    owner_mode: Literal["invite", "attach", "none"] = "invite"
+    owner_email: EmailStr | None = None
+    confirm_existing_user: bool = False
+
+    @model_validator(mode="after")
+    def validate_owner_mode(self) -> PlatformAgencyCreateRequest:
+        if self.owner_mode != "none" and self.owner_email is None:
+            raise ValueError("Owner e-mail is required for invite or attach mode")
+        if self.owner_mode == "attach" and not self.confirm_existing_user:
+            raise ValueError("Attaching an existing user requires explicit confirmation")
+        return self
+
+
+class PlatformAgencyCreateResponse(BaseModel):
+    agency: PlatformAgencyRead
+    owner_action: Literal["invited", "attached", "none"]
+    owner_email: str | None
+
+
 class PlatformAgencyDetail(PlatformAgencyRead):
     subscription_status: str | None
     plan_name: str | None
@@ -102,6 +127,29 @@ class PlatformAgencyUsage(BaseModel):
 class PlatformAgencyMemberUpdate(BaseModel):
     role: str | None = None
     status: str | None = None
+
+
+class PlatformMemberInviteRequest(BaseModel):
+    email: EmailStr
+    role: str
+    locale: Literal["en", "tr"] = "en"
+
+
+class PlatformMemberAttachRequest(BaseModel):
+    email: EmailStr
+    role: str
+    confirm_existing_user: Literal[True]
+
+
+class PlatformInvitationRead(BaseModel):
+    id: uuid.UUID
+    invitation_type: Literal["agency", "brand"]
+    email: str
+    role: str
+    state: Literal["pending", "accepted", "expired", "revoked", "declined"]
+    expires_at: datetime
+    resent_count: int
+    created_at: datetime
 
 
 class PlatformAgencyPlanUpdate(BaseModel):
@@ -185,6 +233,36 @@ class PlatformBrandRead(BaseModel):
     updated_at: datetime
 
 
+class PlatformBrandCreateRequest(BaseModel):
+    agency_id: uuid.UUID
+    name: str = Field(min_length=2, max_length=255)
+    status: Literal["active", "suspended", "archived"] = "active"
+    default_language: Literal["en", "tr"] = "en"
+    contact_mode: Literal["invite", "attach", "none"] = "none"
+    contact_email: EmailStr | None = None
+    contact_role: Literal[
+        "brand_owner",
+        "brand_manager",
+        "brand_viewer",
+        "external_approver",
+    ] = "brand_owner"
+    confirm_existing_user: bool = False
+
+    @model_validator(mode="after")
+    def validate_contact_mode(self) -> PlatformBrandCreateRequest:
+        if self.contact_mode != "none" and self.contact_email is None:
+            raise ValueError("Contact e-mail is required for invite or attach mode")
+        if self.contact_mode == "attach" and not self.confirm_existing_user:
+            raise ValueError("Attaching an existing user requires explicit confirmation")
+        return self
+
+
+class PlatformBrandCreateResponse(BaseModel):
+    brand: PlatformBrandRead
+    contact_action: Literal["invited", "attached", "none"]
+    contact_email: str | None
+
+
 class PlatformBrandUpdate(BaseModel):
     name: str | None = None
     status: str | None = None
@@ -201,6 +279,11 @@ class PlatformBrandMemberRead(BaseModel):
     status: str
     joined_at: datetime | None
     created_at: datetime
+
+
+class PlatformBrandMemberUpdate(BaseModel):
+    role: str | None = None
+    status: str | None = None
 
 
 # ── Platform admin — subscriptions ───────────────────────────────────────────

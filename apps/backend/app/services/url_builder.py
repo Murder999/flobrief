@@ -62,7 +62,7 @@ class UrlBuilder:
 
     @staticmethod
     def invite_link(token: str) -> str:
-        return f"{_base()}/auth/accept-invite?token={quote(token, safe='')}"
+        return f"{_base()}/invite/{quote(token, safe='')}"
 
     @staticmethod
     def verification_link(token: str) -> str:
