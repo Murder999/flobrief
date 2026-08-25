@@ -33,7 +33,11 @@ export function MobileBottomNavigation({ items, onMoreClick, moreActive }: Mobil
       minBottom="0px"
       className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur-md border-t border-border"
     >
-      <nav className="flex items-stretch h-14" aria-label={t("dashboard.shell.bottomNavigation")}>
+      <nav
+        data-testid="mobile-bottom-navigation"
+        className="flex h-14 items-stretch"
+        aria-label={t("dashboard.shell.bottomNavigation")}
+      >
         {items.map((item) => {
           const active = isActive(pathname, item.href, item.exact);
           const IconComp = item.icon;

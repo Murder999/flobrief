@@ -33,7 +33,7 @@ def _required_env(name: str) -> str:
 
 
 RESEND_API_KEY = _required_env("RESEND_API_KEY")
-RESEND_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Flobrief")
+RESEND_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "PostPiloter")
 RESEND_FROM_EMAIL = os.getenv("EMAIL_FROM", "onboarding@resend.dev")
 RESEND_REPLY_TO = os.getenv("EMAIL_REPLY_TO", "")
 

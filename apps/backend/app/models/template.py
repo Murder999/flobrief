@@ -27,7 +27,7 @@ class WhatsAppTemplate(BaseModel):
 
     `code` is the template_key used by callers. A row's `status` gates whether it
     may be used for a real send — only `approved` templates with a `content_sid`
-    are usable. Event→template mapping (populating `event_type` for real Flobrief
+    are usable. Event→template mapping (populating `event_type` for real PostPiloter
     events beyond the seeded test template) is Part 6B scope; see docs/DECISIONS.md.
     """
 

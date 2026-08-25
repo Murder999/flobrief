@@ -119,7 +119,7 @@ test.describe("platform admin — white label", () => {
     await loginPlatformAdmin(page);
     await page.goto("/platform/whitealabel");
     await expect(page.getByRole("heading", { name: "White Label Yönetimi" })).toBeVisible();
-    await expect(page.locator('input[placeholder="Flobrief"]')).toHaveValue("E2E Flobrief Platform", {
+    await expect(page.locator('input[placeholder="PostPiloter"]')).toHaveValue("E2E Flobrief Platform", {
       timeout: 10_000,
     });
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * predev guard: refuses to start a second `next dev` for THIS Flobrief
+ * predev guard: refuses to start a second `next dev` for THIS PostPiloter
  * frontend if one is already running (any port), instead of only checking
  * whether the default port is busy — the real incident that motivated this
  * was a second instance sitting on a different port, invisible to a
@@ -62,7 +62,7 @@ function main() {
 
   console.error("");
   console.error("========================================================");
-  console.error(" Flobrief frontend dev sunucusu ZATEN ÇALIŞIYOR.");
+  console.error(" PostPiloter frontend dev sunucusu ZATEN ÇALIŞIYOR.");
   console.error("========================================================");
   for (const inst of instances) {
     const ports = inst.Ports && inst.Ports.length ? inst.Ports.join(", ") : "bilinmiyor (henüz dinlemiyor olabilir)";

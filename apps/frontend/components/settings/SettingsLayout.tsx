@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Bell,
   Building2,
@@ -82,19 +82,19 @@ const AGENCY_SECTION_GROUPS: AgencySettingsGroup[] = [
 const BRAND_SECTIONS = [
   {
     href: "/brand/settings?tab=profile",
-    label: "Profilim",
+    labelKey: "settings.nav.profileSecurity" as TranslationKey,
     icon: User,
     iconColor: "bg-indigo-500/10 text-indigo-500",
   },
   {
-    href: "/brand/notifications",
-    label: "Bildirimler",
+    href: "/brand/notifications?tab=settings",
+    labelKey: "settings.nav.notifications" as TranslationKey,
     icon: Bell,
     iconColor: "bg-amber-500/10 text-amber-500",
   },
   {
     href: "/brand/settings?tab=brand",
-    label: "Marka Profili",
+    labelKey: "brand.settings.tab.brand" as TranslationKey,
     icon: Palette,
     iconColor: "bg-purple-500/10 text-purple-500",
   },
@@ -122,6 +122,7 @@ export function SettingsLayout({
 }: SettingsLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useLocale();
   const { activeAgency } = useWorkspace();
 
@@ -228,8 +229,7 @@ export function SettingsLayout({
     if (!isActivePath(pathname, section.href)) return false;
     const query = section.href.split("?")[1];
     if (!query) return true;
-    const currentQuery = typeof window === "undefined" ? "" : window.location.search;
-    return new URLSearchParams(query).get("tab") === new URLSearchParams(currentQuery).get("tab");
+    return new URLSearchParams(query).get("tab") === searchParams.get("tab");
   });
 
   return (
@@ -246,9 +246,32 @@ export function SettingsLayout({
         </div>
       </div>
 
+      <div className="mb-6 lg:hidden">
+        <label htmlFor="brand-settings-section" className="sr-only">
+          {t("settings.nav.mobileLabel")}
+        </label>
+        <select
+          id="brand-settings-section"
+          value={activeBrandSection?.href ?? ""}
+          onChange={(event) => router.push(event.target.value)}
+          className="h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm font-medium text-text outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20"
+        >
+          {!activeBrandSection && (
+            <option value="" disabled>
+              {t("settings.nav.mobileLabel")}
+            </option>
+          )}
+          {BRAND_SECTIONS.map((section) => (
+            <option key={section.href} value={section.href}>
+              {t(section.labelKey)}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-8">
         <aside className="hidden lg:block mb-8 lg:mb-0">
-          <nav className="bg-surface border border-border rounded-2xl p-3" aria-label="Ayarlar menüsü">
+          <nav className="bg-surface border border-border rounded-2xl p-3" aria-label={t("settings.nav.label")}>
             <ul className="space-y-1" role="list">
               {BRAND_SECTIONS.map((section) => {
                 const isActive = activeBrandSection?.href === section.href;
@@ -266,7 +289,7 @@ export function SettingsLayout({
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${section.iconColor}`}>
                         <Icon className="w-4.5 h-4.5" aria-hidden="true" />
                       </div>
-                      <div className="flex-1 min-w-0 truncate">{section.label}</div>
+                      <div className="flex-1 min-w-0 truncate">{t(section.labelKey)}</div>
                       {isActive && (
                         <ChevronRight className="w-4 h-4 text-accent flex-shrink-0" aria-hidden="true" />
                       )}
@@ -276,29 +299,6 @@ export function SettingsLayout({
               })}
             </ul>
 
-            <div className="mt-6 pt-6 border-t border-border space-y-1">
-              <p className="px-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Hızlı İşlemler</p>
-              <Link
-                href="/brand/settings?tab=profile"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:bg-surface-2 hover:text-text transition-colors"
-              >
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4.5 h-4.5" aria-hidden="true" />
-                </div>
-                <div className="flex-1 truncate">Profilim</div>
-                <ChevronRight className="w-4 h-4 text-text-muted" aria-hidden="true" />
-              </Link>
-              <a
-                href="/brand/notifications"
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:bg-surface-2 hover:text-text transition-colors"
-              >
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-4.5 h-4.5" aria-hidden="true" />
-                </div>
-                <div className="flex-1 truncate">Bildirimler</div>
-                <ChevronRight className="w-4 h-4 text-text-muted" aria-hidden="true" />
-              </a>
-            </div>
           </nav>
         </aside>
 

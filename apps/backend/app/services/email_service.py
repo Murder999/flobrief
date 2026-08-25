@@ -153,7 +153,7 @@ def _legacy_build_agency_invite_html(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Davet Aldınız</h2>
     <p style="color:#8888A8;margin-bottom:8px">
       <strong style="color:#F0F0F8">{inviter_name}</strong> sizi
@@ -161,7 +161,7 @@ def _legacy_build_agency_invite_html(
       <strong style="color:#6366F1">{role}</strong> rolüyle davet etti.
     </p>{msg_block}
     <a href="{accept_url}" style="display:inline-block;background:#6366F1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:24px;">Daveti Kabul Et</a>
-    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu davet 7 gün geçerlidir. Flobrief hesabınız yoksa bağlantıya tıklayarak oluşturabilirsiniz.</p>
+    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu davet 7 gün geçerlidir. PostPiloter hesabınız yoksa bağlantıya tıklayarak oluşturabilirsiniz.</p>
   </div>
 </body>
 </html>"""
@@ -180,7 +180,7 @@ def _legacy_build_brand_invite_html(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Marka Daveti</h2>
     <p style="color:#8888A8;margin-bottom:8px">
       <strong style="color:#F0F0F8">{inviter_name}</strong> ({agency_name}) sizi
@@ -204,12 +204,12 @@ def _legacy_build_brief_approval_request_html(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Onay İsteği</h2>
     <p style="color:#8888A8;margin-bottom:8px">Merhaba {recipient_name},</p>
     <p style="color:#8888A8;margin-bottom:24px"><strong style="color:#F0F0F8">{agency_name}</strong> ajansı <strong style="color:#F0F0F8">{brief_title}</strong> başlıklı briefi onayınıza sundu.</p>
     <a href="{approval_url}" style="display:inline-block;background:#6366F1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Briefe Git</a>
-    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu e-posta Flobrief tarafından otomatik gönderilmiştir.</p>
+    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu e-posta PostPiloter tarafından otomatik gönderilmiştir.</p>
   </div>
 </body>
 </html>"""
@@ -225,13 +225,13 @@ def _legacy_build_brief_revision_requested_html(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Revizyon İstendi</h2>
     <p style="color:#8888A8;margin-bottom:8px">Merhaba {recipient_name},</p>
     <p style="color:#8888A8;margin-bottom:16px"><strong style="color:#F0F0F8">{brief_title}</strong> briefi için revizyon talep edildi.</p>
     <p style="color:#F0F0F8;background:#1A1A24;border-left:3px solid #F59E0B;padding:12px 16px;border-radius:0 8px 8px 0;font-size:14px;margin-bottom:24px;">{revision_note}</p>
     <a href="{brief_url}" style="display:inline-block;background:#6366F1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Briefe Git</a>
-    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu e-posta Flobrief tarafından otomatik gönderilmiştir.</p>
+    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu e-posta PostPiloter tarafından otomatik gönderilmiştir.</p>
   </div>
 </body>
 </html>"""
@@ -246,12 +246,12 @@ def _legacy_build_brief_approved_html(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px;color:#10B981">Brief Onaylandı</h2>
     <p style="color:#8888A8;margin-bottom:8px">Merhaba {recipient_name},</p>
     <p style="color:#8888A8;margin-bottom:24px"><strong style="color:#F0F0F8">{brief_title}</strong> başlıklı brief onaylandı.</p>
     <a href="{brief_url}" style="display:inline-block;background:#10B981;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Briefe Git</a>
-    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu e-posta Flobrief tarafından otomatik gönderilmiştir.</p>
+    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu e-posta PostPiloter tarafından otomatik gönderilmiştir.</p>
   </div>
 </body>
 </html>"""
@@ -268,12 +268,12 @@ def _legacy_build_generic_notification_html(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">{title}</h2>
     <p style="color:#8888A8;margin-bottom:8px">Merhaba {recipient_name},</p>
     <p style="color:#8888A8;margin-bottom:24px">{body}</p>
     <a href="{action_url}" style="display:inline-block;background:#6366F1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">{action_label}</a>
-    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu e-posta Flobrief tarafından otomatik gönderilmiştir.</p>
+    <p style="color:#8888A8;font-size:12px;margin-top:24px;">Bu e-posta PostPiloter tarafından otomatik gönderilmiştir.</p>
   </div>
 </body>
 </html>"""
@@ -302,7 +302,7 @@ def _legacy_build_verification_html(full_name: str, verification_url: str) -> st
 <html>
 <body style="font-family: Inter, sans-serif; background: #0A0A0F; color: #F0F0F8; padding: 40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">E-posta adresinizi doğrulayın</h2>
     <p style="color: #8888A8; margin-bottom: 24px;">
       Merhaba {full_name}, hesabınızı aktifleştirmek için aşağıdaki bağlantıya tıklayın.
@@ -338,7 +338,7 @@ def _legacy_build_reset_html(full_name: str, reset_url: str) -> str:
 <html>
 <body style="font-family: Inter, sans-serif; background: #0A0A0F; color: #F0F0F8; padding: 40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Şifre Sıfırlama</h2>
     <p style="color: #8888A8; margin-bottom: 24px;">
       Merhaba {full_name}, şifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın.
@@ -477,7 +477,7 @@ async def send_agency_invite_email(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Davet Aldınız</h2>
     <p style="color:#8888A8;margin-bottom:8px">
       <strong style="color:#F0F0F8">{inviter_name}</strong> sizi
@@ -490,7 +490,7 @@ async def send_agency_invite_email(
       Daveti Kabul Et
     </a>
     <p style="color:#8888A8;font-size:12px;margin-top:24px;">
-      Bu davet 7 gün geçerlidir. Flobrief hesabınız yoksa bağlantıya tıklayarak oluşturabilirsiniz.
+      Bu davet 7 gün geçerlidir. PostPiloter hesabınız yoksa bağlantıya tıklayarak oluşturabilirsiniz.
     </p>
   </div>
 </body>
@@ -517,7 +517,7 @@ async def send_brief_approval_request_email(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Onay İsteği</h2>
     <p style="color:#8888A8;margin-bottom:8px">Merhaba {recipient_name},</p>
     <p style="color:#8888A8;margin-bottom:24px">
@@ -530,7 +530,7 @@ async def send_brief_approval_request_email(
       Briefe Git
     </a>
     <p style="color:#8888A8;font-size:12px;margin-top:24px;">
-      Bu e-posta Flobrief tarafından otomatik gönderilmiştir.
+      Bu e-posta PostPiloter tarafından otomatik gönderilmiştir.
     </p>
   </div>
 </body>
@@ -557,7 +557,7 @@ async def send_brief_revision_requested_email(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Revizyon İstendi</h2>
     <p style="color:#8888A8;margin-bottom:8px">Merhaba {recipient_name},</p>
     <p style="color:#8888A8;margin-bottom:16px">
@@ -573,7 +573,7 @@ async def send_brief_revision_requested_email(
       Briefe Git
     </a>
     <p style="color:#8888A8;font-size:12px;margin-top:24px;">
-      Bu e-posta Flobrief tarafından otomatik gönderilmiştir.
+      Bu e-posta PostPiloter tarafından otomatik gönderilmiştir.
     </p>
   </div>
 </body>
@@ -599,7 +599,7 @@ async def send_brief_approved_email(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px;color:#10B981">Brief Onaylandı</h2>
     <p style="color:#8888A8;margin-bottom:8px">Merhaba {recipient_name},</p>
     <p style="color:#8888A8;margin-bottom:24px">
@@ -611,7 +611,7 @@ async def send_brief_approved_email(
       Briefe Git
     </a>
     <p style="color:#8888A8;font-size:12px;margin-top:24px;">
-      Bu e-posta Flobrief tarafından otomatik gönderilmiştir.
+      Bu e-posta PostPiloter tarafından otomatik gönderilmiştir.
     </p>
   </div>
 </body>
@@ -638,7 +638,7 @@ async def send_generic_notification_email(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">{title}</h2>
     <p style="color:#8888A8;margin-bottom:8px">Merhaba {recipient_name},</p>
     <p style="color:#8888A8;margin-bottom:24px">{body}</p>
@@ -648,7 +648,7 @@ async def send_generic_notification_email(
       Görüntüle
     </a>
     <p style="color:#8888A8;font-size:12px;margin-top:24px;">
-      Bu e-posta Flobrief tarafından otomatik gönderilmiştir.
+      Bu e-posta PostPiloter tarafından otomatik gönderilmiştir.
     </p>
   </div>
 </body>
@@ -674,7 +674,7 @@ async def send_payment_failed_email(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px;color:#EF4444">Ödeme Başarısız</h2>
     <p style="color:#8888A8;margin-bottom:8px">Merhaba {recipient_name},</p>
     <p style="color:#8888A8;margin-bottom:24px">
@@ -687,7 +687,7 @@ async def send_payment_failed_email(
       Ödeme Bilgilerini Güncelle
     </a>
     <p style="color:#8888A8;font-size:12px;margin-top:24px;">
-      Bu e-posta Flobrief tarafından otomatik gönderilmiştir.
+      Bu e-posta PostPiloter tarafından otomatik gönderilmiştir.
     </p>
   </div>
 </body>
@@ -718,7 +718,7 @@ async def send_brand_invite_email(
 <html>
 <body style="font-family:Inter,sans-serif;background:#0A0A0F;color:#F0F0F8;padding:40px;">
   <div style="max-width:480px;margin:0 auto;background:#111118;border:1px solid #2A2A3A;border-radius:12px;padding:32px">
-    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">Flobrief</h1>
+    <h1 style="color:#6366F1;font-size:24px;margin-bottom:8px">PostPiloter</h1>
     <h2 style="font-size:18px;margin-bottom:16px">Marka Daveti</h2>
     <p style="color:#8888A8;margin-bottom:8px">
       <strong style="color:#F0F0F8">{inviter_name}</strong> ({agency_name}) sizi

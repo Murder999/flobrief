@@ -76,7 +76,7 @@ export default function BrandReportsPage() {
       <header className="mb-6">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold tracking-tight text-text">{t("reports.brand.title")}</h1>
-          <InfoTooltip text={t("reports.brand.help")} title={t("reports.brand.helpTitle")} placement="bottom">
+          <InfoTooltip text={t("reports.brand.help")} title={t("reports.brand.helpTitle")} placement="bottom" learnMoreHref="/brand/help?topic=report-view">
             <button
               type="button"
               aria-label={t("reports.brand.helpTitle")}

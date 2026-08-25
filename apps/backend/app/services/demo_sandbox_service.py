@@ -171,7 +171,7 @@ class DemoSandboxService:
         await self.db.flush()
 
         agency = Agency(
-            name=f"Flobrief Demo · {suffix[:6].upper()}",
+            name=f"PostPiloter Demo · {suffix[:6].upper()}",
             slug=f"demo-{suffix}",
             status=AgencyStatus.ACTIVE.value,
             owner_user_id=user.id,

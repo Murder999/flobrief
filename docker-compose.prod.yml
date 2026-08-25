@@ -57,6 +57,15 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://postpiloter.com}
         NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-wss://postpiloter.com}
+        NEXT_PUBLIC_PADDLE_CLIENT_TOKEN: ${NEXT_PUBLIC_PADDLE_CLIENT_TOKEN:?NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is required}
+        NEXT_PUBLIC_PADDLE_PRICE_BRAND_SOLO_MONTHLY: ${NEXT_PUBLIC_PADDLE_PRICE_BRAND_SOLO_MONTHLY:?Brand Solo monthly Paddle price is required}
+        NEXT_PUBLIC_PADDLE_PRICE_BRAND_SOLO_YEARLY: ${NEXT_PUBLIC_PADDLE_PRICE_BRAND_SOLO_YEARLY:?Brand Solo yearly Paddle price is required}
+        NEXT_PUBLIC_PADDLE_PRICE_STARTER_AGENCY_MONTHLY: ${NEXT_PUBLIC_PADDLE_PRICE_STARTER_AGENCY_MONTHLY:?Starter Agency monthly Paddle price is required}
+        NEXT_PUBLIC_PADDLE_PRICE_STARTER_AGENCY_YEARLY: ${NEXT_PUBLIC_PADDLE_PRICE_STARTER_AGENCY_YEARLY:?Starter Agency yearly Paddle price is required}
+        NEXT_PUBLIC_PADDLE_PRICE_PRO_AGENCY_MONTHLY: ${NEXT_PUBLIC_PADDLE_PRICE_PRO_AGENCY_MONTHLY:?Pro Agency monthly Paddle price is required}
+        NEXT_PUBLIC_PADDLE_PRICE_PRO_AGENCY_YEARLY: ${NEXT_PUBLIC_PADDLE_PRICE_PRO_AGENCY_YEARLY:?Pro Agency yearly Paddle price is required}
+        NEXT_PUBLIC_PADDLE_PRICE_AGENCY_PLUS_MONTHLY: ${NEXT_PUBLIC_PADDLE_PRICE_AGENCY_PLUS_MONTHLY:?Agency Plus monthly Paddle price is required}
+        NEXT_PUBLIC_PADDLE_PRICE_AGENCY_PLUS_YEARLY: ${NEXT_PUBLIC_PADDLE_PRICE_AGENCY_PLUS_YEARLY:?Agency Plus yearly Paddle price is required}
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://postpiloter.com}

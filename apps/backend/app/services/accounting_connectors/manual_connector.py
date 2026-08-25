@@ -15,7 +15,7 @@ from app.models.client_invoice import ClientInvoice
 
 class ManualConnector:
     """No-op / local-only connector for agencies that track accounting
-    manually (outside Flobrief) or simply haven't connected a real provider
+    manually (outside PostPiloter) or simply haven't connected a real provider
     yet. Every method is synchronous in spirit (no I/O) but declared async to
     satisfy `AccountingConnectorInterface`."""
 

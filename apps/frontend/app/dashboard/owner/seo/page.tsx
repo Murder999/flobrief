@@ -218,7 +218,7 @@ export default function SeoPage() {
                 type="text"
                 value={seoTitle}
                 onChange={(e) => setSeoTitle(e.target.value.slice(0, 60))}
-                placeholder="Ajans adı | Flobrief"
+                placeholder="Ajans adı | PostPiloter"
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent bg-surface text-text"
               />
             </div>

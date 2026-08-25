@@ -118,7 +118,7 @@ export default function PlatformLoginPage() {
               <ShieldCheck className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-text leading-none">Flobrief</p>
+              <p className="text-sm font-semibold text-text leading-none">PostPiloter</p>
               <p className="text-[10px] text-accent font-semibold tracking-widest uppercase">
                 Platform Admin
               </p>
@@ -179,7 +179,7 @@ export default function PlatformLoginPage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.4 }}
         >
-          © {new Date().getFullYear()} Flobrief Platform
+          © {new Date().getFullYear()} PostPiloter Platform
         </motion.p>
       </motion.div>
 
@@ -202,7 +202,7 @@ export default function PlatformLoginPage() {
               <ShieldCheck className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-text leading-none">Flobrief</p>
+              <p className="text-sm font-semibold text-text leading-none">PostPiloter</p>
               <p className="text-[10px] text-accent font-semibold tracking-widest uppercase">
                 Platform Admin
               </p>
@@ -229,7 +229,7 @@ export default function PlatformLoginPage() {
               Yönetici Girişi
             </h1>
             <p className="text-sm text-text-muted">
-              Bu alan yalnızca Flobrief platform yöneticileri içindir.
+              Bu alan yalnızca PostPiloter platform yöneticileri içindir.
             </p>
           </motion.div>
 

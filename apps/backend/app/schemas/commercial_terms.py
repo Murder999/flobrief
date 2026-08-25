@@ -9,7 +9,7 @@ from app.models.enums import CommercialTermsBillingModel
 
 _VALID_BILLING_MODELS = {m.value for m in CommercialTermsBillingModel}
 
-# ISO 4217 three-letter codes for currencies realistically used by Flobrief
+# ISO 4217 three-letter codes for currencies realistically used by PostPiloter
 # agencies/brands. Not the full ISO 4217 table — a deliberately curated
 # allowlist so a typo'd currency code fails fast at the schema boundary
 # rather than silently reaching invoicing math.

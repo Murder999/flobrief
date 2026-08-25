@@ -454,7 +454,7 @@ function SeoEditor({ pages, onSaved, onToast }: SeoEditorProps) {
       <Card title="Temel Meta Etiketleri" action={<SaveButton onClick={handleSave} saving={saving} />}>
         <div className="grid grid-cols-1 gap-4">
           <Field label="Sayfa başlığı (title)">
-            <TextInput value={String(form.title ?? "")} onChange={(v) => setF("title", v)} placeholder="Flobrief — Brief Yönetim Platformu" />
+            <TextInput value={String(form.title ?? "")} onChange={(v) => setF("title", v)} placeholder="PostPiloter — Brief Yönetim Platformu" />
           </Field>
           <Field label="Açıklama (meta description, maks 160 karakter)">
             <textarea
@@ -495,7 +495,7 @@ function SeoEditor({ pages, onSaved, onToast }: SeoEditorProps) {
 
       <Card title="Open Graph (OG) Etiketleri">
         <div className="grid grid-cols-1 gap-4">
-          <Field label="OG Başlık"><TextInput value={String(form.og_title ?? "")} onChange={(v) => setF("og_title", v)} placeholder="Flobrief — Brief Yönetim Platformu" /></Field>
+          <Field label="OG Başlık"><TextInput value={String(form.og_title ?? "")} onChange={(v) => setF("og_title", v)} placeholder="PostPiloter — Brief Yönetim Platformu" /></Field>
           <Field label="OG Açıklama">
             <textarea
               value={String(form.og_description ?? "")}
@@ -511,7 +511,7 @@ function SeoEditor({ pages, onSaved, onToast }: SeoEditorProps) {
 
       <Card title="Twitter / X Kartı">
         <div className="grid grid-cols-1 gap-4">
-          <Field label="Twitter Başlık"><TextInput value={String(form.twitter_title ?? "")} onChange={(v) => setF("twitter_title", v)} placeholder="Flobrief — Brief Yönetim Platformu" /></Field>
+          <Field label="Twitter Başlık"><TextInput value={String(form.twitter_title ?? "")} onChange={(v) => setF("twitter_title", v)} placeholder="PostPiloter — Brief Yönetim Platformu" /></Field>
           <Field label="Twitter Açıklama">
             <textarea
               value={String(form.twitter_description ?? "")}
@@ -950,7 +950,7 @@ export default function PlatformSeoPage() {
         <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-1">Platform Ayarları</p>
         <h1 className="text-2xl font-bold text-text">SEO & Büyüme Merkezi</h1>
         <p className="mt-1 text-sm text-text-muted">
-          Flobrief public sayfalarının arama motoru görünürlüğü, izleme kodları ve büyüme metrikleri.
+          PostPiloter public sayfalarının arama motoru görünürlüğü, izleme kodları ve büyüme metrikleri.
         </p>
       </div>
 

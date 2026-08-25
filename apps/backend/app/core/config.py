@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    APP_NAME: str = "Flobrief"
+    APP_NAME: str = "PostPiloter"
     APP_ENV: str = "development"
     APP_DEBUG: bool = False
     SECRET_KEY: str

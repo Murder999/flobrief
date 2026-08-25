@@ -4,6 +4,7 @@ import { Suspense, type FormEvent, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/lib/api-client";
 import { isSafeReturnTo } from "@/lib/auth";
@@ -234,15 +235,7 @@ function BrandLoginForm() {
             className="mb-10"
           >
             <Link href="/" className="inline-flex items-center gap-2.5 group">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-glow-sm"
-                style={{ background: "var(--gradient-accent)" }}
-              >
-                <span className="text-white font-bold text-sm">F</span>
-              </div>
-              <span className="text-xl font-semibold text-text group-hover:text-accent transition-colors tracking-tight">
-                Flobrief
-              </span>
+              <PostPiloterLogo className="h-8 w-auto transition-transform group-hover:scale-[1.02]" priority />
             </Link>
           </motion.div>
 
@@ -386,7 +379,7 @@ function BrandLoginForm() {
         </motion.div>
 
         <p className="mt-8 text-center text-xs text-text-muted relative">
-          © {new Date().getFullYear()} Flobrief. Tüm hakları saklıdır.
+          © {new Date().getFullYear()} PostPiloter. Tüm hakları saklıdır.
         </p>
       </motion.div>
     </div>
@@ -403,7 +396,7 @@ export default function BrandLoginPage() {
               className="w-8 h-8 rounded-xl flex items-center justify-center"
               style={{ background: "var(--gradient-accent)" }}
             >
-              <span className="text-white font-bold text-xs">F</span>
+              <span className="text-white font-bold text-xs">P</span>
             </div>
             <svg className="w-4 h-4 animate-spin text-text-muted" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />

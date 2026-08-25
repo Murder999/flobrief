@@ -264,13 +264,16 @@ export const dashboard = {
   "common.help.backToPortal": "Portal'a Dön",
 
   // Demo
-  "dashboard.demo.mode": "Demo Çalışma Alanı",
+  "dashboard.demo.mode": "Demo Modu",
+  "dashboard.demo.mobileMode": "Demo",
   "dashboard.demo.switchPortal": "Demo portal değiştir",
   "dashboard.demo.loading": "Yükleniyor…",
   "dashboard.demo.switching": "Portal değiştiriliyor…",
   "dashboard.demo.switchError": "Portal değiştirilemedi. Lütfen tekrar deneyin.",
   "dashboard.demo.agencyPortal": "Ajans Portalı",
   "dashboard.demo.brandPortal": "Marka Portalı",
+  "dashboard.demo.agency": "Ajans",
+  "dashboard.demo.brand": "Marka",
   "dashboard.demo.agencyDesc": "Ajans operasyonları",
   "dashboard.demo.brandDesc": "Marka / müşteri görüşü",
 } as const;

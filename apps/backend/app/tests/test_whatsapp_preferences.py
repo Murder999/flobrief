@@ -11,12 +11,13 @@ and demo-tenant restrictions. No real Twilio call is ever made.
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.core.security import create_access_token
 from app.db.session import AsyncSessionLocal
@@ -35,7 +36,11 @@ from app.models.enums import (
     UserType,
     WhatsAppTemplateStatus,
 )
-from app.models.notification import NotificationDelivery, NotificationEventPreference
+from app.models.notification import (
+    NotificationDelivery,
+    NotificationEventPreference,
+    NotificationPreference,
+)
 from app.models.user import User
 from app.repositories.notification import (
     NotificationEventPreferenceRepository,
@@ -389,6 +394,39 @@ async def test_brand_user_does_not_see_finance_or_internal_events(client, pctx: 
     # invoice.overdue / invoice.payment_received are agency-only in the catalog.
     assert NotificationEventType.INVOICE_OVERDUE.value not in event_types
     assert NotificationEventType.INVOICE_PAYMENT_RECEIVED.value not in event_types
+
+
+async def test_concurrent_preference_reads_create_one_row(client, pctx: PrefCtx) -> None:
+    async with AsyncSessionLocal() as session:
+        await session.execute(
+            delete(NotificationPreference).where(
+                NotificationPreference.user_id == pctx.brand_manager_id
+            )
+        )
+        await session.commit()
+
+    headers = _brand_headers(pctx.brand_manager_token)
+    preferences_response, whatsapp_response = await asyncio.gather(
+        client.get("/api/v1/notifications/preferences", headers=headers),
+        client.get("/api/v1/notifications/whatsapp/status", headers=headers),
+    )
+
+    assert preferences_response.status_code == 200
+    assert whatsapp_response.status_code == 200
+
+    async with AsyncSessionLocal() as session:
+        rows = (
+            (
+                await session.execute(
+                    select(NotificationPreference).where(
+                        NotificationPreference.user_id == pctx.brand_manager_id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+    assert len(rows) == 1
 
 
 async def test_viewer_cannot_update_another_users_preference(client, pctx: PrefCtx) -> None:

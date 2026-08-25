@@ -1,10 +1,11 @@
-# Flobrief Environment Reference
+# PostPiloter Environment Reference
 
-Flobrief uses three separate environment surfaces:
+PostPiloter uses three separate environment surfaces:
 
 - Root `.env`: Docker Compose interpolation (`POSTGRES_PASSWORD`, `REDIS_PASSWORD`, public frontend build variables).
 - `apps/backend/.env` or `.env.prod`: FastAPI runtime settings.
 - `apps/frontend/.env.local`: local Next.js build/runtime settings. `NEXT_PUBLIC_*` values are compiled into the browser bundle and must be present at build time.
+- `apps/frontend/.env.paddle` (optional, ignored): local Paddle public client token and Price IDs loaded by the frontend npm scripts when provider values are kept separate from `.env.local`.
 
 Never commit populated `.env`, `.env.prod`, or `.env.local` files.
 
@@ -14,7 +15,7 @@ Sanitised `.env.example` files are intentionally version-controlled. The root `.
 
 | Variable | Required | Default | Description |
 |---|---:|---|---|
-| `APP_NAME` | No | `Flobrief` | Application name |
+| `APP_NAME` | No | `PostPiloter` | Application name |
 | `APP_ENV` | Production | `development` | Set to `production` in production |
 | `APP_DEBUG` | No | `false` | Enables API docs when true |
 | `SECRET_KEY` | **Yes** | — | Unique 64+ character JWT signing secret |
@@ -74,9 +75,18 @@ REDIS_URL=redis://:<redis-password>@redis:6379/0
 | `CORS_ALLOW_CREDENTIALS` | No | `true` | Credentialed CORS requests |
 | `NEXT_PUBLIC_API_URL` | Frontend build | `http://localhost:8000` | Public API origin; may equal the frontend origin behind Nginx |
 | `NEXT_PUBLIC_WS_URL` | Frontend build | `ws://localhost:8000` | WebSocket origin; use `wss://` in production |
-| `NEXT_PUBLIC_APP_NAME` | No | `Flobrief` | Browser application name |
+| `NEXT_PUBLIC_APP_NAME` | No | `PostPiloter` | Browser application name |
+| `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` | Pricing/checkout | — | Browser-facing Paddle client token; `live_` selects production and `test_` selects sandbox |
+| `NEXT_PUBLIC_PADDLE_PRICE_BRAND_SOLO_MONTHLY` | Pricing/checkout | — | Brand Solo monthly Paddle Price ID |
+| `NEXT_PUBLIC_PADDLE_PRICE_BRAND_SOLO_YEARLY` | Pricing/checkout | — | Brand Solo yearly Paddle Price ID |
+| `NEXT_PUBLIC_PADDLE_PRICE_STARTER_AGENCY_MONTHLY` | Pricing/checkout | — | Starter Agency monthly Paddle Price ID |
+| `NEXT_PUBLIC_PADDLE_PRICE_STARTER_AGENCY_YEARLY` | Pricing/checkout | — | Starter Agency yearly Paddle Price ID |
+| `NEXT_PUBLIC_PADDLE_PRICE_PRO_AGENCY_MONTHLY` | Pricing/checkout | — | Pro Agency monthly Paddle Price ID |
+| `NEXT_PUBLIC_PADDLE_PRICE_PRO_AGENCY_YEARLY` | Pricing/checkout | — | Pro Agency yearly Paddle Price ID |
+| `NEXT_PUBLIC_PADDLE_PRICE_AGENCY_PLUS_MONTHLY` | Pricing/checkout | — | Agency Plus monthly Paddle Price ID |
+| `NEXT_PUBLIC_PADDLE_PRICE_AGENCY_PLUS_YEARLY` | Pricing/checkout | — | Agency Plus yearly Paddle Price ID |
 
-`NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL` are Docker build arguments in `docker-compose.prod.yml`; changing only the running container environment does not rewrite an already-built browser bundle.
+All `NEXT_PUBLIC_*` values above are Docker build arguments in `docker-compose.prod.yml`; changing only the running container environment does not rewrite an already-built browser bundle. Production Compose fails before building if a required Paddle public value is absent. Docker Compose does not discover `.env.paddle` automatically, so the guarded Hetzner deploy script explicitly loads both the root `.env` and `.env.paddle` before build, rollback, and diagnostics commands.
 
 ## Self-service demo sandbox
 

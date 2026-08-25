@@ -194,6 +194,7 @@ async def test_export_csv_contains_fixture_entry_row(client, tenants) -> None:
     )
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/csv")
+    assert "postpiloter-time-entries-" in resp.headers["content-disposition"]
     text = resp.content.decode("utf-8-sig")
     lines = [ln for ln in text.strip().splitlines() if ln]
     assert lines[0].startswith("date,user,brief_id,brand_id,category")

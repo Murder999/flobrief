@@ -27,7 +27,7 @@ _VALID_DOCUMENT_TYPES = {t.value for t in ClientInvoiceDocumentType}
 
 class ClientInvoice(BaseModel):
     """An agency's bill to one of its brand clients — deliberately separate
-    from `app.models.invoice.Invoice` (Flobrief's own SaaS subscription
+    from `app.models.invoice.Invoice` (PostPiloter's own SaaS subscription
     billing via iyzico, plan §1). `document_type` is constrained at the DB
     level to `draft_invoice`/`proforma` only — this system never issues a
     legally-valid Turkish e-invoice (`e-fatura`) and must never claim to.

@@ -1,4 +1,4 @@
-# Flobrief — Database Design Reference
+# PostPiloter — Database Design Reference
 
 ## Engine
 PostgreSQL 16 via SQLAlchemy 2.x async (asyncpg driver)

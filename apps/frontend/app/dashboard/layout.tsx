@@ -11,8 +11,8 @@ import { CommandPalette } from "@/components/search/command-palette";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import type { NotificationFeedSource } from "@/components/notifications/useNotificationFeed";
 import { GlobalTimerWidget } from "@/components/time-tracking/GlobalTimerWidget";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
-import { DemoPortalSwitcher } from "@/components/workspace/demo-portal-switcher";
 import { useWorkspace } from "@/context/workspace-context";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { AgencyOnboardingWizard } from "@/components/onboarding/OnboardingWizard";
@@ -184,16 +184,7 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
 
       {/* Logo row */}
       <div className="relative flex items-center gap-2.5 px-4 py-4 flex-shrink-0">
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{
-            background: "var(--gradient-accent)",
-            boxShadow: "0 2px 8px rgba(99,102,241,0.30)",
-          }}
-        >
-          <span className="text-white font-bold text-xs tracking-tight leading-none">F</span>
-        </div>
-        <span className="font-semibold text-text text-sm flex-1 tracking-tight">Flobrief</span>
+        <PostPiloterLogo className="h-5 w-auto max-w-[88px] flex-1 object-contain object-left" />
         <GlobalTimerWidget />
         <NotificationBell source={notificationSource} basePath="/dashboard/notifications" />
       </div>
@@ -204,8 +195,6 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
           <WorkspaceSwitcher />
         </div>
       </div>
-
-      <DemoPortalSwitcher portal="agency" />
 
       {/* Navigation */}
       <nav data-testid="sidebar-navigation" className="relative min-h-0 flex-1 overflow-y-auto px-2.5 py-2">
@@ -410,10 +399,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         }
         groups={navDrawerGroups}
         bottomNavItems={localizedBottomNavItems}
-        brandTitle="Flobrief"
+        brandTitle="PostPiloter"
         brandSubtitle={activeAgency?.name}
-        drawerTopContent={<DemoPortalSwitcher portal="agency" />}
-        fallbackPageTitle="Flobrief"
+        demoPortal="agency"
+        fallbackPageTitle="PostPiloter"
         user={{ name: user.full_name, email: user.email, initials: getInitials(user.full_name) }}
         profileHref="/dashboard/settings/profile"
         onLogout={logout}

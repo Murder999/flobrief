@@ -305,7 +305,7 @@ class InvoicePdfService:
         pdf.cell(
             0,
             5,
-            _s(f"Bu {title.lower()} {now_str} UTC'de Flobrief tarafindan olusturuldu."),
+            _s(f"Bu {title.lower()} {now_str} UTC'de PostPiloter tarafindan olusturuldu."),
         )
 
         return bytes(pdf.output())

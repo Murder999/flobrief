@@ -1,9 +1,18 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.enums import PlanCode
 from app.models.plan import Plan
+
+PUBLIC_PLAN_ORDER = (
+    PlanCode.BRAND_SOLO.value,
+    PlanCode.STARTER_AGENCY.value,
+    PlanCode.PRO_AGENCY.value,
+    PlanCode.AGENCY_PLUS.value,
+    PlanCode.ENTERPRISE.value,
+)
 
 
 class PlanRepository:
@@ -14,7 +23,14 @@ class PlanRepository:
         result = await self.db.execute(
             select(Plan)
             .where(Plan.deleted_at.is_(None), Plan.is_active.is_(True))
-            .order_by(Plan.monthly_price_cents.asc())
+            .order_by(
+                case(
+                    {code: position for position, code in enumerate(PUBLIC_PLAN_ORDER)},
+                    value=Plan.code,
+                    else_=len(PUBLIC_PLAN_ORDER),
+                ),
+                Plan.monthly_price_cents.asc(),
+            )
         )
         return list(result.scalars().all())
 

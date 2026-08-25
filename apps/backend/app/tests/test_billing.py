@@ -40,6 +40,20 @@ class TestPlanDefinitions(unittest.TestCase):
         }
         assert expected == codes
 
+    def test_public_plan_order_keeps_enterprise_last(self) -> None:
+        from app.repositories.plan import PUBLIC_PLAN_ORDER
+        from scripts.seed_plans import PLAN_DEFINITIONS
+
+        expected_order = (
+            PlanCode.BRAND_SOLO.value,
+            PlanCode.STARTER_AGENCY.value,
+            PlanCode.PRO_AGENCY.value,
+            PlanCode.AGENCY_PLUS.value,
+            PlanCode.ENTERPRISE.value,
+        )
+        assert tuple(PUBLIC_PLAN_ORDER) == expected_order
+        assert set(PUBLIC_PLAN_ORDER) == {plan["code"] for plan in PLAN_DEFINITIONS}
+
     def test_plan_entitlement_progression(self) -> None:
         # Pro should have higher limits than Starter
         from scripts.seed_plans import PLAN_DEFINITIONS

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, FlaskConical, ShieldCheck } from "lucide-react";
+import { PublicFooter } from "@/components/marketing/PublicFooter";
 import { ApiError, demoApi, type DemoPublicStatus } from "@/lib/api-client";
 
 type TurnstileApi = {
@@ -115,6 +116,7 @@ export default function DemoPage() {
     !starting;
 
   return (
+    <>
     <main className="min-h-screen bg-background relative overflow-hidden">
       <div className="absolute inset-0 hero-grid opacity-30" />
       <div
@@ -141,7 +143,7 @@ export default function DemoPage() {
               SELF-SERVICE DEMO
             </div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-text leading-[1.08]">
-              Flobrief&apos;i kendi
+              PostPiloter&apos;ı kendi
               <span className="gradient-text"> çalışma alanınızda </span>
               keşfedin.
             </h1>
@@ -225,5 +227,7 @@ export default function DemoPage() {
         </div>
       </div>
     </main>
+    <PublicFooter />
+    </>
   );
 }

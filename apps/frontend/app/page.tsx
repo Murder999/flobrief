@@ -20,6 +20,7 @@ import {
 import { LoginModal } from "@/components/auth/LoginModal";
 import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { LanguageSelector } from "@/components/i18n/language-selector";
+import { PublicFooter } from "@/components/marketing/PublicFooter";
 import { useLocale } from "@/context/locale-context";
 import { homeEnglishCopy } from "@/messages/home";
 
@@ -1245,8 +1246,6 @@ export default function HomePage() {
           >
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse-ring flex-shrink-0" />
             <span className="text-xs font-semibold text-accent tracking-wide">{homeText("Ajanslar için premium brief yönetimi")}</span>
-            <span className="w-px h-3 bg-border-strong" />
-            <span className="text-xs text-text-muted">Beta</span>
           </motion.div>
 
           <motion.h1 variants={vUp} className="mb-6 text-display text-text">
@@ -1965,112 +1964,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-      <footer className="border-t border-border bg-background">
-
-        {/* Main footer */}
-        <div className="mx-auto max-w-7xl px-6 py-14">
-          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-
-            {/* Brand */}
-            <div className="lg:col-span-2">
-              <Link href="/" className="inline-flex items-center gap-2.5 group mb-4">
-                <PostPiloterLogo className="h-8 w-auto transition-transform group-hover:scale-[1.02]" />
-              </Link>
-              <p className="text-sm text-text-muted leading-relaxed max-w-xs mb-6">
-                {homeText("Ajanslar ve markalar için brief yönetimi, onay akışları ve içerik takvimi platformu. Uçtan uca süreç, tek ekrandan.")}
-              </p>
-              <div className="flex gap-3">
-                <Link
-                  href="/auth/register"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-white px-4 py-2 rounded-xl transition-all hover:opacity-90"
-                  style={{ background: "var(--gradient-accent)" }}
-                >
-                  {homeText("Başla")}
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="inline-flex items-center text-xs font-medium text-text-secondary px-4 py-2 rounded-xl border border-border hover:border-border-hover hover:text-text transition-all"
-                >
-                  {homeText("Fiyatlandırma")}
-                </Link>
-              </div>
-            </div>
-
-            {/* Product */}
-            <div>
-              <h4 className="text-xs font-bold text-text uppercase tracking-wider mb-4">{homeText("Ürün")}</h4>
-              <ul className="space-y-3">
-                {[
-                  { label: "Ajans Programı",         href: "/ajans-programi" },
-                  { label: "Müşteri Onay Sistemi",   href: "/musteri-onay-sistemi" },
-                  { label: "Revizyon Takibi",        href: "/revizyon-takip" },
-                  { label: "Müşteri Portalı",        href: "/musteri-portali" },
-                  { label: "Online Brief",           href: "/online-brief" },
-                  { label: "Fiyatlandırma",          href: "/pricing" },
-                ].map(({ label, href }) => (
-                  <li key={label}>
-                    <a
-                      href={href}
-                      className="text-sm text-text-muted hover:text-text transition-colors inline-flex items-center gap-1 group"
-                    >
-                      {homeText(label)}
-                      <ChevronRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Get started */}
-            <div>
-              <h4 className="text-xs font-bold text-text uppercase tracking-wider mb-4">{homeText("Başlangıç")}</h4>
-              <ul className="space-y-3">
-                {[
-                  { label: "Ücretsiz Kayıt",  href: "/auth/register"      },
-                ].map(({ label, href }) => (
-                  <li key={label}>
-                    <Link
-                      href={href}
-                      className="text-sm text-text-muted hover:text-text transition-colors inline-flex items-center gap-1 group"
-                    >
-                      {homeText(label)}
-                      <ChevronRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    </Link>
-                  </li>
-                ))}
-                <li>
-                  <button
-                    type="button"
-                    aria-haspopup="dialog"
-                    onClick={() => setLoginOpen(true)}
-                    className="group inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text"
-                  >
-                    {homeText("Giriş Yap")}
-                    <ChevronRight className="h-3 w-3 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="border-t border-border">
-          <div className="mx-auto max-w-7xl px-6 py-5">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <p className="text-xs text-text-muted order-2 sm:order-1">
-                © {new Date().getFullYear()} PostPiloter. {homeText("Tüm hakları saklıdır.")}
-              </p>
-              <div className="flex items-center gap-1.5 order-1 sm:order-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                <span className="text-xs text-text-muted">{homeText("Tüm sistemler çalışıyor")}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>

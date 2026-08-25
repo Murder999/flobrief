@@ -1,4 +1,4 @@
-# Flobrief Production Deployment
+# PostPiloter Production Deployment
 
 This guide covers the repository’s Docker Compose topology on Hetzner: Nginx → Next.js/FastAPI, PostgreSQL 16, Redis 7, and a persistent local-media volume. A successful CI run on `main` can promote the exact tested commit automatically; deployment remains disabled until the production environment is configured explicitly.
 
@@ -71,7 +71,18 @@ POSTGRES_DB=flobrief
 REDIS_PASSWORD=<strong-redis-password>
 NEXT_PUBLIC_API_URL=https://postpiloter.com
 NEXT_PUBLIC_WS_URL=wss://postpiloter.com
+NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=<live-client-side-token>
+NEXT_PUBLIC_PADDLE_PRICE_BRAND_SOLO_MONTHLY=<production-price-id>
+NEXT_PUBLIC_PADDLE_PRICE_BRAND_SOLO_YEARLY=<production-price-id>
+NEXT_PUBLIC_PADDLE_PRICE_STARTER_AGENCY_MONTHLY=<production-price-id>
+NEXT_PUBLIC_PADDLE_PRICE_STARTER_AGENCY_YEARLY=<production-price-id>
+NEXT_PUBLIC_PADDLE_PRICE_PRO_AGENCY_MONTHLY=<production-price-id>
+NEXT_PUBLIC_PADDLE_PRICE_PRO_AGENCY_YEARLY=<production-price-id>
+NEXT_PUBLIC_PADDLE_PRICE_AGENCY_PLUS_MONTHLY=<production-price-id>
+NEXT_PUBLIC_PADDLE_PRICE_AGENCY_PLUS_YEARLY=<production-price-id>
 ```
+
+These are browser-facing Paddle values, not backend API keys or webhook secrets. They may instead be kept in the ignored root `.env.paddle`; `scripts/deploy_hetzner.sh` requires that file and passes both `.env` and `.env.paddle` to Docker Compose so the values are available during the frontend image build.
 
 Set backend `apps/backend/.env.prod`:
 

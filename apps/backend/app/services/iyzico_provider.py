@@ -1,7 +1,7 @@
 """iyzico payment provider.
 
 Authentication: HMAC-SHA256 per iyzico API spec.
-Card details NEVER touch Flobrief servers — CheckoutForm redirects to iyzico-hosted page.
+Card details NEVER touch PostPiloter servers — CheckoutForm redirects to iyzico-hosted page.
 """
 
 from __future__ import annotations

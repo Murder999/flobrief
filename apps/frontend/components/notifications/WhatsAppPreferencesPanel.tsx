@@ -12,6 +12,8 @@ import {
 } from "@/lib/api-client";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useLocale } from "@/context/locale-context";
+import type { TranslationKey } from "@/messages";
 
 interface WhatsAppPreferencesPanelProps {
   accessToken: string | null;
@@ -28,6 +30,34 @@ const GROUP_ORDER = [
   "delivery_and_approval",
   "finance",
 ];
+
+const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
+  brief_and_work: "settings.whatsapp.group.briefAndWork",
+  comments_and_collaboration: "settings.whatsapp.group.collaboration",
+  delivery_and_approval: "settings.whatsapp.group.deliveryApproval",
+  finance: "settings.whatsapp.group.finance",
+};
+
+const EVENT_LABEL_KEYS: Record<string, TranslationKey> = {
+  "brief.created": "settings.whatsapp.event.briefCreated",
+  "brief.assigned": "settings.whatsapp.event.briefAssigned",
+  "comment.added": "settings.whatsapp.event.commentAdded",
+  "mention.in_comment": "settings.whatsapp.event.commentMentioned",
+  "mention.in_annotation": "settings.whatsapp.event.annotationMentioned",
+  "deliverable.submitted": "settings.whatsapp.event.deliverableSubmitted",
+  "brief.submitted_for_approval": "settings.whatsapp.event.briefSubmitted",
+  "deliverable.approved": "settings.whatsapp.event.deliverableApproved",
+  "brief.revision_requested": "settings.whatsapp.event.briefRevisionRequested",
+  "deliverable.revision_requested": "settings.whatsapp.event.deliverableRevisionRequested",
+  "annotation.created": "settings.whatsapp.event.annotationCreated",
+  "annotation.replied": "settings.whatsapp.event.annotationReplied",
+  "calendar.item_due": "settings.whatsapp.event.calendarDue",
+  "brief.overdue": "settings.whatsapp.event.briefOverdue",
+  "invoice.sent": "settings.whatsapp.event.invoiceSent",
+  "invoice.due_soon": "settings.whatsapp.event.invoiceDueSoon",
+  "invoice.overdue": "settings.whatsapp.event.invoiceOverdue",
+  "invoice.payment_received": "settings.whatsapp.event.invoicePaymentReceived",
+};
 
 function StatusDot({ tone }: { tone: "ok" | "warn" | "off" }) {
   const cls =
@@ -85,6 +115,7 @@ export function WhatsAppPreferencesPanel({
   portal,
   phoneSettingsHref,
 }: WhatsAppPreferencesPanelProps) {
+  const { locale, t } = useLocale();
   const [status, setStatus] = useState<WhatsAppUserStatusRead | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -102,9 +133,9 @@ export function WhatsAppPreferencesPanel({
     whatsappPreferencesApi
       .getStatus(agencyId, accessToken)
       .then(setStatus)
-      .catch(() => setLoadError("WhatsApp durumu yüklenemedi."))
+      .catch(() => setLoadError(t("settings.whatsapp.loadError")))
       .finally(() => setLoading(false));
-  }, [accessToken, agencyId]);
+  }, [accessToken, agencyId, t]);
 
   useEffect(() => {
     load();
@@ -119,7 +150,7 @@ export function WhatsAppPreferencesPanel({
       setStatus(updated);
       setConsentModalOpen(false);
     } catch {
-      setActionError("Onay kaydedilemedi. Lütfen tekrar deneyin.");
+      setActionError(t("settings.whatsapp.consentSaveError"));
     } finally {
       setConsentSubmitting(false);
     }
@@ -133,7 +164,7 @@ export function WhatsAppPreferencesPanel({
       const updated = await whatsappPreferencesApi.updateConsent(false, agencyId, accessToken);
       setStatus(updated);
     } catch {
-      setActionError("İşlem tamamlanamadı. Lütfen tekrar deneyin.");
+      setActionError(t("settings.whatsapp.actionError"));
     } finally {
       setConsentSubmitting(false);
     }
@@ -159,7 +190,7 @@ export function WhatsAppPreferencesPanel({
           : prev
       );
     } catch {
-      setActionError("Tercih kaydedilemedi. Lütfen tekrar deneyin.");
+      setActionError(t("settings.whatsapp.preferenceSaveError"));
     } finally {
       setTogglingEvent(null);
     }
@@ -187,7 +218,7 @@ export function WhatsAppPreferencesPanel({
         provider: "unknown",
         template_key: "",
         provider_message_id: null,
-        safe_error: err?.message ?? "Test mesajı gönderilemedi.",
+        safe_error: err?.message ?? t("settings.whatsapp.testFailed"),
       });
     } finally {
       setTestSending(false);
@@ -198,9 +229,9 @@ export function WhatsAppPreferencesPanel({
   if (loadError || !status) {
     return (
       <div className="px-4 py-3 bg-danger/10 border border-danger/30 rounded-xl text-sm text-danger flex items-center justify-between gap-3">
-        <span>{loadError ?? "WhatsApp durumu yüklenemedi."}</span>
+        <span>{loadError ?? t("settings.whatsapp.loadError")}</span>
         <button onClick={load} className="text-xs underline underline-offset-2 flex-shrink-0">
-          Tekrar dene
+          {t("settings.whatsapp.retry")}
         </button>
       </div>
     );
@@ -214,7 +245,7 @@ export function WhatsAppPreferencesPanel({
 
   const groups = GROUP_ORDER.map((key) => ({
     key,
-    label: events.find((e) => e.group === key)?.group_label ?? key,
+    label: GROUP_LABEL_KEYS[key] ? t(GROUP_LABEL_KEYS[key]) : events.find((e) => e.group === key)?.group_label ?? key,
     events: events.filter((e) => e.group === key),
   })).filter((g) => g.events.length > 0);
 
@@ -227,8 +258,7 @@ export function WhatsAppPreferencesPanel({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="text-xs text-text-muted leading-relaxed">
-            WhatsApp sağlayıcısı platform yöneticisi tarafından henüz yapılandırılmamış.
-            Yapılandırıldığında bu bölüm otomatik olarak etkinleşecektir.
+            {t("settings.whatsapp.providerUnavailable")}
           </p>
         </div>
       )}
@@ -236,8 +266,7 @@ export function WhatsAppPreferencesPanel({
       {is_demo_tenant && (
         <div className="flex gap-3 bg-accent/5 border border-accent/20 rounded-xl px-5 py-4">
           <p className="text-xs text-text-muted leading-relaxed">
-            Bu demo ortamda gerçek WhatsApp mesajı gönderilmez. Tüm tercihler ve test akışı
-            görüntülenebilir, ancak gönderim daima simüle edilmiş şekilde işaretlenir.
+            {t("settings.whatsapp.demoNotice")}
           </p>
         </div>
       )}
@@ -247,20 +276,19 @@ export function WhatsAppPreferencesPanel({
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-text">WhatsApp Bildirimleri</h3>
+              <h3 className="text-sm font-semibold text-text">{t("settings.whatsapp.title")}</h3>
               <Badge variant={master_enabled ? "success" : "default"}>
-                {master_enabled ? "Açık" : "Kapalı"}
+                {master_enabled ? t("settings.whatsapp.on") : t("settings.whatsapp.off")}
               </Badge>
             </div>
             <p className="text-xs text-text-muted mt-1 leading-relaxed max-w-md">
-              Açık olduğunda, aşağıda seçtiğiniz bildirim türleri onaylı WhatsApp şablonları
-              üzerinden telefonunuza iletilir. İstediğiniz zaman kapatabilirsiniz.
+              {t("settings.whatsapp.masterDescription")}
             </p>
           </div>
           <Toggle
             checked={master_enabled}
             disabled={!canOptIn && !master_enabled}
-            label="WhatsApp bildirimlerini aç/kapat"
+            label={t("settings.whatsapp.toggleLabel")}
             onChange={() => (master_enabled ? handleOptOut() : setConsentModalOpen(true))}
           />
         </div>
@@ -268,27 +296,27 @@ export function WhatsAppPreferencesPanel({
         <div className="mt-4 pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex items-center gap-2 text-xs">
             <StatusDot tone={phone.has_phone_number ? "ok" : "warn"} />
-            <span className="text-text-muted">Telefon:</span>
+            <span className="text-text-muted">{t("settings.whatsapp.phoneStatus")}</span>
             {phone.has_phone_number ? (
               <span className="font-mono text-text">{phone.phone_masked}</span>
             ) : (
               <Link href={phoneSettingsHref} className="text-accent hover:underline">
-                Telefon ekle
+                {t("settings.whatsapp.addPhone")}
               </Link>
             )}
             {phone.has_phone_number && !phone.phone_verified && (
-              <span className="text-text-muted/70">(doğrulanmamış)</span>
+              <span className="text-text-muted/70">({t("settings.whatsapp.unverified")})</span>
             )}
           </div>
           <div className="flex items-center gap-2 text-xs">
             <StatusDot tone={consent.whatsapp_opt_in ? "ok" : "off"} />
-            <span className="text-text-muted">Onay:</span>
+            <span className="text-text-muted">{t("settings.whatsapp.consentStatus")}</span>
             <span className="text-text">
               {consent.whatsapp_opt_in && consent.whatsapp_opt_in_at
-                ? `Verildi — ${new Date(consent.whatsapp_opt_in_at).toLocaleDateString("tr-TR")}`
+                ? `${t("settings.whatsapp.consentGiven")} — ${new Date(consent.whatsapp_opt_in_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")}`
                 : consent.whatsapp_opt_out_at
-                ? `Kapatıldı — ${new Date(consent.whatsapp_opt_out_at).toLocaleDateString("tr-TR")}`
-                : "Henüz verilmedi"}
+                ? `${t("settings.whatsapp.consentWithdrawn")} — ${new Date(consent.whatsapp_opt_out_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US")}`
+                : t("settings.whatsapp.consentMissing")}
             </span>
           </div>
         </div>
@@ -317,17 +345,19 @@ export function WhatsAppPreferencesPanel({
                     className="flex items-center justify-between gap-4 px-5 py-3.5"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-text truncate">{event.event_label}</p>
+                      <p className="text-sm text-text truncate">
+                        {EVENT_LABEL_KEYS[event.event_type] ? t(EVENT_LABEL_KEYS[event.event_type]) : event.event_label}
+                      </p>
                       {!event.template_ready && (
                         <p className="text-[11px] text-amber-400 mt-0.5">
-                          Şablon henüz hazır değil — açık olsa da şu an gönderim yapılamıyor.
+                          {t("settings.whatsapp.templatePending")}
                         </p>
                       )}
                     </div>
                     <Toggle
                       checked={event.whatsapp_enabled}
                       disabled={togglingEvent === event.event_type}
-                      label={event.event_label}
+                      label={EVENT_LABEL_KEYS[event.event_type] ? t(EVENT_LABEL_KEYS[event.event_type]) : event.event_label}
                       onChange={() => handleEventToggle(event)}
                     />
                   </div>
@@ -342,9 +372,9 @@ export function WhatsAppPreferencesPanel({
       <div className="bg-surface border border-border rounded-xl px-5 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-sm font-medium text-text">Test mesajı gönder</p>
+            <p className="text-sm font-medium text-text">{t("settings.whatsapp.testTitle")}</p>
             <p className="text-xs text-text-muted mt-0.5">
-              Kayıtlı telefon numaranıza kontrollü bir WhatsApp test mesajı gönderilir.
+              {t("settings.whatsapp.testDescription")}
             </p>
           </div>
           <Button
@@ -353,31 +383,31 @@ export function WhatsAppPreferencesPanel({
             disabled={testSending || !readyForTest}
             onClick={handleTestSend}
           >
-            {testSending ? "Gönderiliyor…" : "Test Mesajı Gönder"}
+            {testSending ? t("settings.whatsapp.testSending") : t("settings.whatsapp.testSend")}
           </Button>
         </div>
         {!readyForTest && (
           <p className="text-xs text-text-muted mt-2">
-            Test göndermek için WhatsApp&apos;ı açın, telefon numaranızı ekleyin ve onay verin.
+            {t("settings.whatsapp.testRequirements")}
           </p>
         )}
         {testResult && (
           <div className="mt-3 p-3 bg-surface-2 border border-border rounded-lg text-xs space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="text-text-muted w-20">Durum</span>
+              <span className="text-text-muted w-20">{t("settings.whatsapp.resultStatus")}</span>
               <code className="font-mono px-2 py-0.5 rounded border bg-surface text-text border-border">
                 {testResult.status}
               </code>
             </div>
             {testResult.masked_recipient && (
               <div className="flex items-center gap-2">
-                <span className="text-text-muted w-20">Alıcı</span>
+                <span className="text-text-muted w-20">{t("settings.whatsapp.resultRecipient")}</span>
                 <code className="font-mono text-text">{testResult.masked_recipient}</code>
               </div>
             )}
             {testResult.safe_error && (
               <div className="flex items-start gap-2">
-                <span className="text-text-muted w-20 flex-shrink-0">Not</span>
+                <span className="text-text-muted w-20 flex-shrink-0">{t("settings.whatsapp.resultNote")}</span>
                 <span className="text-text-muted">{testResult.safe_error}</span>
               </div>
             )}
@@ -385,9 +415,9 @@ export function WhatsAppPreferencesPanel({
         )}
         {status.last_delivery_status && (
           <p className="mt-3 text-[11px] text-text-muted">
-            Son WhatsApp bildirimi: <span className="font-mono">{status.last_delivery_status}</span>
+            {t("settings.whatsapp.lastDelivery")}: <span className="font-mono">{status.last_delivery_status}</span>
             {status.last_delivery_at &&
-              ` — ${new Date(status.last_delivery_at).toLocaleString("tr-TR")}`}
+              ` — ${new Date(status.last_delivery_at).toLocaleString(locale === "tr" ? "tr-TR" : "en-US")}`}
           </p>
         )}
       </div>
@@ -395,27 +425,25 @@ export function WhatsAppPreferencesPanel({
       <Modal
         isOpen={consentModalOpen}
         onClose={() => setConsentModalOpen(false)}
-        title="WhatsApp Bildirim Onayı"
+        title={t("settings.whatsapp.consentTitle")}
         maxWidth="sm"
       >
         <div className="space-y-4">
           <p className="text-sm text-text-secondary leading-relaxed">
-            WhatsApp bildirimlerini açtığınızda, size atanan brief&apos;ler, yorumlar, onay talepleri ve
-            faturalarla ilgili seçtiğiniz bildirim türleri kayıtlı telefon numaranıza
-            gönderilecektir.
+            {t("settings.whatsapp.consentBody")}
           </p>
           <ul className="text-xs text-text-muted space-y-1.5 list-disc list-inside">
-            <li>İstediğiniz zaman bu ayarı kapatabilirsiniz.</li>
-            <li>Telefon numaranız yalnızca bildirim göndermek için kullanılır.</li>
-            <li>Demo ortamlarda gerçek bir mesaj gönderilmez.</li>
+            <li>{t("settings.whatsapp.consentBulletControl")}</li>
+            <li>{t("settings.whatsapp.consentBulletPrivacy")}</li>
+            <li>{t("settings.whatsapp.consentBulletDemo")}</li>
           </ul>
           {actionError && <p className="text-xs text-danger">{actionError}</p>}
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" size="sm" onClick={() => setConsentModalOpen(false)}>
-              Vazgeç
+              {t("settings.whatsapp.cancel")}
             </Button>
             <Button variant="primary" size="sm" isLoading={consentSubmitting} onClick={handleOptIn}>
-              Onaylıyorum, Aç
+              {t("settings.whatsapp.confirm")}
             </Button>
           </div>
         </div>

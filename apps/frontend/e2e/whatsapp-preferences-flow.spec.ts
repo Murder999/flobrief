@@ -67,6 +67,9 @@ async function loginAgency(page: Page, email: string) {
 }
 
 async function loginBrand(page: Page, email: string) {
+  await page.addInitScript(() => {
+    sessionStorage.setItem("flobrief_onboarding_wizard_closed_session", "true");
+  });
   await page.goto("/brand/login");
   await page.locator("#brand-email").fill(email);
   await page.locator("#brand-password").fill(PASSWORD);
@@ -96,7 +99,7 @@ test.describe("WhatsApp preferences flow — agency user settings", () => {
     await loginAgency(page, OWNER_A_EMAIL);
     await page.goto("/dashboard/settings/notifications");
 
-    await expect(page.getByRole("heading", { name: "Bildirim Tercihleri" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bildirimler", exact: true })).toBeVisible();
     await expect(page.getByText("WhatsApp Bildirimleri")).toBeVisible();
 
     const bodyText = await page.locator("body").innerText();
@@ -258,14 +261,53 @@ test.describe("WhatsApp preferences flow — Owner/Admin management center", () 
 });
 
 test.describe("WhatsApp preferences flow — brand portal", () => {
-  test("brand user sees the WhatsApp settings tab without finance/internal events", async ({
+  test("brand user manages shared channels and sees role-filtered WhatsApp events", async ({
     page,
   }) => {
     const consoleErrors = collectConsoleErrors(page);
     await loginBrand(page, BRAND_MANAGER_EMAIL);
+    const statusResponsePromise = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/v1/notifications/whatsapp/status" &&
+        response.request().method() === "GET",
+      { timeout: 15_000 }
+    );
     await page.goto("/brand/notifications?tab=settings");
+    const statusResponse = await statusResponsePromise;
+    const requestHeaders = statusResponse.request().headers();
+    const responseBody = await statusResponse.text();
+    expect(
+      statusResponse.status(),
+      JSON.stringify({
+        endpoint: new URL(statusResponse.url()).pathname,
+        method: statusResponse.request().method(),
+        status: statusResponse.status(),
+        response_body: responseBody.slice(0, 500),
+        origin: new URL(statusResponse.url()).origin,
+        user_type: "brand_user",
+        portal: "brand",
+        demo_session: false,
+        has_x_agency_id: "x-agency-id" in requestHeaders,
+        tenant_type: "normal_brand",
+      })
+    ).toBe(200);
 
-    await expect(page.getByText("WhatsApp Bildirimleri")).toBeVisible();
+    const emailToggle = page.getByRole("switch", { name: "E-posta bildirimleri" });
+    const inAppToggle = page.getByRole("switch", { name: "Uygulama içi bildirimler" });
+    await expect(emailToggle).toBeVisible();
+    await expect(inAppToggle).toBeVisible();
+    await expect(page.getByText("WhatsApp bildirimleri")).toBeVisible();
+
+    const initialEmailState = await emailToggle.getAttribute("aria-checked");
+    await emailToggle.click();
+    await expect(emailToggle).not.toHaveAttribute("aria-checked", initialEmailState ?? "");
+    const savedEmailState = await emailToggle.getAttribute("aria-checked");
+    await page.reload();
+    await expect(page.getByRole("switch", { name: "E-posta bildirimleri" })).toHaveAttribute(
+      "aria-checked",
+      savedEmailState ?? ""
+    );
+
     const bodyText = await page.locator("body").innerText();
     expect(bodyText).not.toContain("Ödeme alındı"); // agency-only finance event
 
@@ -276,9 +318,23 @@ test.describe("WhatsApp preferences flow — brand portal", () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await loginBrand(page, BRAND_MANAGER_EMAIL);
     await page.goto("/brand/notifications?tab=settings");
-    await expect(page.getByText("WhatsApp Bildirimleri")).toBeVisible();
+    await expect(page.getByLabel("Ayarlar bölümü")).toHaveValue("/brand/notifications?tab=settings");
+    await expect(page.getByText("WhatsApp bildirimleri")).toBeVisible();
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1);
+  });
+
+  test("notification tabs persist in the URL and browser history", async ({ page }) => {
+    await loginBrand(page, BRAND_MANAGER_EMAIL);
+    await page.goto("/brand/notifications");
+
+    await page.getByRole("tab", { name: "Ayarlar", exact: true }).click();
+    await expect(page).toHaveURL(/\/brand\/notifications\?tab=settings$/);
+    await expect(page.getByRole("heading", { name: "Bildirimler", exact: true })).toBeVisible();
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/brand\/notifications$/);
+    await expect(page.getByRole("tab", { name: "Tümü", exact: true })).toBeVisible();
   });
 });

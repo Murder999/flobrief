@@ -22,8 +22,8 @@ export const viewport: Viewport = {
 
 const FALLBACK_METADATA: Metadata = {
   title: {
-    default: "Flobrief — Agency Brief Management",
-    template: "%s | Flobrief",
+    default: "PostPiloter — Agency Brief Management",
+    template: "%s | PostPiloter",
   },
   description:
     "Premium brief management, approval workflows, and content calendar for agencies and brands.",

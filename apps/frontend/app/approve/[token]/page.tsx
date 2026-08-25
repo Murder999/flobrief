@@ -348,7 +348,7 @@ export default function ApprovalPortalPage() {
   const st = statusLabel(approval.status, locale);
   const primaryColor = branding?.primary_color ?? "#6D28D9";
   const logoUrl = _assetUrl(branding?.logo_url ?? null);
-  const brandDisplayName = branding?.brand_name ?? branding?.agency_name ?? "Flobrief";
+  const brandDisplayName = branding?.brand_name ?? branding?.agency_name ?? "PostPiloter";
 
   // ── Active pending portal ─────────────────────────────────────────────────────
   return (

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Flobrief Demo Seed Script.
+"""PostPiloter Demo Seed Script.
 
 Creates a full demo workspace for sales demos and local development.
 Idempotent: if demo agency already exists, script exits cleanly.

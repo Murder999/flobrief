@@ -5,9 +5,9 @@ import { getInitials } from "@/lib/auth";
 import { brandPortalApi } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { DemoPortalSwitcher } from "@/components/workspace/demo-portal-switcher";
 import type { NotificationFeedSource } from "@/components/notifications/useNotificationFeed";
 import { BrandOnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useOnboardingPageSeen } from "@/hooks/useOnboardingPageSeen";
 import { ResponsiveAppShell } from "@/components/shell/ResponsiveAppShell";
 import type { BottomNavItem, NavDrawerGroup, NavIcon } from "@/components/shell/types";
@@ -164,22 +164,14 @@ function BrandSidebar({ isManager, membershipRole, brandName, notificationSource
 
       {/* Logo */}
       <div className="relative flex shrink-0 items-center gap-2.5 border-b border-border px-4 py-4">
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 shadow-glow-sm"
-          style={{ background: "var(--gradient-accent)" }}
-        >
-          <span className="text-white font-bold text-xs tracking-tight">F</span>
-        </div>
         <div className="flex-1 min-w-0">
-          <span className="font-semibold text-text text-sm tracking-tight block leading-tight">Flobrief</span>
+          <PostPiloterLogo className="mb-0.5 h-4 w-auto max-w-[94px] object-contain object-left" />
           <span className="block truncate text-[10px] leading-tight text-text-muted">
             {brandName ?? t("dashboard.navigation.portal")}
           </span>
         </div>
         <NotificationBell source={notificationSource} basePath="/brand/notifications" />
       </div>
-
-      <DemoPortalSwitcher portal="brand" />
 
       {seatWarning && (
         <div className="relative mx-2.5 mt-2.5 shrink-0 rounded-lg border border-warning/30 bg-warning/10 px-2.5 py-2 text-[11px] font-medium text-warning">
@@ -382,10 +374,10 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
         }
         groups={navDrawerGroups}
         bottomNavItems={localizedBottomNavItems}
-        brandTitle="Flobrief"
+        brandTitle="PostPiloter"
         brandSubtitle={brandName ?? t("dashboard.navigation.portal")}
-        drawerTopContent={<DemoPortalSwitcher portal="brand" />}
-        fallbackPageTitle="Flobrief"
+        demoPortal="brand"
+        fallbackPageTitle="PostPiloter"
         user={{ name: user.full_name, email: user.email, initials: getInitials(user.full_name) }}
         profileHref="/brand/settings"
         onLogout={logout}

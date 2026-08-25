@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Flobrief User Auth Debug Script.
+"""PostPiloter User Auth Debug Script.
 
 Checks whether a user exists and shows auth-relevant fields.
 NEVER prints password hash or sensitive secrets.
@@ -92,7 +92,7 @@ async def check(email: str, do_verify: bool = False) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Check Flobrief user auth state.")
+    parser = argparse.ArgumentParser(description="Check PostPiloter user auth state.")
     parser.add_argument("--email", required=True, help="User email to check")
     parser.add_argument(
         "--verify-password",

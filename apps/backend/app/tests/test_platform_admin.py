@@ -32,6 +32,7 @@ from app.schemas.platform import (
     PlatformSubscriptionRead,
     PlatformUserRead,
 )
+from app.services.mfa_service import build_otpauth_url
 
 # ── TOTP implementation helpers (copied from service) ─────────────────────────
 
@@ -84,10 +85,15 @@ class TestMfaSchemas:
     def test_setup_response(self):
         r = MfaSetupResponse(
             secret="JBSWY3DPEHPK3PXP",
-            otpauth_url="otpauth://totp/Flobrief:admin@example.com?secret=JBSWY3DPEHPK3PXP",
+            otpauth_url="otpauth://totp/PostPiloter:admin@example.com?secret=JBSWY3DPEHPK3PXP",
         )
         assert r.secret == "JBSWY3DPEHPK3PXP"
         assert "otpauth://totp" in r.otpauth_url
+
+    def test_otpauth_uses_postpiloter_issuer(self):
+        url = build_otpauth_url("JBSWY3DPEHPK3PXP", "admin@example.com")
+        assert "/PostPiloter:admin%40example.com" in url
+        assert "issuer=PostPiloter" in url
 
     def test_confirm_request_requires_code(self):
         r = MfaConfirmRequest(code="123456")

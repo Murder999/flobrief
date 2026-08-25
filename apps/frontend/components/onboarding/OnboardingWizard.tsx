@@ -31,7 +31,7 @@ interface StepMeta {
 }
 
 const AGENCY_OWNER_STEPS: Record<string, StepMeta> = {
-  welcome: { title: "Flobrief'e hoş geldiniz", description: "Kısa bir turla temel adımları birlikte tamamlayalım.", route: null, cta: "Başla" },
+  welcome: { title: "PostPiloter'a hoş geldiniz", description: "Kısa bir turla temel adımları birlikte tamamlayalım.", route: null, cta: "Başla" },
   agency_profile: { title: "Ajans profilini tamamla", description: "Ajans adınızı ve görünümünüzü düzenleyin.", route: "/dashboard/settings/agency", cta: "Ajans Ayarları", target: "/dashboard/settings/agency" },
   first_brand: { title: "İlk markanı ekle", description: "Yönettiğiniz markaları platforma ekleyin.", route: "/dashboard/brands", cta: "Marka Ekle", target: "/dashboard/brands" },
   invite_team: { title: "Ekip arkadaşını davet et", description: "Takımınızı ajansınıza davet edin.", route: "/dashboard/settings/members", cta: "Ekip Davet Et", target: "/dashboard/settings/members" },
@@ -287,6 +287,7 @@ function OnboardingWizardImpl({ variant, agencyId }: OnboardingWizardImplProps) 
     <>
       {/* Floating launcher — always available, doubles as "help menu" reopen (§J) */}
       <button
+        data-onboarding-launcher
         type="button"
         onClick={() => {
           if (isDismissed) { resume(); } else { setPanelOpen(true); }
@@ -335,7 +336,7 @@ function OnboardingWizardImpl({ variant, agencyId }: OnboardingWizardImplProps) 
             </div>
             <div className="p-6">
               <h2 className="text-lg font-semibold text-text mb-1.5">
-                {variant === "brand" ? "Marka portalına hoş geldiniz" : "Flobrief'e hoş geldiniz"}
+                {variant === "brand" ? "Marka portalına hoş geldiniz" : "PostPiloter'a hoş geldiniz"}
               </h2>
               <p className="text-sm text-text-muted leading-relaxed mb-5">
                 Sizi birkaç dakikada kurulumdan geçirecek kısa bir tur hazırladık — istediğiniz an
@@ -479,6 +480,7 @@ function OnboardingWizardImpl({ variant, agencyId }: OnboardingWizardImplProps) 
       {/* Resume affordance for a dismissed tour, surfaced inline near the launcher */}
       {isDismissed && !panelOpen && !welcomeOpen && (
         <button
+          data-onboarding-resume
           type="button"
           onClick={resume}
           className="fixed bottom-5 right-[72px] z-40 hidden md:flex items-center gap-1.5 px-3 py-2.5 rounded-full bg-surface border border-border shadow-lg text-[11px] font-medium text-text-muted hover:text-text transition-colors"

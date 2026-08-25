@@ -1,4 +1,4 @@
-"""Registry of Flobrief's actual public (indexable-eligible) frontend routes.
+"""Registry of PostPiloter's actual public (indexable-eligible) frontend routes.
 
 Kept in sync manually with apps/frontend/app/*. Only routes that genuinely
 exist as public pages belong here — private/authenticated routes (platform,

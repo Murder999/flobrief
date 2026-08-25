@@ -1,7 +1,7 @@
-# Flobrief — UI/UX DNA
+# PostPiloter — UI/UX DNA
 
 ## Positioning
-Flobrief is a premium B2B SaaS tool used by professional agencies to manage their brand clients.
+PostPiloter is a premium B2B SaaS tool used by professional agencies to manage their brand clients.
 The UI must reflect this: every screen should feel like it belongs in a sales demo or a VC pitch deck.
 
 ## Quality Benchmark

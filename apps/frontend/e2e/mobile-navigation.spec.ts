@@ -284,7 +284,7 @@ test.describe("Desktop regression", () => {
 
     await expect(page.getByRole("button", { name: "Menüyü aç" })).toBeHidden();
     await expect(page.getByRole("navigation", { name: "Alt gezinme" })).toBeHidden();
-    await expect(page.getByText("Flobrief").first()).toBeVisible(); // desktop sidebar logo row
+    await expect(page.locator('[data-testid="app-sidebar"] [data-brand-logo="postpiloter"]')).toBeVisible();
 
     expect(consoleErrors).toEqual([]);
   });

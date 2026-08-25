@@ -14,6 +14,7 @@ _COMMON_PASSWORDS: frozenset[str] = frozenset(
         "Admin1234!",
         "Welcome1!",
         "Flobrief1!",
+        "PostPiloter1!",
         "Passw0rd!",
         "Test1234!",
         "Summer2024!",

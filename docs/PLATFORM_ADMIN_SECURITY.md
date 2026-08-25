@@ -1,4 +1,4 @@
-# Flobrief — Platform Admin Security Specification
+# PostPiloter — Platform Admin Security Specification
 
 ## Kapsam
 Bu döküman, `platform_admin` kullanıcı tipi için geçerli olan tüm güvenlik

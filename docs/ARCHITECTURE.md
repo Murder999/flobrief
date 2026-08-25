@@ -1,7 +1,7 @@
-# Flobrief — System Architecture
+# PostPiloter — System Architecture
 
 ## Overview
-Flobrief is a multi-tenant B2B SaaS platform. The architecture is designed for:
+PostPiloter is a multi-tenant B2B SaaS platform. The architecture is designed for:
 - Hard tenant isolation (agency-scoped data)
 - Role-based access control at the API layer
 - Async-first backend for performance

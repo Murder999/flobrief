@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Flobrief Platform Admin Password Reset CLI.
+"""PostPiloter Platform Admin Password Reset CLI.
 
 Resets the password of an existing platform_admin account directly in the database.
 Minimum 5 characters required. No API validation rules apply here.

@@ -30,8 +30,12 @@ export function LocaleProvider({ initialLocale, children }: { initialLocale: Loc
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   useEffect(() => {
+    const pathLocale = window.location.pathname === "/tr" || window.location.pathname.startsWith("/tr/")
+      ? "tr"
+      : null;
     const storedLocale = normalizeLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
-    if (storedLocale) setLocaleState(storedLocale);
+    if (pathLocale) setLocaleState(pathLocale);
+    else if (storedLocale) setLocaleState(storedLocale);
   }, []);
 
   useEffect(() => {

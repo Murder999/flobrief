@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Flobrief Platform Admin Bootstrap CLI.
+"""PostPiloter Platform Admin Bootstrap CLI.
 
 Creates a platform_admin user directly in the database.
 No registration or invitation flow — this is the only way to create platform admins.
@@ -60,7 +60,7 @@ async def _create(email: str, full_name: str, password: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Create a Flobrief platform_admin user.",
+        description="Create a PostPiloter platform_admin user.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--email", required=True, help="Admin email address")
@@ -68,7 +68,7 @@ def main() -> None:
     args = parser.parse_args()
 
     print("=" * 60)
-    print("  FLOBRIEF PLATFORM ADMIN BOOTSTRAP")
+    print("  POSTPILOTER PLATFORM ADMIN BOOTSTRAP")
     print("=" * 60)
     print("[SECURITY] Platform admins have full system access.")
     print("[SECURITY] Production: run via deploy pipeline only.")

@@ -45,10 +45,12 @@ from app.models.enums import (  # noqa: E402
     WhatsAppTemplateStatus,
 )
 from app.models.notification import NotificationPreference  # noqa: E402
+from app.models.platform_provider_settings import PlatformProviderSetting  # noqa: E402
 from app.models.user import User  # noqa: E402
 from app.repositories.notification import NotificationPreferenceRepository  # noqa: E402
 from app.repositories.whatsapp_template import WhatsAppTemplateRepository  # noqa: E402
 from app.services.notification_dispatcher import NotificationDispatcher  # noqa: E402
+from app.services.secret_encryption import secret_encryption  # noqa: E402
 
 OWNER_A_EMAIL = "flobrief-e2e-waprefs-owner-a@example.com"
 OWNER_B_EMAIL = "flobrief-e2e-waprefs-owner-b@example.com"
@@ -56,6 +58,7 @@ BRAND_MANAGER_EMAIL = "flobrief-e2e-waprefs-brandmgr@example.com"
 DEMO_OWNER_EMAIL = "flobrief-e2e-waprefs-demo-owner@example.com"
 PASSWORD = "E2eTest1234!"
 READY_TEMPLATE_CODE = "brief_created"
+E2E_PROVIDER_MARKER = "E2E1"
 
 _LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 _ALL_EMAILS = (OWNER_A_EMAIL, OWNER_B_EMAIL, BRAND_MANAGER_EMAIL, DEMO_OWNER_EMAIL)
@@ -104,6 +107,17 @@ async def _delete_fixture(session) -> None:
             await session.delete(brand)
         await session.flush()
         await session.delete(user)
+
+    provider = (
+        await session.execute(
+            select(PlatformProviderSetting).where(
+                PlatformProviderSetting.provider == "whatsapp_twilio",
+                PlatformProviderSetting.account_sid_last4 == E2E_PROVIDER_MARKER,
+            )
+        )
+    ).scalar_one_or_none()
+    if provider is not None:
+        await session.delete(provider)
     await session.commit()
 
     # Restore the shared template row to its draft/no-content_sid baseline.
@@ -141,6 +155,7 @@ async def seed() -> None:
             is_active=True,
             is_verified=True,
             phone_number="+905551230001",
+            locale="tr",
         )
         owner_b = User(
             email=OWNER_B_EMAIL,
@@ -150,6 +165,7 @@ async def seed() -> None:
             is_active=True,
             is_verified=True,
             phone_number="+905551230002",
+            locale="tr",
         )
         brand_manager = User(
             email=BRAND_MANAGER_EMAIL,
@@ -159,6 +175,7 @@ async def seed() -> None:
             is_active=True,
             is_verified=True,
             phone_number="+905551230003",
+            locale="tr",
         )
         now = datetime.now(UTC)
         demo_agency = Agency(
@@ -176,6 +193,7 @@ async def seed() -> None:
             is_active=True,
             is_verified=True,
             phone_number="+905551230004",
+            locale="tr",
         )
 
         session.add_all(
@@ -249,6 +267,31 @@ async def seed() -> None:
             recipient_ids=[owner_a.id],
         )
         await session.commit()
+
+        provider = (
+            await session.execute(
+                select(PlatformProviderSetting).where(
+                    PlatformProviderSetting.provider == "whatsapp_twilio"
+                )
+            )
+        ).scalar_one_or_none()
+        if provider is None:
+            session.add(
+                PlatformProviderSetting(
+                    provider="whatsapp_twilio",
+                    provider_type="twilio_sandbox",
+                    is_enabled=True,
+                    encrypted_account_sid=secret_encryption.encrypt(
+                        "AC00000000000000000000000000E2E1"
+                    ),
+                    encrypted_auth_token=secret_encryption.encrypt("e2e-local-only-token"),
+                    encrypted_whatsapp_from=secret_encryption.encrypt("whatsapp:+15555550199"),
+                    account_sid_last4=E2E_PROVIDER_MARKER,
+                    whatsapp_from_masked="whatsapp:+1555****0199",
+                    configured_at=datetime.now(UTC),
+                )
+            )
+            await session.commit()
 
         print(f"E2E_OWNER_A_EMAIL={OWNER_A_EMAIL}")
         print(f"E2E_OWNER_B_EMAIL={OWNER_B_EMAIL}")

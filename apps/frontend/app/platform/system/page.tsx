@@ -96,7 +96,7 @@ export default function PlatformSystemPage() {
         </p>
         <h1 className="text-2xl font-bold text-text tracking-tight">Sistem Sağlığı</h1>
         <p className="text-sm text-text-muted mt-1">
-          Flobrief altyapısı ve uygulama bileşenlerinin anlık durumu.
+          PostPiloter altyapısı ve uygulama bileşenlerinin anlık durumu.
         </p>
       </div>
 

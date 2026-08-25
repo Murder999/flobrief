@@ -2,6 +2,10 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import type { NotificationFeedSource } from "@/components/notifications/useNotificationFeed";
+import {
+  DemoPortalSwitcher,
+  type DemoPortal,
+} from "@/components/workspace/demo-portal-switcher";
 import { subscribeMobileDrawerRequests } from "@/lib/mobile-drawer-bridge";
 import { MobileBottomNavigation } from "./MobileBottomNavigation";
 import { MobileNavigationDrawer } from "./MobileNavigationDrawer";
@@ -16,7 +20,7 @@ interface ResponsiveAppShellProps {
   bottomNavItems: BottomNavItem[];
   brandTitle: string;
   brandSubtitle?: string;
-  drawerTopContent?: ReactNode;
+  demoPortal: DemoPortal;
   fallbackPageTitle: string;
   user: { name: string; email: string; initials: string } | null;
   profileHref: string;
@@ -41,7 +45,7 @@ export function ResponsiveAppShell({
   bottomNavItems,
   brandTitle,
   brandSubtitle,
-  drawerTopContent,
+  demoPortal,
   fallbackPageTitle,
   user,
   profileHref,
@@ -97,13 +101,14 @@ export function ResponsiveAppShell({
         />
       </div>
 
+      <DemoPortalSwitcher portal={demoPortal} />
+
       <MobileNavigationDrawer
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         groups={groups}
         brandTitle={brandTitle}
         brandSubtitle={brandSubtitle}
-        topContent={drawerTopContent}
         user={user}
         profileHref={profileHref}
         onLogout={onLogout}

@@ -134,7 +134,7 @@ async def export_csv(
     effective_start = start_date or default_start
     effective_end = end_date or default_end
     csv_bytes = await svc.export_csv(workspace.agency.id, effective_start, effective_end)
-    filename = f"flobrief-time-entries-{effective_start}-{effective_end}.csv"
+    filename = f"postpiloter-time-entries-{effective_start}-{effective_end}.csv"
     return StreamingResponse(
         BytesIO(csv_bytes),
         media_type="text/csv",

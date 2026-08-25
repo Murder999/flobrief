@@ -567,3 +567,16 @@ body {
   font-style: italic;
   font-weight: 500;
 }
+
+/* Keep authenticated floating utilities in separate right-edge slots. */
+html:has([data-floating-demo-control]) [data-onboarding-launcher],
+html:has([data-floating-demo-control]) [data-onboarding-resume] {
+  bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px) + 4.75rem);
+}
+
+@media (min-width: 1024px) {
+  html:has([data-floating-demo-control]) [data-onboarding-launcher],
+  html:has([data-floating-demo-control]) [data-onboarding-resume] {
+    bottom: 5.75rem;
+  }
+}

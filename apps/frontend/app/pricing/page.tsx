@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,18 +16,13 @@ import {
 import { useLocale } from "@/context/locale-context";
 import { LanguageSelector } from "@/components/i18n/language-selector";
 import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
+import { PublicFooter } from "@/components/marketing/PublicFooter";
 import { usePaddlePricePreview } from "@/lib/billing/usePaddlePricePreview";
 import { openCheckout } from "@/lib/billing/paddle";
 import type { TranslationKey } from "@/messages";
 
 const ES = [0.16, 1, 0.3, 1] as const;
 const vUp = { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: ES } } };
-
-/* ── helpers ─────────────────────────────────────────────────────────────── */
-
-function fmt(cents: number, currency: string, intlLocale: string) {
-  return new Intl.NumberFormat(intlLocale, { style: "currency", currency, minimumFractionDigits: 0 }).format(cents / 100);
-}
 
 /* ── Plan card ───────────────────────────────────────────────────────────── */
 
@@ -42,18 +37,21 @@ const PLAN_META: Record<string, { icon: React.ElementType; color: string; popula
 function PricingCard({
   plan, yearly, onSelect, highlighted,
 }: {
-  plan: PlanRead; yearly: boolean; onSelect: (p: PlanRead) => void; highlighted: boolean;
+  plan: PlanRead; yearly: boolean; onSelect: (p: PlanRead) => Promise<void>; highlighted: boolean;
 }) {
-  const { intlLocale, t, locale } = useLocale();
+  const { t } = useLocale();
   const meta = PLAN_META[plan.code] ?? { icon: Star, color: "text-text" };
   const Icon = meta.icon;
   const isEnterprise = plan.monthly_price_cents === 0;
   const period = yearly ? "yearly" : "monthly";
+  const [checkoutError, setCheckoutError] = useState(false);
 
-  const { price, loading: priceLoading, error: priceError } = usePaddlePricePreview(
+  const { price, loading: priceLoading, error: priceError, retry } = usePaddlePricePreview(
     isEnterprise ? null : (plan.code as "brand_solo" | "starter_agency" | "pro_agency" | "agency_plus"),
     period
   );
+
+  useEffect(() => setCheckoutError(false), [period]);
 
   const handleCheckout = async () => {
     if (isEnterprise) {
@@ -63,7 +61,12 @@ function PricingCard({
     if (priceError || !price) {
       return;
     }
-    await onSelect(plan);
+    try {
+      setCheckoutError(false);
+      await onSelect(plan);
+    } catch {
+      setCheckoutError(true);
+    }
   };
 
   return (
@@ -73,6 +76,8 @@ function PricingCard({
           ? "border-accent/50 bg-surface shadow-[0_0_0_1px_var(--color-accent)/10,0_8px_40px_var(--color-accent)/10] scale-[1.02]"
           : "border-border bg-surface hover:border-border-hover hover:shadow-card-hover"
       }`}
+      data-testid={`pricing-card-${plan.code}`}
+      data-billing-period={period}
     >
       {meta.popular && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
@@ -104,15 +109,23 @@ function PricingCard({
           <div className="flex flex-col items-center gap-2 text-center py-4">
             <div className="text-3xl font-bold text-text-muted">—</div>
             <p className="text-sm text-danger-text">{t("marketing.pricing.priceUnavailable")}</p>
-            <p className="text-xs text-text-muted">Checkout devre dışı</p>
+            <button
+              type="button"
+              onClick={() => void retry()}
+              className="text-xs font-semibold text-accent hover:text-accent-hover transition-colors"
+            >
+              {t("marketing.pricing.retry")}
+            </button>
           </div>
         ) : priceLoading ? (
           <>
             <div className="flex items-end gap-1">
-              <div className="text-3xl font-bold text-text animate-pulse">
-                <span className="bg-surface-2 rounded w-24 h-10" />
+              <div className="animate-pulse">
+                <span className="block bg-surface-2 rounded w-24 h-10" />
               </div>
-              <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
+              <span className="text-sm text-text-muted mb-1">
+                {yearly ? t("marketing.pricing.perYear") : t("marketing.pricing.perMonth")}
+              </span>
             </div>
             <p className="mt-1 text-xs text-text-muted">{t("marketing.pricing.loadingPrice")}</p>
           </>
@@ -120,11 +133,13 @@ function PricingCard({
           <>
             <div className="flex items-end gap-1">
               <p className="text-3xl font-bold text-text">{price.formattedTotal}</p>
-              <span className="text-sm text-text-muted mb-1">{t("marketing.pricing.perMonth")}</span>
+              <span className="text-sm text-text-muted mb-1">
+                {yearly ? t("marketing.pricing.perYear") : t("marketing.pricing.perMonth")}
+              </span>
             </div>
             {yearly && plan.yearly_price_cents && (
               <p className="mt-1 text-xs text-success-text font-medium">
-                {t("marketing.pricing.yearlySavings", { price: price.formattedTotal })}
+                {t("marketing.pricing.yearlySavings")}
               </p>
             )}
           </>
@@ -132,6 +147,13 @@ function PricingCard({
           <div className="flex flex-col items-center gap-2 text-center py-4">
             <div className="text-3xl font-bold text-text-muted">—</div>
             <p className="text-sm text-danger-text">{t("marketing.pricing.priceUnavailable")}</p>
+            <button
+              type="button"
+              onClick={() => void retry()}
+              className="text-xs font-semibold text-accent hover:text-accent-hover transition-colors"
+            >
+              {t("marketing.pricing.retry")}
+            </button>
           </div>
         )}
       </div>
@@ -187,14 +209,14 @@ function PricingCard({
 
       <button
         onClick={handleCheckout}
-        disabled={priceLoading && !isEnterprise}
+        disabled={!isEnterprise && (priceLoading || Boolean(priceError) || !price)}
         className={`mt-auto w-full rounded-xl py-2.5 text-sm font-semibold transition-all ${
           highlighted
             ? "text-white hover:opacity-90"
             : isEnterprise
               ? "bg-surface-2 border border-border text-text hover:bg-surface-3"
               : "bg-surface-2 border border-border text-text hover:bg-accent hover:text-white hover:border-accent/0"
-        } ${priceLoading && !isEnterprise ? "opacity-50 cursor-wait" : ""}`}
+        } ${!isEnterprise && (priceLoading || Boolean(priceError) || !price) ? "opacity-50 cursor-not-allowed" : ""}`}
         style={highlighted ? { background: "var(--gradient-accent)" } : undefined}
       >
         {isEnterprise
@@ -209,6 +231,11 @@ function PricingCard({
           : t("marketing.pricing.selectPlan")}
         {!isEnterprise && !priceLoading && <ArrowRight className="inline w-3.5 h-3.5 ml-1.5 -mt-px" />}
       </button>
+      {checkoutError && (
+        <p className="mt-2 text-center text-xs text-danger-text" role="alert">
+          {t("marketing.pricing.checkoutError")}
+        </p>
+      )}
     </div>
   );
 }
@@ -339,23 +366,32 @@ export default function PricingPage() {
   const { user } = useAuth();
   const [plans, setPlans] = useState<PlanRead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [plansError, setPlansError] = useState(false);
   const [yearly, setYearly] = useState(false);
 
-  useEffect(() => {
-    planApi
-      .list()
-      .then((data) =>
-        setPlans(
-          data
-            .filter((p) => PLAN_ORDER.includes(p.code))
-            .sort((a, b) => PLAN_ORDER.indexOf(a.code) - PLAN_ORDER.indexOf(b.code))
-        )
-      )
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const loadPlans = useCallback(async () => {
+    setLoading(true);
+    setPlansError(false);
+    try {
+      const data = await planApi.list();
+      setPlans(
+        data
+          .filter((p) => PLAN_ORDER.includes(p.code))
+          .sort((a, b) => PLAN_ORDER.indexOf(a.code) - PLAN_ORDER.indexOf(b.code))
+      );
+    } catch {
+      setPlans([]);
+      setPlansError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  function handleSelect(plan: PlanRead) {
+  useEffect(() => {
+    void loadPlans();
+  }, [loadPlans]);
+
+  async function handleSelect(plan: PlanRead) {
     if (plan.monthly_price_cents === 0) {
       window.location.href = "mailto:sales@postpiloter.com?subject=Enterprise Plan";
       return;
@@ -364,7 +400,7 @@ export default function PricingPage() {
     const planCode = plan.code as "brand_solo" | "starter_agency" | "pro_agency" | "agency_plus";
     const period = yearly ? "yearly" : "monthly";
 
-    openCheckout({
+    await openCheckout({
       planCode,
       period,
       locale: locale as "tr" | "en",
@@ -452,6 +488,17 @@ export default function PricingPage() {
             {[...Array(5)].map((_, i) => (
               <div key={i} className="h-[420px] animate-pulse rounded-2xl border border-border bg-surface" />
             ))}
+          </div>
+        ) : plansError ? (
+          <div className="mb-20 rounded-2xl border border-border bg-surface px-6 py-12 text-center" role="alert">
+            <p className="text-sm text-text-secondary">{t("marketing.pricing.planLoadError")}</p>
+            <button
+              type="button"
+              onClick={() => void loadPlans()}
+              className="mt-3 text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
+            >
+              {t("marketing.pricing.retry")}
+            </button>
           </div>
         ) : (
           <motion.div
@@ -543,17 +590,7 @@ export default function PricingPage() {
         </motion.div>
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-border">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-text-muted">
-          <span>© {new Date().getFullYear()} PostPiloter. {t("marketing.footer.rights")}</span>
-          <div className="flex items-center gap-4">
-            <Link href="/pricing" className="hover:text-text transition-colors">{t("marketing.pricing.nav")}</Link>
-            <a href="mailto:sales@postpiloter.com" className="hover:text-text transition-colors">{t("marketing.pricing.contact")}</a>
-            <Link href="/" className="hover:text-text transition-colors">{t("marketing.pricing.home")}</Link>
-          </div>
-        </div>
-      </div>
+      <PublicFooter />
     </div>
   );
 }

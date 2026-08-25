@@ -1,4 +1,4 @@
-# Flobrief
+# PostPiloter
 
 Premium B2B SaaS platform for agency-brand brief management, approval workflows, content calendar, reporting, white-label, and subscription management.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""predev guard: refuses to start a second `uvicorn` for THIS Flobrief
+"""predev guard: refuses to start a second `uvicorn` for THIS PostPiloter
 backend if one is already running, mirroring apps/frontend/scripts/predev-check.js.
 
 Detects by process command line (backend directory path + "uvicorn"), not by
@@ -61,7 +61,7 @@ def main() -> int:
 
     print("")
     print("========================================================")
-    print(" Flobrief backend (uvicorn) ZATEN ÇALIŞIYOR.")
+    print(" PostPiloter backend (uvicorn) ZATEN ÇALIŞIYOR.")
     print("========================================================")
     for inst in instances:
         ports = inst.get("Ports") or []

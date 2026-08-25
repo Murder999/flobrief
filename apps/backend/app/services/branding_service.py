@@ -253,7 +253,7 @@ class BrandingService:
             select(Agency).where(Agency.id == agency_id, Agency.deleted_at.is_(None))
         )
         agency = result.scalar_one_or_none()
-        agency_name = agency.name if agency else "Flobrief"
+        agency_name = agency.name if agency else "PostPiloter"
 
         settings = await self._settings_repo.get_by_agency(agency_id)
         entitlement = await _check_entitlement(self.db, agency_id)

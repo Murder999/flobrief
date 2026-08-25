@@ -184,15 +184,15 @@ class NotificationPreferenceRepository:
         self.session = session
 
     async def get_or_create(self, user_id: uuid.UUID) -> NotificationPreference:
-        stmt = select(NotificationPreference).where(NotificationPreference.user_id == user_id)
-        result = await self.session.execute(stmt)
-        pref = result.scalar_one_or_none()
-        if pref is None:
-            pref = NotificationPreference(user_id=user_id)
-            self.session.add(pref)
-            await self.session.flush()
-            await self.session.refresh(pref)
-        return pref
+        await self.session.execute(
+            pg_insert(NotificationPreference)
+            .values(user_id=user_id)
+            .on_conflict_do_nothing(index_elements=[NotificationPreference.user_id])
+        )
+        result = await self.session.execute(
+            select(NotificationPreference).where(NotificationPreference.user_id == user_id)
+        )
+        return result.scalar_one()
 
     async def update(
         self,

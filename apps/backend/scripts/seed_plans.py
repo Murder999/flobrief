@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Flobrief Plan Seed Script.
+"""PostPiloter Plan Seed Script.
 
 Seeds the five plan definitions. Idempotent: safe to run multiple times.
 Existing plans (matched by code) are updated in place; missing ones are created.

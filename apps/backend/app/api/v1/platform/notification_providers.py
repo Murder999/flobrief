@@ -207,7 +207,9 @@ async def test_whatsapp_send(
 
     provider = await WhatsAppProviderFactory.get_provider(db)
 
-    message = data.message or "Flobrief WhatsApp test mesajı. Platform yapılandırması başarılı."
+    message = data.message or (
+        "PostPiloter WhatsApp test mesajı. Platform yapılandırması başarılı."
+    )
     result = provider.send_message(data.to_phone, message)
 
     to_masked = _mask_phone(data.to_phone)

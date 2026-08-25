@@ -29,15 +29,15 @@ export function PublicFooter() {
   return (
     <>
       <footer className="border-t border-border bg-background" data-testid="public-footer">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="lg:col-span-2">
-          <Link href={localize("/")} className="group mb-4 inline-flex items-center gap-2.5">
-            <PostPiloterLogo className="h-8 w-auto transition-transform group-hover:scale-[1.02]" />
-          </Link>
-          <p className="mb-6 max-w-sm text-sm leading-relaxed text-text-muted">
-            {t("marketing.footer.description")}
-          </p>
-<div className="flex flex-wrap gap-3">
+        <div className="mx-auto grid max-w-7xl gap-x-8 gap-y-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="lg:col-span-2">
+            <Link href={localize("/")} className="group mb-4 inline-flex items-center gap-2.5">
+              <PostPiloterLogo className="h-8 w-auto transition-transform group-hover:scale-[1.02]" />
+            </Link>
+            <p className="mb-6 max-w-sm text-sm leading-relaxed text-text-muted">
+              {t("marketing.footer.description")}
+            </p>
+            <div className="flex flex-wrap gap-3">
               <Link href={localize("/demo")} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-gradient-accent px-4 text-xs font-semibold text-white">
                 {t("marketing.actions.demo")}
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -46,9 +46,9 @@ export function PublicFooter() {
                 {t("auth.actions.register")}
               </Link>
             </div>
-        </div>
+          </div>
 
-        <div>
+          <div>
           <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-text">{t("marketing.footer.solutions")}</h2>
           <ul className="space-y-3">
             {solutionLinks.map((item) => (
@@ -59,9 +59,9 @@ export function PublicFooter() {
               </li>
             ))}
           </ul>
-        </div>
+          </div>
 
-        <div>
+          <div>
           <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-text">{t("marketing.footer.getStarted")}</h2>
           <ul className="space-y-3">
             <li><Link href={localize("/pricing")} className="text-sm text-text-muted hover:text-text">{t("common.navigation.pricing")}</Link></li>
@@ -77,9 +77,9 @@ export function PublicFooter() {
               </button>
             </li>
           </ul>
-        </div>
+          </div>
 
-        <div>
+          <div>
           <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-text">{t("marketing.footer.legal")}</h2>
           <ul className="space-y-3">
             {legalLinks.map((item) => (
@@ -90,14 +90,14 @@ export function PublicFooter() {
               </li>
             ))}
           </ul>
+          </div>
         </div>
-      </div>
-      <div className="border-t border-border">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-6 py-5 sm:flex-row">
-          <p className="text-xs text-text-muted">© {new Date().getFullYear()} PostPiloter. {t("marketing.footer.rights")}</p>
-          <p className="text-xs text-text-muted">{t("marketing.footer.tagline")}</p>
+        <div className="border-t border-border">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-6 py-5 sm:flex-row">
+            <p className="text-xs text-text-muted">© {new Date().getFullYear()} PostPiloter. {t("marketing.footer.rights")}</p>
+            <p className="text-xs text-text-muted">{t("marketing.footer.tagline")}</p>
+          </div>
         </div>
-      </div>
       </footer>
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>

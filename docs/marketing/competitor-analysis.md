@@ -1,4 +1,4 @@
-# Flobrief — Rakip Analizi
+# PostPiloter — Rakip Analizi
 
 **Araştırma Tarihi:** 12 Temmuz 2026  
 **Analizi Yapan:** Claude Code (web araştırması + proje kaynak kodu incelemesi)  
@@ -8,7 +8,7 @@
 
 ## 1. Yönetici Özeti
 
-Flobrief, ajanslar ile marka müşterileri arasındaki **brief yönetimi ve onay sürecini** merkeze alan dikey bir B2B SaaS ürünüdür. Rakipler ya genel proje yönetimi (ClickUp, Monday.com) ya da sosyal medya içerik onayı (Planable) ya da dosya proofing (Filestage, Ziflow) konumlandırması yapar — **brieffing + onay + içerik takvimi + beyaz etiket + Türkçe ödeme** bütünlüğünü tek platformda sunan bir rakip yoktur.
+PostPiloter, ajanslar ile marka müşterileri arasındaki **brief yönetimi ve onay sürecini** merkeze alan dikey bir B2B SaaS ürünüdür. Rakipler ya genel proje yönetimi (ClickUp, Monday.com) ya da sosyal medya içerik onayı (Planable) ya da dosya proofing (Filestage, Ziflow) konumlandırması yapar — **brieffing + onay + içerik takvimi + beyaz etiket + Türkçe ödeme** bütünlüğünü tek platformda sunan bir rakip yoktur.
 
 **En büyük fırsat:** Türkiye ve çevre pazarlarda, ajans-marka ilişkisini yönetmek için hâlâ e-posta + Excel + WhatsApp kullanan ajanslar; yerelleştirilmiş ve dikey bir platforma ciddi ödeme niyetindedir.
 
@@ -16,9 +16,9 @@ Flobrief, ajanslar ile marka müşterileri arasındaki **brief yönetimi ve onay
 
 ---
 
-## 2. Flobrief Ürün Özeti
+## 2. PostPiloter Ürün Özeti
 
-Flobrief'in mevcut (v1.0) yetenekleri:
+PostPiloter'ın mevcut (v1.0) yetenekleri:
 
 | Modül | Özellikler |
 |-------|------------|
@@ -71,7 +71,7 @@ Flobrief'in mevcut (v1.0) yetenekleri:
 
 **Zayıf Yönler:**
 - **Brief yönetimi yok:** Yaratıcı brief oluşturma, sektörel şablonlar, brief versiyonlama
-- **Beyaz etiket yok:** Marka portalı Flobrief markasıyla çalışır
+- **Beyaz etiket yok:** Marka portalı PostPiloter markasıyla çalışır
 - **İçerik takvimi kısıtlı:** Sadece sosyal medya gönderileri; çok kanallı kampanya planlaması zayıf
 - **Türkçe ödeme yok:** iyzico veya yerel ödeme methodu desteği bulunmuyor
 - Küçük ekipler için fiyat yüksek olabiliyor
@@ -282,7 +282,7 @@ Türkiye'de ajans-marka brief ve onay yönetimi için özel bir SaaS çözümü 
 
 ## 4. Mesajlaşma Karşılaştırma Matrisi
 
-| Boyut | Flobrief | Planable | Filestage | Ziflow | ClickUp | Monday.com |
+| Boyut | PostPiloter | Planable | Filestage | Ziflow | ClickUp | Monday.com |
 |-------|----------|----------|-----------|--------|---------|------------|
 | **Birincil tagline** | Brief yönetimi + onay platformu (ajanslar için) | "İşbirliği önce gelen sosyal medya aracı" | "Online proofing platformu" | "Kurumsal yaratıcı proofing" | "Hepsi bir arada PM" | "Daha iyi çalış" |
 | **Hedef alıcı** | Türkiye/bölge ajans sahipleri + marka yöneticileri | Sosyal medya ajansları | Yaratıcı proje yöneticileri | Kurumsal kreatif ekipler | Genel PM kullanıcıları | Genel iş ekipleri |
@@ -295,7 +295,7 @@ Türkiye'de ajans-marka brief ve onay yönetimi için özel bir SaaS çözümü 
 
 ## 5. Özellik Karşılaştırması
 
-| Özellik | Flobrief | Planable | Filestage | Ziflow | ClickUp | Monday.com |
+| Özellik | PostPiloter | Planable | Filestage | Ziflow | ClickUp | Monday.com |
 |---------|----------|----------|-----------|--------|---------|------------|
 | Brief şablon motoru | ✅ (dinamik, sektörel) | ❌ | ❌ | ❌ | ⚠️ (özel yapım) | ⚠️ (özel yapım) |
 | Brief versiyon geçmişi | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -326,9 +326,9 @@ Türkiye'de ajans-marka brief ve onay yönetimi için özel bir SaaS çözümü 
 
 ## 6. İçerik Boşluğu Analizi
 
-### Flobrief'in Öne Çıkabileceği İçerik Konuları
+### PostPiloter'ın Öne Çıkabileceği İçerik Konuları
 
-| Konu | Rakipler | Flobrief Fırsatı |
+| Konu | Rakipler | PostPiloter Fırsatı |
 |------|----------|------------------|
 | Ajans brief sürecini nasıl dijitalleştirirsiniz | Neredeyse hiç içerik yok | Rehber, şablon, vaka çalışması |
 | Türkiye'de ajans-marka ilişkisi yönetimi | Türkçe içerik yok | Türkçe blog, webinar |
@@ -337,7 +337,7 @@ Türkiye'de ajans-marka brief ve onay yönetimi için özel bir SaaS çözümü 
 | Ajans raporlaması: müşteriye ne sunmalı | Çeşitli içerik var | iyzico faturalamayla bütünleşik rehber |
 | KPI takibi: brief döngüsü metrikleri | Yok | Özgün blog + PDF |
 
-### Flobrief'in Olmadığı Ama Rakiplerin Ürettiği Konular
+### PostPiloter'da Olmayan Ama Rakiplerin Ürettiği Konular
 
 | Konu | Kim Üretiyor |
 |------|-------------|
@@ -352,7 +352,7 @@ Türkiye'de ajans-marka brief ve onay yönetimi için özel bir SaaS çözümü 
 
 ### 7.1 Konumlandırma Boşlukları
 
-1. **"Brief-to-approval" dikey platform:** Hiçbir rakip tüm brief yaşam döngüsünü (oluşturma → atama → versiyon → onay → takvim → raporlama) tek platformda sunmuyor. Flobrief bu boşluğu dolduruyor.
+1. **"Brief-to-approval" dikey platform:** Hiçbir rakip tüm brief yaşam döngüsünü (oluşturma → atama → versiyon → onay → takvim → raporlama) tek platformda sunmuyor. PostPiloter bu boşluğu dolduruyor.
 
 2. **Türkiye ve MENA pazarı için yerelleştirilmiş çözüm:**
    - iyzico ile yerel TL ödeme
@@ -361,7 +361,7 @@ Türkiye'de ajans-marka brief ve onay yönetimi için özel bir SaaS çözümü 
    - KVKK uyumlu altyapı
    - WhatsApp bildirimi (Türkiye'de B2B iletişimde dominant)
 
-3. **Ajans beyaz etiketi:** Rakipler arasında Filestage ve Ziflow çok sınırlı branding sunar. Flobrief'in tam markalı public portal + özel domain özelliği, ajanslara müşteri karşısında premium görünüm sağlar.
+3. **Ajans beyaz etiketi:** Rakipler arasında Filestage ve Ziflow çok sınırlı branding sunar. PostPiloter'ın tam markalı public portal + özel domain özelliği, ajanslara müşteri karşısında premium görünüm sağlar.
 
 4. **Platform-as-a-platform:** Platform admin paneli ile çok ajansı yöneten SaaS operatörlerine satılabilir (agency-of-agencies veya franchising modeli).
 
@@ -386,13 +386,13 @@ Türkiye'de ajans-marka brief ve onay yönetimi için özel bir SaaS çözümü 
 
 ### 8.2 Yapısal Tehditler
 
-- **AI destekli otomatik brief oluşturma:** Rakipler AI ile brief içeriğini otomatik üretirse; Flobrief'in şablon motoru basit kalabilir
+- **AI destekli otomatik brief oluşturma:** Rakipler AI ile brief içeriğini otomatik üretirse; PostPiloter'ın şablon motoru basit kalabilir
 - **Mega platform konsolidasyonu:** Adobe (Workfront) veya Salesforce bu segmenti satın alabilir
 - **Entegrasyon eksikliği:** v1'de Slack, Asana, Jira entegrasyonu yok; kurumsal müşteriler vazgeçebilir
 
 ---
 
-## 9. Flobrief'te Eksik Kalan Kritik Özellikler (v1 Sonrası Yol Haritası)
+## 9. PostPiloter'da Eksik Kalan Kritik Özellikler (v1 Sonrası Yol Haritası)
 
 Aşağıdaki özellikler rekabet avantajı için önceliklendirilmeli:
 
@@ -432,7 +432,7 @@ Aşağıdaki özellikler rekabet avantajı için önceliklendirilmeli:
 
 ### Hızlı Kazanımlar (Bu Hafta / Bu Ay)
 
-1. **"Flobrief vs Planable" ve "Flobrief vs Filestage" karşılaştırma sayfaları oluşturun** — SEO'da "brief approval software Turkey" için öne geçin
+1. **"PostPiloter vs Planable" ve "PostPiloter vs Filestage" karşılaştırma sayfaları oluşturun** — SEO'da "brief approval software Turkey" için öne geçin
 2. **Türkçe blog içeriği başlatın:** "E-postayla brief yönetiminin ajansınıza maliyeti ne?" — organic trafik için
 3. **Demo seed scriptini satış demosu olarak hazırlayın** — potansiyel müşterilere interaktif demo linki gönderin
 4. **WhatsApp Business kaydına başlayın** — Meta onay süreci uzun; erkenden başlanmalı
@@ -458,7 +458,7 @@ Aşağıdaki özellikler rekabet avantajı için önceliklendirilmeli:
 DOSYA / DOSYA               │                    BRIEF / İŞ AKIŞI
 PROOFING ───────────────────┼──────────────── ODAKLI
                             │
-              Monday.com ●  │   ● Flobrief
+              Monday.com ●  │   ● PostPiloter
                             │     (hedef konum)
         ClickUp ●           │
                             │
@@ -467,7 +467,7 @@ PROOFING ───────────────────┼───�
                     KÜÇÜK / KİŞİSEL
 ```
 
-Flobrief'in hedef konum: **Brief-iş akışı odaklı + orta ölçek ajans** — Ziflow ve Filestage'in fiyat olarak ulaşamadığı, ClickUp ve Monday'in özellik derinliğinden yoksun olduğu bölge.
+PostPiloter'ın hedef konum: **Brief-iş akışı odaklı + orta ölçek ajans** — Ziflow ve Filestage'in fiyat olarak ulaşamadığı, ClickUp ve Monday'in özellik derinliğinden yoksun olduğu bölge.
 
 ---
 

@@ -84,7 +84,7 @@ def main() -> None:
     parser.add_argument("--to", required=True, help="Recipient phone in E.164 format (+905...)")
     parser.add_argument(
         "--message",
-        default="Flobrief test WhatsApp bildirimi. Provider yapılandırması başarılı.",
+        default="PostPiloter test WhatsApp bildirimi. Provider yapılandırması başarılı.",
         help="Message body",
     )
     args = parser.parse_args()

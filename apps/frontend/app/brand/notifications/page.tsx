@@ -1,6 +1,8 @@
 "use client";
 
 import { WhatsAppPreferencesPanel } from "@/components/notifications/WhatsAppPreferencesPanel";
+import { NotificationChannelPreferences } from "@/components/notifications/NotificationChannelPreferences";
+import { SettingsLayout } from "@/components/settings/SettingsLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { brandPortalApi, type NotificationRead } from "@/lib/api-client";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
@@ -29,6 +31,21 @@ const BRIEF_PREFIXES = ["brief."];
 const COMMENT_PREFIXES = ["comment."];
 const FILE_PREFIXES = ["file."];
 const TEAM_PREFIXES = ["user.invited", "invitation."];
+const CATEGORIES = new Set<Category>([
+  "all",
+  "unread",
+  "approvals",
+  "briefs",
+  "comments",
+  "files",
+  "team",
+  "system",
+  "settings",
+]);
+
+function categoryFromQuery(value: string | null): Category {
+  return value && CATEGORIES.has(value as Category) ? (value as Category) : "all";
+}
 
 function categoryOf(eventType: string): Category {
   if (APPROVAL_PREFIXES.some((p) => eventType.startsWith(p))) return "approvals";
@@ -79,9 +96,7 @@ export default function BrandNotificationsPage() {
   const searchParams = useSearchParams();
   const [items, setItems] = useState<NotificationRead[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [tab, setTab] = useState<Category>(
-    searchParams.get("tab") === "settings" ? "settings" : "all"
-  );
+  const [tab, setTab] = useState<Category>(() => categoryFromQuery(searchParams.get("tab")));
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const navigatingIdRef = useRef<string | null>(null);
@@ -106,6 +121,10 @@ export default function BrandNotificationsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setTab(categoryFromQuery(searchParams.get("tab")));
+  }, [searchParams]);
 
   const filtered = useMemo(() => {
     if (tab === "all" || tab === "unread") return items;
@@ -159,8 +178,46 @@ export default function BrandNotificationsPage() {
     setUnreadCount(0);
   };
 
+  const handleTabChange = (value: string) => {
+    const nextTab = categoryFromQuery(value);
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextTab === "all") params.delete("tab");
+    else params.set("tab", nextTab);
+    setTab(nextTab);
+    const query = params.toString();
+    router.push(`/brand/notifications${query ? `?${query}` : ""}`, { scroll: false });
+  };
+
+  if (tab === "settings") {
+    return (
+      <SettingsLayout
+        portal="brand"
+        title={t("settings.nav.notifications")}
+        description={t("settings.notifications.description")}
+      >
+        <div className="space-y-4">
+          <NotificationChannelPreferences
+            accessToken={accessToken}
+            helpHref="/brand/help?topic=notifications"
+          />
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <h2 className="mb-2 text-sm font-semibold text-text">
+              {t("settings.notifications.whatsappTitle")}
+            </h2>
+            <WhatsAppPreferencesPanel
+              accessToken={accessToken}
+              agencyId={null}
+              portal="brand"
+              phoneSettingsHref="/brand/settings?tab=profile"
+            />
+          </div>
+        </div>
+      </SettingsLayout>
+    );
+  }
+
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="mx-auto max-w-3xl p-4 sm:p-8">
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-text">{t("notifications.title")}</h1>
@@ -179,16 +236,8 @@ export default function BrandNotificationsPage() {
         )}
       </div>
 
-      <Tabs items={tabsWithCounts} value={tab} onChange={(v) => setTab(v as Category)} className="mb-4" />
+      <Tabs items={tabsWithCounts} value={tab} onChange={handleTabChange} className="mb-4" />
 
-      {tab === "settings" ? (
-        <WhatsAppPreferencesPanel
-          accessToken={accessToken}
-          agencyId={null}
-          portal="brand"
-          phoneSettingsHref="/brand/settings"
-        />
-      ) : (
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
@@ -243,7 +292,6 @@ export default function BrandNotificationsPage() {
           })
         )}
       </div>
-      )}
     </div>
   );
 }

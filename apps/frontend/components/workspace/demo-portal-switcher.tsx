@@ -5,20 +5,20 @@ import { useAuth } from "@/hooks/useAuth";
 import { demoApi } from "@/lib/api-client";
 import { useLocale } from "@/context/locale-context";
 import { cn } from "@/lib/utils";
-import { Building2, Briefcase, Loader2, FlaskConical } from "lucide-react";
+import { FlaskConical, Loader2 } from "lucide-react";
 
-type DemoPortal = "agency" | "brand";
+export type DemoPortal = "agency" | "brand";
 
 const PORTALS = [
   {
     id: "agency" as const,
+    shortLabelKey: "dashboard.demo.agency",
     labelKey: "dashboard.demo.agencyPortal",
-    icon: Building2,
   },
   {
     id: "brand" as const,
+    shortLabelKey: "dashboard.demo.brand",
     labelKey: "dashboard.demo.brandPortal",
-    icon: Briefcase,
   },
 ] as const;
 
@@ -30,17 +30,12 @@ export function DemoPortalSwitcher({ portal }: DemoPortalSwitcherProps) {
   const { user, accessToken } = useAuth();
   const { t } = useLocale();
   const [isConfirmedDemo, setIsConfirmedDemo] = useState(false);
-  const [currentPortal, setCurrentPortal] = useState<DemoPortal>(portal);
   const [pendingPortal, setPendingPortal] = useState<DemoPortal | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestInFlightRef = useRef(false);
 
   const canHaveDemoSession =
     user?.user_type === "agency_user" || user?.user_type === "brand_user";
-
-  useEffect(() => {
-    setCurrentPortal(portal);
-  }, [portal]);
 
   useEffect(() => {
     let active = true;
@@ -55,9 +50,6 @@ export function DemoPortalSwitcher({ portal }: DemoPortalSwitcherProps) {
       .then((session) => {
         if (!active) return;
         setIsConfirmedDemo(session.is_demo);
-        if (session.is_demo && session.active_portal) {
-          setCurrentPortal(session.active_portal);
-        }
       })
       .catch(() => {
         if (active) setIsConfirmedDemo(false);
@@ -71,7 +63,7 @@ export function DemoPortalSwitcher({ portal }: DemoPortalSwitcherProps) {
   const switchPortal = async (targetPortal: DemoPortal) => {
     if (
       !accessToken ||
-      targetPortal === currentPortal ||
+      targetPortal === portal ||
       requestInFlightRef.current
     ) {
       return;
@@ -110,66 +102,74 @@ export function DemoPortalSwitcher({ portal }: DemoPortalSwitcherProps) {
   return (
     <section
       data-testid="demo-portal-switcher"
-      className="relative shrink-0 px-2.5 py-2.5"
+      data-floating-demo-control
+      className="pointer-events-none fixed inset-x-3 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem)] z-40 flex justify-center lg:inset-x-auto lg:bottom-6 lg:right-6"
       aria-label={t("dashboard.demo.switchPortal")}
       aria-busy={pendingPortal !== null}
     >
-      <div className="rounded-xl border border-accent/20 bg-gradient-to-br from-accent-subtle/80 via-surface to-surface p-1.5 shadow-sm">
-        <div className="flex items-center gap-1.5 px-1 pb-1.5">
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-accent-subtle">
-            <FlaskConical className="h-3 w-3 text-accent" />
-          </span>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">
-            {t("dashboard.demo.mode")}
-          </p>
-        </div>
+      <div
+        data-testid="demo-portal-switcher-dock"
+        className="pointer-events-auto w-max max-w-full rounded-2xl border border-border/90 bg-surface/95 p-1.5 shadow-xl backdrop-blur-xl"
+      >
+        <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1.5 px-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-accent-subtle">
+              <FlaskConical className="h-3 w-3 text-accent" aria-hidden="true" />
+            </span>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+              <span className="sm:hidden">{t("dashboard.demo.mobileMode")}</span>
+              <span className="hidden sm:inline">{t("dashboard.demo.mode")}</span>
+            </p>
+          </div>
 
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-surface-2 p-1">
-          {PORTALS.map((portalOption) => {
-            const selected = currentPortal === portalOption.id;
-            const isPending = pendingPortal === portalOption.id;
-            const Icon = portalOption.icon;
+          <div
+            className="grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1"
+            role="group"
+            aria-label={t("dashboard.demo.switchPortal")}
+          >
+            {PORTALS.map((portalOption) => {
+              const selected = portal === portalOption.id;
+              const isPending = pendingPortal === portalOption.id;
 
-            return (
-              <button
-                key={portalOption.id}
-                type="button"
-                onClick={() => void switchPortal(portalOption.id)}
-                disabled={pendingPortal !== null || selected}
-                aria-pressed={selected}
-                className={cn(
-                  "flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-md px-1 py-1.5 text-[10px] font-semibold leading-tight transition-all",
-                  selected
-                    ? "bg-gradient-accent text-white shadow-glow-sm ring-1 ring-accent/30"
-                    : "text-text-muted hover:bg-surface hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
-                  pendingPortal !== null && "cursor-wait"
-                )}
-              >
-                {isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-                ) : (
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
-                )}
-                <span className="text-center">{t(portalOption.labelKey)}</span>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={portalOption.id}
+                  type="button"
+                  onClick={() => void switchPortal(portalOption.id)}
+                  disabled={pendingPortal !== null}
+                  aria-label={t(portalOption.labelKey)}
+                  aria-pressed={selected}
+                  className={cn(
+                    "flex h-9 min-w-[68px] items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-2 sm:min-w-[76px]",
+                    selected
+                      ? "bg-accent text-white shadow-sm"
+                      : "text-text-muted hover:bg-surface hover:text-text",
+                    pendingPortal !== null && "cursor-wait"
+                  )}
+                >
+                  {isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden="true" />
+                  ) : null}
+                  <span>{t(portalOption.shortLabelKey)}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {pendingPortal && (
           <p
-            className="flex items-center gap-1.5 px-1 pt-1.5 text-[10px] text-text-muted"
+            className="sr-only"
             role="status"
             aria-live="polite"
           >
-            <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
             {t("dashboard.demo.switching")}
           </p>
         )}
 
         {error && (
           <p
-            className="px-1 pt-1.5 text-[10px] leading-snug text-danger"
+            className="max-w-[260px] px-2 pb-1 pt-2 text-[10px] leading-snug text-danger"
             role="alert"
             aria-live="assertive"
           >

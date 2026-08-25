@@ -1,12 +1,13 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { brandPortalApi, notificationApi, type UserProfileRead, type BrandProfileRead } from "@/lib/api-client";
+import { brandPortalApi, type UserProfileRead, type BrandProfileRead } from "@/lib/api-client";
 import { getInitials } from "@/lib/auth";
 import { PhoneNumberInput } from "@/components/forms/PhoneNumberInput";
 import { PasswordChangeForm } from "@/components/settings/password-change-form";
 import { SettingsLayout } from "@/components/settings/SettingsLayout";
-import { useEffect, useState, useCallback, useMemo, type FormEvent } from "react";
+import { useEffect, useState, useCallback, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLocale } from "@/context/locale-context";
 import { translate } from "@/lib/i18n/translate";
 import type { TranslationKey } from "@/messages";
@@ -37,8 +38,9 @@ function SaveButton({ isLoading, disabled }: { isLoading: boolean; disabled?: bo
 export default function BrandSettingsPage() {
   const { user, accessToken, refreshUser, logout } = useAuth();
   const { locale } = useLocale();
+  const searchParams = useSearchParams();
   const t = (key: string) => translate(locale, key as TranslationKey);
-  const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const activeTab: Tab = searchParams.get("tab") === "brand" ? "brand" : "profile";
 
   // Profile state
   const [profile, setProfile] = useState<UserProfileRead | null>(null);
@@ -62,11 +64,6 @@ export default function BrandSettingsPage() {
   const [brandError, setBrandError] = useState<string | null>(null);
   const [isManager, setIsManager] = useState(false);
 
-  // Notification channel preferences state
-  const [emailEnabled, setEmailEnabled] = useState(false);
-  const [inAppEnabled, setInAppEnabled] = useState(false);
-  const [whatsappEnabled, setWhatsAppEnabled] = useState(false);
-
   const loadData = useCallback(async () => {
     if (!accessToken) return;
     const [prof, br, me] = await Promise.allSettled([
@@ -79,6 +76,7 @@ export default function BrandSettingsPage() {
       setProfile(prof.value);
       setFullName(prof.value.full_name);
       setJobTitle(prof.value.job_title ?? user?.job_title ?? "");
+      setPhoneNumber(prof.value.phone_number ?? "");
     }
     if (br.status === "fulfilled") {
       setBrand(br.value);
@@ -92,16 +90,6 @@ export default function BrandSettingsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  // Load notification preferences from API
-  useEffect(() => {
-    if (!accessToken) return;
-    notificationApi.getPreferences(accessToken).then((prefs) => {
-      setEmailEnabled(prefs.email_enabled);
-      setInAppEnabled(prefs.in_app_enabled);
-      setWhatsAppEnabled(prefs.whatsapp_enabled);
-    });
-  }, [accessToken]);
 
   async function handleProfileSave(e: FormEvent) {
     e.preventDefault();
@@ -166,62 +154,12 @@ export default function BrandSettingsPage() {
     }
   }
 
-  const emailActive = emailEnabled;
-  const inAppActive = inAppEnabled;
-  const whatsappRequiresSetup = whatsappEnabled && !phoneNumber?.trim();
-  const whatsappActive = whatsappEnabled && !!phoneNumber?.trim();
-
-  const channelItems = useMemo(
-    () => [
-      { key: "email", title: "E-posta", active: emailActive, setup: false },
-      { key: "in_app", title: "Uygulama içi", active: inAppActive, setup: false },
-      { key: "whatsapp", title: "WhatsApp", active: whatsappActive, setup: whatsappRequiresSetup },
-    ],
-    [emailActive, inAppActive, whatsappEnabled, phoneNumber]
-  );
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const urlTab = searchParams.get("tab") as Tab | null;
-    if (urlTab === "profile" || urlTab === "brand") {
-      setActiveTab(urlTab);
-    }
-  }, []);
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    searchParams.set("tab", activeTab);
-    const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
-    window.history.replaceState({ page: window.location.pathname }, "", newUrl);
-  }, [activeTab]);
-
   const profileTab = activeTab === "profile";
   const brandTab = activeTab === "brand";
 
   return (
     <SettingsLayout portal="brand" title={t("settings.title")} description={t("settings.profile.description")}>
       <div className="pt-4">
-        <div className="flex items-center gap-1 bg-surface-2 p-1 rounded-xl w-fit mb-4">
-          <button
-            key="profile"
-            onClick={() => setActiveTab("profile")}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              profileTab ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
-            }`}
-          >
-            {t("brand.settings.tab.profile")}
-          </button>
-          <button
-            key="brand"
-            onClick={() => setActiveTab("brand")}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              brandTab ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
-            }`}
-          >
-            {t("brand.settings.tab.brand")}
-          </button>
-        </div>
-
         {profileTab && (
           <div className="bg-surface border border-border rounded-xl p-6">
             <div className="flex items-center gap-4 mb-4 pb-4 border-b border-border">
@@ -281,7 +219,7 @@ export default function BrandSettingsPage() {
               <FieldRow label={t("settings.profile.lastLogin")}>
                 <p className="text-sm text-text">
                   {user?.last_login_at
-                    ? new Date(user.last_login_at).toLocaleDateString("tr-TR", {
+                    ? new Date(user.last_login_at).toLocaleDateString(locale === "tr" ? "tr-TR" : "en-US", {
                         day: "numeric",
                         month: "long",
                         year: "numeric",
@@ -406,29 +344,6 @@ export default function BrandSettingsPage() {
             )}
           </div>
         )}
-
-        <div className="mt-5 bg-surface border border-border rounded-xl p-4">
-          <h2 className="text-sm font-semibold text-text mb-3">
-            {t("brand.settings.notificationChannels")}
-          </h2>
-          <div className="grid grid-cols-3 gap-2">
-            {channelItems.map((ch) => (
-              <div
-                key={ch.key}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface-2 text-sm`}
-              >
-                <span>{t(ch.title)}</span>
-                <span>
-                  {ch.active
-                    ? "Aktif"
-                    : ch.setup
-                    ? "Kurulum gerekli"
-                    : "Kapalı"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {profileTab && (
           <div className="mt-4 bg-surface border border-border rounded-xl p-4">

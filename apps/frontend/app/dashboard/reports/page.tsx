@@ -97,7 +97,7 @@ export default function ReportsPage() {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight text-text">{t("reports.agency.title")}</h1>
-            <InfoTooltip text={t("reports.agency.help")} title={t("reports.agency.helpTitle")} placement="bottom">
+            <InfoTooltip text={t("reports.agency.help")} title={t("reports.agency.helpTitle")} placement="bottom" learnMoreHref="/dashboard/help?topic=report-create">
               <button
                 type="button"
                 aria-label={t("reports.agency.helpTitle")}

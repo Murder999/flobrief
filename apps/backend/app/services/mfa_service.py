@@ -68,7 +68,7 @@ def _verify_totp(secret_b32: str, code: str, window: int = 1) -> bool:
 
 
 def build_otpauth_url(secret: str, email: str) -> str:
-    issuer = "Flobrief"
+    issuer = "PostPiloter"
     label = f"{quote(issuer)}:{quote(email)}"
     return (
         f"otpauth://totp/{label}"

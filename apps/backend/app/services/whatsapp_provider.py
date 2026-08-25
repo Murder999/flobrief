@@ -34,7 +34,7 @@ TWILIO_SANDBOX_SENDER = "whatsapp:+14155238886"
 # Fixed, safe body for the dev-only Sandbox freeform test send. Never
 # includes caller/user-supplied text — see send_sandbox_freeform_test_message.
 SANDBOX_FREEFORM_TEST_BODY = (
-    "Flobrief WhatsApp Sandbox bağlantısı başarıyla çalışıyor. Bu yalnızca "
+    "PostPiloter WhatsApp Sandbox bağlantısı başarıyla çalışıyor. Bu yalnızca "
     "geliştirme ortamında gönderilen bir test mesajıdır."
 )
 

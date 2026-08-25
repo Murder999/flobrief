@@ -124,6 +124,7 @@ export default function BrandApprovalsPage() {
             targetRef={approvalsRef}
             text="Onay akışı: Brief'in teslim edilmesi → Inceleme → Onay veya Revizyon iste → Tamamlandı. Bekleyen onaylar renkle belirtilir. Reddetmek/revizyon istemek için brief'i seçin."
             title="Onak Akışı Hakkında"
+            learnMoreHref="/brand/help?topic=approval"
           />
         </div>
       </div>

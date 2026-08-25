@@ -24,7 +24,7 @@ class WhatsAppTemplateService:
         deadline_str = deadline.strftime("%d %B %Y") if deadline else "—"
         action = url_builder.brief_detail(brief_id)
         return (
-            f"📋 Flobrief — Yeni Brief\n\n"
+            f"📋 PostPiloter — Yeni Brief\n\n"
             f"Marka: {brand_name}\n"
             f"Brief: {brief_title}\n"
             f"Teslim: {deadline_str}\n\n"
@@ -34,13 +34,15 @@ class WhatsAppTemplateService:
     @staticmethod
     def brief_assigned(brief_title: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brief_detail(brief_id)
-        return f"📌 Flobrief — Brief Atandı\n\n" f"Brief: {brief_title}\n\n" f"Görüntüle:\n{action}"
+        return (
+            f"📌 PostPiloter — Brief Atandı\n\n" f"Brief: {brief_title}\n\n" f"Görüntüle:\n{action}"
+        )
 
     @staticmethod
     def brand_brief_submitted(brief_title: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brand_brief_detail(brief_id)
         return (
-            f"📤 Flobrief — Brief Gönderildi\n\n"
+            f"📤 PostPiloter — Brief Gönderildi\n\n"
             f"Brief: {brief_title}\n\n"
             f"Görüntüle:\n{action}"
         )
@@ -50,7 +52,7 @@ class WhatsAppTemplateService:
         preview = comment_preview[:100] + "…" if len(comment_preview) > 100 else comment_preview
         action = url_builder.brief_detail(brief_id)
         return (
-            f"💬 Flobrief — Yeni Yorum\n\n"
+            f"💬 PostPiloter — Yeni Yorum\n\n"
             f"Brief: {brief_title}\n"
             f"Yorum: {preview}\n\n"
             f"Görüntüle:\n{action}"
@@ -60,7 +62,7 @@ class WhatsAppTemplateService:
     def revision_requested(brief_title: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brief_detail(brief_id)
         return (
-            f"🔄 Flobrief — Revizyon İstendi\n\n"
+            f"🔄 PostPiloter — Revizyon İstendi\n\n"
             f"Brief: {brief_title}\n\n"
             f"Görüntüle:\n{action}"
         )
@@ -69,21 +71,25 @@ class WhatsAppTemplateService:
     def approval_requested(brief_title: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brief_detail(brief_id)
         return (
-            f"⏳ Flobrief — Onay Bekleniyor\n\n" f"Brief: {brief_title}\n\n" f"Onaya git:\n{action}"
+            f"⏳ PostPiloter — Onay Bekleniyor\n\n"
+            f"Brief: {brief_title}\n\n"
+            f"Onaya git:\n{action}"
         )
 
     @staticmethod
     def approval_approved(brief_title: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brief_detail(brief_id)
         return (
-            f"✅ Flobrief — Brief Onaylandı\n\n" f"Brief: {brief_title}\n\n" f"Görüntüle:\n{action}"
+            f"✅ PostPiloter — Brief Onaylandı\n\n"
+            f"Brief: {brief_title}\n\n"
+            f"Görüntüle:\n{action}"
         )
 
     @staticmethod
     def approval_rejected(brief_title: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brief_detail(brief_id)
         return (
-            f"❌ Flobrief — Brief Reddedildi\n\n"
+            f"❌ PostPiloter — Brief Reddedildi\n\n"
             f"Brief: {brief_title}\n\n"
             f"Görüntüle:\n{action}"
         )
@@ -92,7 +98,7 @@ class WhatsAppTemplateService:
     def file_uploaded(brief_title: str, file_name: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brief_detail(brief_id)
         return (
-            f"📎 Flobrief — Dosya Yüklendi\n\n"
+            f"📎 PostPiloter — Dosya Yüklendi\n\n"
             f"Brief: {brief_title}\n"
             f"Dosya: {file_name}\n\n"
             f"Görüntüle:\n{action}"
@@ -103,7 +109,7 @@ class WhatsAppTemplateService:
         deadline_str = deadline.strftime("%d %B %Y")
         action = url_builder.brief_detail(brief_id)
         return (
-            f"⚠️ Flobrief — Teslim Tarihi Yaklaşıyor\n\n"
+            f"⚠️ PostPiloter — Teslim Tarihi Yaklaşıyor\n\n"
             f"Brief: {brief_title}\n"
             f"Teslim: {deadline_str}\n\n"
             f"Görüntüle:\n{action}"
@@ -114,7 +120,7 @@ class WhatsAppTemplateService:
         deadline_str = deadline.strftime("%d %B %Y")
         action = url_builder.brief_detail(brief_id)
         return (
-            f"🚨 Flobrief — Teslim Tarihi Geçti\n\n"
+            f"🚨 PostPiloter — Teslim Tarihi Geçti\n\n"
             f"Brief: {brief_title}\n"
             f"Teslim: {deadline_str}\n\n"
             f"Görüntüle:\n{action}"
@@ -124,7 +130,7 @@ class WhatsAppTemplateService:
     def deliverable_submitted(brief_title: str, deliverable_title: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brief_detail(brief_id)
         return (
-            f"📦 Flobrief — Yeni Teslimat\n\n"
+            f"📦 PostPiloter — Yeni Teslimat\n\n"
             f"Brief: {brief_title}\n"
             f"Teslimat: {deliverable_title}\n\n"
             f"İncelemek için:\n{action}"
@@ -134,7 +140,7 @@ class WhatsAppTemplateService:
     def deliverable_approved(brief_title: str, deliverable_title: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brief_detail(brief_id)
         return (
-            f"✅ Flobrief — Teslimat Onaylandı\n\n"
+            f"✅ PostPiloter — Teslimat Onaylandı\n\n"
             f"Brief: {brief_title}\n"
             f"Teslimat: {deliverable_title}\n\n"
             f"Görüntüle:\n{action}"
@@ -146,7 +152,7 @@ class WhatsAppTemplateService:
     ) -> str:
         action = url_builder.brief_detail(brief_id)
         return (
-            f"🔄 Flobrief — Teslimat Revizyonu\n\n"
+            f"🔄 PostPiloter — Teslimat Revizyonu\n\n"
             f"Brief: {brief_title}\n"
             f"Teslimat: {deliverable_title}\n\n"
             f"Revizyon detayı:\n{action}"
@@ -156,7 +162,7 @@ class WhatsAppTemplateService:
     def milestone_assigned(task_title: str, brief_title: str, brief_id: uuid.UUID) -> str:
         action = url_builder.brief_detail(brief_id)
         return (
-            f"📌 Flobrief — Görev Atandı\n\n"
+            f"📌 PostPiloter — Görev Atandı\n\n"
             f"Görev: {task_title}\n"
             f"Brief: {brief_title}\n\n"
             f"Görüntüle:\n{action}"
@@ -164,7 +170,7 @@ class WhatsAppTemplateService:
 
     @staticmethod
     def generic(title: str, body: str) -> str:
-        return f"📣 Flobrief — {title}\n\n{body}"
+        return f"📣 PostPiloter — {title}\n\n{body}"
 
 
 whatsapp_templates = WhatsAppTemplateService()

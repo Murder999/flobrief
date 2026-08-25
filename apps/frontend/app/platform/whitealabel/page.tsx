@@ -166,7 +166,7 @@ function LivePreview({ form, defaults, target, onTargetChange }: { form: Platfor
   const bg = form.background_color || defaults.background_color || "#0B0B12";
   const surface = form.surface_color || defaults.surface_color || "#15151F";
   const text = form.text_color || defaults.text_color || "#F4F4F6";
-  const portalName = form.portal_name ?? defaults.portal_name ?? "Flobrief";
+  const portalName = form.portal_name ?? defaults.portal_name ?? "PostPiloter";
   const logoUrl = assetUrl(defaults.logo_url);
   const targets: { id: PreviewTarget; label: string }[] = [
     { id: "login", label: "Giriş Ekranı" },
@@ -403,7 +403,7 @@ export default function PlatformWhitelabelPage() {
           <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-1">Platform Ayarları</p>
           <h1 className="text-2xl font-bold text-text">White Label Yönetimi</h1>
           <p className="mt-1 text-sm text-text-muted max-w-xl">
-            Ajansların kullanacağı varsayılan Flobrief kimliği. Bu ayarlar, kendi white-label
+            Ajansların kullanacağı varsayılan PostPiloter kimliği. Bu ayarlar, kendi white-label
             yapılandırmasını yapmamış ajans portallarında ve giriş ekranında otomatik uygulanır.
           </p>
         </div>
@@ -444,7 +444,7 @@ export default function PlatformWhitelabelPage() {
           <Card title="Portal Kimliği" description="Ajans portallarında ve giriş ekranında görünen ad ve mesajlar.">
             <div className="space-y-4">
               <Field label="Portal adı">
-                <TextInput value={form.portal_name ?? ""} onChange={(v) => setF("portal_name", v || null)} placeholder="Flobrief" />
+                <TextInput value={form.portal_name ?? ""} onChange={(v) => setF("portal_name", v || null)} placeholder="PostPiloter" />
               </Field>
               <Field label="Giriş ekranı başlığı">
                 <TextInput value={form.login_title ?? ""} onChange={(v) => setF("login_title", v || null)} placeholder="Panele Giriş Yap" />
@@ -477,7 +477,7 @@ export default function PlatformWhitelabelPage() {
           <Card title="İletişim & Footer">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="E-posta gönderen adı">
-                <TextInput value={form.email_from_name ?? ""} onChange={(v) => setF("email_from_name", v || null)} placeholder="Flobrief Bildirimleri" />
+                <TextInput value={form.email_from_name ?? ""} onChange={(v) => setF("email_from_name", v || null)} placeholder="PostPiloter Bildirimleri" />
               </Field>
               <Field label="Destek e-postası">
                 <TextInput value={form.support_email ?? ""} onChange={(v) => setF("support_email", v || null)} placeholder="destek@postpiloter.com" type="email" />
@@ -490,7 +490,7 @@ export default function PlatformWhitelabelPage() {
               </Field>
               <div className="sm:col-span-2">
                 <Field label="Footer metni">
-                  <TextInput value={form.footer_text ?? ""} onChange={(v) => setF("footer_text", v || null)} placeholder="© 2026 Flobrief. Tüm hakları saklıdır." />
+                  <TextInput value={form.footer_text ?? ""} onChange={(v) => setF("footer_text", v || null)} placeholder="© 2026 PostPiloter. Tüm hakları saklıdır." />
                 </Field>
               </div>
             </div>
@@ -522,7 +522,7 @@ export default function PlatformWhitelabelPage() {
                     <input
                       value={s.value}
                       onChange={(e) => setSocialInputs((prev) => prev.map((p, j) => (j === i ? { ...p, value: e.target.value } : p)))}
-                      placeholder="https://linkedin.com/company/flobrief"
+                      placeholder="https://linkedin.com/company/postpiloter"
                       className="flex-1 bg-surface-2 border border-border rounded-lg px-2.5 py-1.5 text-xs font-mono text-text focus:outline-none focus:border-accent"
                     />
                     <button onClick={() => setSocialInputs((prev) => prev.filter((_, j) => j !== i))} className="text-text-muted hover:text-danger transition-colors px-1">

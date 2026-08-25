@@ -471,7 +471,7 @@ class CommercialTermsBillingModel(StrEnum):
 
 class ClientInvoiceStatus(StrEnum):
     """Lifecycle of an agency->brand-client invoice (plan §3, distinct from
-    `InvoiceStatus` which is Flobrief's own SaaS subscription billing)."""
+    `InvoiceStatus` which is PostPiloter's own SaaS subscription billing)."""
 
     DRAFT = "draft"
     PENDING_APPROVAL = "pending_approval"
@@ -486,7 +486,7 @@ class ClientInvoiceStatus(StrEnum):
 
 
 class ClientInvoiceDocumentType(StrEnum):
-    """Never `e-fatura` — Flobrief never claims to issue a legally-valid
+    """Never `e-fatura` — PostPiloter never claims to issue a legally-valid
     Turkish e-invoice; these are internal draft/proforma documents only
     (plan §1/§3/§12)."""
 

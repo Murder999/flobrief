@@ -48,6 +48,10 @@ class TestPasswordPolicy:
         errors = validate_password_policy("Password1!")
         assert any("yaygın" in e for e in errors)
 
+    def test_product_name_password_rejected(self) -> None:
+        errors = validate_password_policy("PostPiloter1!")
+        assert any("yaygın" in e for e in errors)
+
     def test_valid_password_passes(self) -> None:
         assert is_password_valid("Flobrief@2024#Secure") is True
 

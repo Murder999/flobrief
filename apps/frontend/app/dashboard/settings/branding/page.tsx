@@ -474,6 +474,7 @@ export default function BrandingSettingsPage() {
                   targetRef={brandingRef}
                   text={t("settings.branding.whiteLabel.help")}
                   title={t("settings.branding.whiteLabel.title")}
+                  learnMoreHref="/dashboard/help?topic=white-label"
                 />
               </div>
               <button

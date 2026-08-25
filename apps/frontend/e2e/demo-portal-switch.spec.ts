@@ -35,59 +35,113 @@ async function expectPortal(page: Page, portal: "agency" | "brand") {
 
   await page.waitForURL((url) => url.pathname === route, { timeout: 30_000 });
   await expect(page).not.toHaveURL(/\/(?:auth|brand)\/login/);
-  await expect(page.getByTestId("app-sidebar")).toBeVisible();
   const switcher = page.getByTestId("demo-portal-switcher");
+  await expect(switcher).toHaveCount(1);
   await expect(switcher).toBeVisible();
-  await expect(switcher.getByRole("button", { name: activeLabel })).toHaveAttribute("aria-pressed", "true");
+  await expect(switcher.getByRole("button", { name: activeLabel }), page.url()).toHaveAttribute("aria-pressed", "true");
   await expect(switcher.getByRole("button", { name: inactiveLabel })).toHaveAttribute("aria-pressed", "false");
+  await dismissDemoOnboarding(page);
 }
 
 async function switchPortal(page: Page, target: "agency" | "brand") {
   const label = target === "agency" ? /Ajans Portalı|Agency Portal/ : /Marka Portalı|Brand Portal/;
   const switcher = page.getByTestId("demo-portal-switcher");
-  let resolvePayload!: (payload: { status: number; body: string }) => void;
-  const payloadPromise = new Promise<{ status: number; body: string }>((resolve) => {
-    resolvePayload = resolve;
-  });
   await page.route("**/api/v1/demo/switch-portal", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 250));
-    const response = await route.fetch();
-    resolvePayload({ status: response.status(), body: await response.text() });
-    await route.fulfill({ response });
+    await route.continue();
   }, { times: 1 });
   await switcher.getByRole("button", { name: label }).click();
   await expect(switcher).toHaveAttribute("aria-busy", "true");
-  const payload = await payloadPromise;
-  expect(payload.status, payload.body).toBe(200);
-  expect(JSON.parse(payload.body).access_token).toBeTruthy();
   await expectPortal(page, target);
 }
 
-async function expectSidebarAtViewports(page: Page) {
+async function expectFloatingDockAtDesktopViewports(page: Page) {
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     const sidebar = page.getByTestId("app-sidebar");
     const switcher = page.getByTestId("demo-portal-switcher");
+    const dock = page.getByTestId("demo-portal-switcher-dock");
     const navigation = page.getByTestId("sidebar-navigation");
     const utilities = page.getByTestId("sidebar-utilities");
-    const [sidebarBox, switcherBox, navigationBox, utilitiesBox] = await Promise.all([
+    const [sidebarBox, dockBox, navigationBox, utilitiesBox] = await Promise.all([
       sidebar.boundingBox(),
-      switcher.boundingBox(),
+      dock.boundingBox(),
       navigation.boundingBox(),
       utilities.boundingBox(),
     ]);
 
     expect(sidebarBox).not.toBeNull();
-    expect(switcherBox).not.toBeNull();
+    expect(dockBox).not.toBeNull();
     expect(navigationBox).not.toBeNull();
     expect(utilitiesBox).not.toBeNull();
     expect(Math.round(sidebarBox!.height)).toBe(viewport.height);
-    expect(switcherBox!.y + switcherBox!.height).toBeLessThanOrEqual(navigationBox!.y + 1);
     expect(navigationBox!.y + navigationBox!.height).toBeLessThanOrEqual(utilitiesBox!.y + 1);
+    expect(Math.round(viewport.width - dockBox!.x - dockBox!.width)).toBe(24);
+    expect(Math.round(viewport.height - dockBox!.y - dockBox!.height)).toBe(24);
+    expect(await switcher.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
+    await expect(sidebar.getByTestId("demo-portal-switcher")).toHaveCount(0);
     await expect(utilities.getByTestId("demo-portal-switcher")).toHaveCount(0);
     await expect(switcher.getByRole("button", { name: /Ajans Portalı|Agency Portal/ })).toBeVisible();
     await expect(switcher.getByRole("button", { name: /Marka Portalı|Brand Portal/ })).toBeVisible();
+
+    const beforeScroll = await dock.boundingBox();
+    await navigation.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+    expect(await dock.boundingBox()).toEqual(beforeScroll);
   }
+}
+
+async function expectFloatingDockOnMobile(page: Page) {
+  const viewport = { width: 390, height: 844 };
+  await page.setViewportSize(viewport);
+
+  const switcher = page.getByTestId("demo-portal-switcher");
+  const dock = page.getByTestId("demo-portal-switcher-dock");
+  const bottomNavigation = page.getByTestId("mobile-bottom-navigation");
+  await expect(page.getByTestId("app-sidebar")).toBeHidden();
+  await expect(bottomNavigation).toBeVisible();
+  await expect(switcher).toHaveCount(1);
+
+  const [dockBox, bottomNavigationBox] = await Promise.all([
+    dock.boundingBox(),
+    bottomNavigation.boundingBox(),
+  ]);
+  expect(dockBox).not.toBeNull();
+  expect(bottomNavigationBox).not.toBeNull();
+  expect(dockBox!.width).toBeLessThanOrEqual(viewport.width - 24);
+  expect(Math.abs(dockBox!.x + dockBox!.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(1);
+  expect(bottomNavigationBox!.y - (dockBox!.y + dockBox!.height)).toBeGreaterThanOrEqual(11);
+
+  await bottomNavigation.locator("button").click();
+  const drawer = page.getByRole("dialog");
+  await expect(drawer).toBeVisible();
+  await expect(drawer.getByTestId("demo-portal-switcher")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+}
+
+async function expectInlineSwitchError(page: Page, target: "agency" | "brand") {
+  const label = target === "agency" ? /Ajans Portalı|Agency Portal/ : /Marka Portalı|Brand Portal/;
+  const switcher = page.getByTestId("demo-portal-switcher");
+  await page.route("**/api/v1/demo/switch-portal", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        portal: target,
+        redirect_to: "/unexpected",
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        access_token: "unused",
+        token_type: "bearer",
+        expires_in: 60,
+      }),
+    });
+  }, { times: 1 });
+
+  await switcher.getByRole("button", { name: label }).click();
+  await expect(switcher).toHaveAttribute("aria-busy", "true");
+  await expect(switcher.getByRole("alert")).toBeVisible();
+  await expect(switcher).toHaveAttribute("aria-busy", "false");
+  await expect(switcher.getByRole("button", { name: label })).toBeEnabled();
 }
 
 test.describe("demo portal identity switch", () => {
@@ -98,12 +152,14 @@ test.describe("demo portal identity switch", () => {
     });
 
     await startDemo(page);
-    await dismissDemoOnboarding(page);
     await expectPortal(page, "agency");
-    await expectSidebarAtViewports(page);
+    await expectFloatingDockAtDesktopViewports(page);
+    await expectFloatingDockOnMobile(page);
 
     await switchPortal(page, "brand");
-    await expectSidebarAtViewports(page);
+    await expectFloatingDockAtDesktopViewports(page);
+    await expectFloatingDockOnMobile(page);
+    await expectInlineSwitchError(page, "agency");
     await switchPortal(page, "agency");
     await switchPortal(page, "brand");
 

@@ -166,6 +166,7 @@ def test_whatsapp_deliverable_submitted_template() -> None:
     )
     assert "Teslimat" in msg
     assert "Instagram Görseli" in msg
+    assert "PostPiloter" in msg
 
 
 def test_whatsapp_deliverable_approved_template() -> None:

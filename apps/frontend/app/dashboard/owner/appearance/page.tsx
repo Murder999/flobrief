@@ -194,7 +194,7 @@ export default function AppearanceHubPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-text">White-label Modu</p>
-              <p className="text-xs text-text-muted">Flobrief markasını müşteri sayfalarından gizler</p>
+              <p className="text-xs text-text-muted">PostPiloter markasını müşteri sayfalarından gizler</p>
             </div>
           </div>
           <div className="flex items-center gap-3">

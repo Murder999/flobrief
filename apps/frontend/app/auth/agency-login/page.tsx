@@ -4,6 +4,7 @@ import { Suspense, type FormEvent, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/lib/api-client";
 import { isSafeReturnTo } from "@/lib/auth";
@@ -39,9 +40,9 @@ function ProductScene() {
         {/* Mini header bar */}
         <div className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-3 shadow-card">
           <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "var(--gradient-accent)" }}>
-            <span className="text-white text-xs font-bold">F</span>
+            <span className="text-white text-xs font-bold">P</span>
           </div>
-          <span className="text-xs font-medium text-text">Flobrief — Creative Agency</span>
+          <span className="text-xs font-medium text-text">PostPiloter — Creative Agency</span>
           <div className="ml-auto flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
               <span className="text-[8px] font-bold text-accent">AK</span>
@@ -260,15 +261,7 @@ function AgencyLoginForm() {
             className="mb-10"
           >
             <Link href="/" className="inline-flex items-center gap-2.5 group">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-glow-sm"
-                style={{ background: "var(--gradient-accent)" }}
-              >
-                <span className="text-white font-bold text-sm">F</span>
-              </div>
-              <span className="text-xl font-semibold text-text group-hover:text-accent transition-colors tracking-tight">
-                Flobrief
-              </span>
+              <PostPiloterLogo className="h-8 w-auto transition-transform group-hover:scale-[1.02]" priority />
             </Link>
           </motion.div>
 
@@ -460,7 +453,7 @@ export default function AgencyLoginPage() {
               className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ background: "var(--gradient-accent)" }}
             >
-              <span className="text-white font-bold text-sm">F</span>
+              <span className="text-white font-bold text-sm">P</span>
             </div>
             <svg className="w-4 h-4 animate-spin text-text-muted" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
