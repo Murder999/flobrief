@@ -76,7 +76,7 @@ async def test_password_reset_email_uses_resend_and_production_link(
 
 
 @pytest.mark.asyncio
-async def test_agency_and_brand_invites_use_canonical_accept_url(
+async def test_agency_and_brand_invites_use_canonical_public_invite_url(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(settings, "FRONTEND_PUBLIC_URL", "https://postpiloter.com")
@@ -106,13 +106,14 @@ async def test_agency_and_brand_invites_use_canonical_accept_url(
     assert deliver.await_count == 2
     first_html = deliver.await_args_list[0].kwargs["html_body"]
     second_html = deliver.await_args_list[1].kwargs["html_body"]
-    assert "https://postpiloter.com/auth/accept-invite?token=agency-token" in first_html
-    assert "https://postpiloter.com/auth/accept-invite?token=brand-token" in second_html
+    assert "https://postpiloter.com/invite/agency-token" in first_html
+    assert "https://postpiloter.com/invite/brand-token" in second_html
 
 
 @pytest.mark.asyncio
 async def test_resend_invitation_rotates_token_and_sends_new_link() -> None:
     db = AsyncMock()
+    db.scalar = AsyncMock(return_value=None)
     service = InvitationService(db)
     invitation = MagicMock(
         id=uuid.uuid4(),
@@ -148,7 +149,9 @@ async def test_resend_invitation_rotates_token_and_sends_new_link() -> None:
 
 @pytest.mark.asyncio
 async def test_resend_invitation_rejects_expired_or_used_invitation() -> None:
-    service = InvitationService(AsyncMock())
+    db = AsyncMock()
+    db.scalar = AsyncMock(return_value=None)
+    service = InvitationService(db)
     invitation = MagicMock(id=uuid.uuid4(), is_pending=False)
     actor = MagicMock(id=uuid.uuid4())
     service.invite_repo.get_by_id = AsyncMock(return_value=invitation)

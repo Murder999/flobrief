@@ -44,7 +44,7 @@
 - Independent brands can invite their own team, own a subscription, view invoices/limits, and enter checkout; brand billing mutations require the exact active `brand_owner` membership.
 - The existing Platform Agencies/Brands surface now creates real non-demo tenants, provisions explicit manual subscriptions, sends owner/contact invitations, or attaches compatible users only after confirmation.
 - Agency/Brand detail recovery supports invite, resend, revoke, attach, and audited member changes. Every platform write remains under `get_platform_admin_user` and emits safe platform audit metadata.
-- Migrations `z9a0b1c2d3e4` and `a0b1c2d3e4f5` add partnership invitations and agency-less brand team invitations. Current validation: Ruff/format, 176 focused regression tests, 5 unified-flow cases, route uniqueness, TypeScript, and a successful 98-page production build.
+- Migrations `z9a0b1c2d3e4` and `a0b1c2d3e4f5` add partnership invitations and agency-less brand team invitations. Current validation: Ruff/format, the complete 1,819-test backend suite, 5 unified-flow cases, route uniqueness, TypeScript, and a successful 98-page production build.
 
 ## Recent Hardening — 2026-07-27
 
@@ -184,7 +184,7 @@
 | Focused asset/route regression suite | PASS — 53 tests |
 | Demo sandbox and route regression suite | PASS — 9 tests |
 | Backend Ruff check + format | PASS — 384 files clean |
-| Backend Pytest | PASS — 1777 tests |
+| Backend Pytest | PASS — 1819 tests |
 | Frontend TypeScript | PASS |
 | Frontend lint | PASS — no errors; raw-image optimization warnings remain |
 | Frontend production build | PASS — 98/98 static pages generated; Node 20.x remains the release runtime contract |

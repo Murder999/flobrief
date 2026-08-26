@@ -41,6 +41,10 @@ async def platform_admin_token():
 
 @pytest.fixture(autouse=True)
 async def _cleanup_seo_settings():
+    async with AsyncSessionLocal() as session:
+        await session.execute(delete(PlatformSeoPageSettings))
+        await session.execute(delete(PlatformGrowthSettings))
+        await session.commit()
     yield
     async with AsyncSessionLocal() as session:
         await session.execute(delete(PlatformSeoPageSettings))
