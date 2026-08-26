@@ -56,7 +56,10 @@ _UNSAFE = re.compile(r"[^\w\-_.]")
 
 def normalize_filename(original: str) -> str:
     """Strip directory traversal, sanitize chars, keep extension, add UUID suffix."""
-    base = os.path.basename(original)  # guard: strips any path prefix
+    # Treat both POSIX and Windows separators as path boundaries regardless of
+    # the server OS. ``os.path.basename`` alone does not strip backslashes on
+    # Linux, which could preserve Windows-style traversal segments.
+    base = os.path.basename(original.replace("\\", "/"))
     name, dot, ext = base.rpartition(".")
     if not name:
         name = base
