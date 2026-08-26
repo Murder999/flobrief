@@ -53,6 +53,13 @@ jobs:
         working-directory: apps/backend
         run: python -m ruff format --check .
 
+      - name: Apply database migrations
+        working-directory: apps/backend
+        env:
+          SECRET_KEY: ci-test-secret-key-flobrief-64-chars-xxxxxxxxxxxxxxxxxxxx
+          DATABASE_URL: postgresql+asyncpg://flobrief:flobrief@localhost:5432/flobrief_test
+        run: python -m alembic upgrade head
+
       - name: Run tests
         working-directory: apps/backend
         env:
