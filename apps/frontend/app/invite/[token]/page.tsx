@@ -2,6 +2,7 @@
 
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { PhoneNumberInput } from "@/components/forms/PhoneNumberInput";
 import { LanguageSelector } from "@/components/i18n/language-selector";
@@ -94,7 +95,7 @@ export default function InvitationPage() {
   } = useAuth();
   const [preview, setPreview] = useState<InvitationPreview | null>(null);
   const [pageState, setPageState] = useState<PageState>("loading");
-  const [action, setAction] = useState<"signup" | "accept" | "logout" | null>(null);
+  const [action, setAction] = useState<"signup" | "activate" | "accept" | "logout" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -192,6 +193,31 @@ export default function InvitationPage() {
       } else {
         await loadPreview();
         setActionError(t("auth.invite.acceptFailed"));
+      }
+    } finally {
+      setAction(null);
+    }
+  }
+
+  async function handleExistingAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!preview || action) return;
+    setAction("activate");
+    setActionError(null);
+    try {
+      const result = await invitationApi.activate(token, { password });
+      await refreshSession();
+      setPageState("success");
+      window.setTimeout(() => window.location.replace(result.redirect_to), 1200);
+    } catch (error) {
+      const code = getInvitationErrorCode(error);
+      if (code === "INVITATION_INVALID_CREDENTIALS") {
+        setActionError(t("auth.error.invalidCredentials"));
+      } else if (code === "INVITATION_ACCOUNT_NOT_FOUND") {
+        await loadPreview();
+        setActionError(t("auth.invite.acceptFailed"));
+      } else {
+        setActionError(t("auth.invite.activationFailed"));
       }
     } finally {
       setAction(null);
@@ -339,13 +365,21 @@ export default function InvitationPage() {
         )}
 
         {isInitialized && !authLoading && !user && preview.account_exists && preview.account_type_compatible !== false && (
-          <div className="rounded-2xl border border-accent/20 bg-accent/5 p-5 text-center">
+          <form className="space-y-4 rounded-2xl border border-accent/20 bg-accent/5 p-5" onSubmit={handleExistingAccount} aria-busy={action === "activate"}>
             <h2 className="font-semibold text-text">{t("auth.invite.existingTitle")}</h2>
-            <p className="mt-2 text-sm leading-6 text-text-muted">{t("auth.invite.existingBody")}</p>
-            <Button className="mt-5 w-full" onClick={() => router.push(`/auth/login?redirect=${encodeURIComponent(returnTo)}`)}>
+            <p className="text-sm leading-6 text-text-muted">{t("auth.invite.existingBody", { role: roleLabel })}</p>
+            <Input label={t("auth.fields.email")} type="email" value={preview.email} readOnly aria-readonly="true" />
+            <Input label={t("auth.fields.password")} type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" />
+            <div className="flex justify-end">
+              <Link className="text-xs font-medium text-accent hover:text-accent-hover" href="/auth/forgot-password">
+                {t("auth.password.forgot")}
+              </Link>
+            </div>
+            {actionError && <div className="rounded-xl border border-danger/20 bg-danger/8 px-4 py-3 text-sm text-danger" role="alert">{actionError}</div>}
+            <Button className="w-full" type="submit" isLoading={action === "activate"}>
               {t("auth.invite.loginAndAccept")}
             </Button>
-          </div>
+          </form>
         )}
 
         {isInitialized && !authLoading && !user && preview.account_exists === false && (

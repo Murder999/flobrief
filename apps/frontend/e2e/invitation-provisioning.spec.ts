@@ -39,14 +39,18 @@ function authUser(email: string, userType: "agency_user" | "brand_user") {
 }
 
 async function mockInvitation(page: Page, invitation: Record<string, unknown>, loggedIn?: ReturnType<typeof authUser>) {
-  let signupComplete = false;
+  let onboardingComplete = false;
   await page.route("**/api/v1/invitations/preview/**", (route) => route.fulfill({ json: invitation }));
   await page.route("**/api/v1/invitations/signup/**", async (route) => {
-    signupComplete = true;
+    onboardingComplete = true;
     await route.fulfill({ status: 201, json: { access_token: "signup-token", token_type: "bearer", expires_in: 900, redirect_to: invitation.invitation_type === "brand" ? "/brand/dashboard" : "/dashboard" } });
   });
+  await page.route("**/api/v1/invitations/activate/**", async (route) => {
+    onboardingComplete = true;
+    await route.fulfill({ status: 201, json: { access_token: "activation-token", token_type: "bearer", expires_in: 900, redirect_to: invitation.invitation_type === "brand" ? "/brand/dashboard" : "/dashboard" } });
+  });
   await page.route("**/api/v1/auth/refresh", (route) => {
-    if (loggedIn || signupComplete) return route.fulfill({ json: { access_token: "access-token", token_type: "bearer", expires_in: 900 } });
+    if (loggedIn || onboardingComplete) return route.fulfill({ json: { access_token: "access-token", token_type: "bearer", expires_in: 900 } });
     return route.fulfill({ status: 401, json: { detail: "No session" } });
   });
   await page.route("**/api/v1/auth/me", (route) => route.fulfill({ json: loggedIn ?? authUser(String(invitation.email), invitation.invitation_type === "brand" ? "brand_user" : "agency_user") }));
@@ -78,24 +82,29 @@ test.describe("invitation-aware onboarding", () => {
     await page.waitForURL("**/dashboard", { timeout: 5_000 });
   });
 
-  test("existing recipient logs in, returns to the invitation, accepts it, and reaches Brand dashboard", async ({ page }) => {
+  test("existing recipient activates the invited membership inline and reaches Brand dashboard", async ({ page }) => {
     await mockInvitation(page, preview({ account_exists: true, account_type_compatible: true }));
-    await page.route("**/api/v1/auth/login", (route) => {
-      if (route.request().method() !== "POST") return route.fallback();
-      return route.fulfill({ json: { access_token: "login-token", token_type: "bearer", expires_in: 900 } });
-    });
-    await page.route("**/api/v1/invitations/accept/**", (route) => route.fulfill({ status: 204 }));
     await page.route("**/brand/dashboard", (route) => route.fulfill({ contentType: "text/html", body: "<h1>TEST Brand Dashboard</h1>" }));
     await page.goto("/invite/existing-token");
-    await page.getByRole("button", { name: "Log In & Accept Invitation" }).click();
-    await expect(page).toHaveURL(/\/auth\/login\?redirect=%2Finvite%2Fexisting-token/);
-    await page.getByRole("button", { name: "Brand portal" }).click();
-    await page.getByLabel("Email address").fill("test.brand@example.com");
+    await expect(page.getByLabel("Email address")).toHaveValue("test.brand@example.com");
+    await expect(page.getByLabel("Email address")).toHaveAttribute("readonly", "");
     await page.getByLabel("Password").fill("StrongPass123!");
-    await page.getByRole("button", { name: "Log in" }).click();
-    await expect(page).toHaveURL(/\/invite\/existing-token/);
-    await page.getByRole("button", { name: "Accept invitation" }).click();
+    await page.getByRole("button", { name: "Activate Membership & Accept Invitation" }).click();
+    await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
     await page.waitForURL("**/brand/dashboard", { timeout: 5_000 });
+  });
+
+  test("existing recipient stays on the invitation when the password is wrong", async ({ page }) => {
+    await mockInvitation(page, preview({ account_exists: true, account_type_compatible: true }));
+    await page.route("**/api/v1/invitations/activate/**", (route) => route.fulfill({
+      status: 401,
+      json: { detail: { code: "INVITATION_INVALID_CREDENTIALS", message: "Invalid credentials" } },
+    }));
+    await page.goto("/invite/existing-wrong-password-token");
+    await page.getByLabel("Password").fill("WrongPass123!");
+    await page.getByRole("button", { name: "Activate Membership & Accept Invitation" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "The email address or password is incorrect." })).toBeVisible();
+    await expect(page).toHaveURL(/\/invite\/existing-wrong-password-token/);
   });
 
   test("wrong logged-in account cannot accept the invitation", async ({ page }) => {

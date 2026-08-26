@@ -136,6 +136,10 @@ class InvitationSignupRequest(BaseModel):
         return value
 
 
+class InvitationExistingAccountRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=1024)
+
+
 class InvitationSignupResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

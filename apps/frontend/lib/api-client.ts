@@ -553,6 +553,10 @@ export interface InvitationSignupResponse {
   redirect_to: "/dashboard" | "/brand/dashboard";
 }
 
+export interface InvitationExistingAccountRequest {
+  password: string;
+}
+
 export interface WorkspaceAgencyItem {
   id: string;
   name: string;
@@ -722,6 +726,12 @@ export const invitationApi = {
 
   signup: (token: string, data: InvitationSignupRequest) =>
     request<InvitationSignupResponse>(`/api/v1/invitations/signup/${token}`, {
+      method: "POST",
+      body: data,
+    }),
+
+  activate: (token: string, data: InvitationExistingAccountRequest) =>
+    request<InvitationSignupResponse>(`/api/v1/invitations/activate/${token}`, {
       method: "POST",
       body: data,
     }),

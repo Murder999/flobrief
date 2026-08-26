@@ -1,11 +1,11 @@
-# Flobrief — Project State
+# PostPiloter — Project State
 
 ## Status
 
 **Product**: Premium multi-tenant B2B SaaS for agency/brand brief operations
 **Current phase**: Production hardening and go-live verification
 **Release posture**: Not approved for production until `docs/LAUNCH_CHECKLIST.md` is completed
-**Last updated**: 2026-08-21
+**Last updated**: 2026-08-26
 
 ## Stack
 
@@ -34,6 +34,15 @@
 - Public approval/report links use revocable hashed tokens.
 - iyzico and Twilio webhooks fail closed on missing/invalid signatures.
 - Provider credentials are encrypted with `FLOBRIEF_SECRET_ENCRYPTION_KEY`.
+
+## Invitation and platform provisioning hardening — 2026-08-25
+
+- Public invitation preview is token-scoped, exposes no tenant IDs, and discloses exact-account existence only for a valid pending invitation.
+- Net-new Agency and Brand recipients create the correct portal user and exact invited membership atomically, with invitation-derived authority and a rotating authenticated session.
+- A valid pending single-use invitation is accepted as mailbox proof; invite-created users are verified. Compatible existing recipients verify their password and activate the exact invited membership/session inline without a generic-login round trip. Existing incompatible portal identities are never converted and leave the invitation pending for support.
+- The existing Platform Agencies/Brands surface now creates real non-demo tenants, provisions explicit manual subscriptions, sends owner/contact invitations, or attaches compatible users only after confirmation.
+- Agency/Brand detail recovery supports invite, resend, revoke, attach, and audited member changes. Every platform write remains under `get_platform_admin_user` and emits safe platform audit metadata.
+- No database migration was required. Focused validation: Ruff, 122 backend tests, typecheck, build (97 pages), zero duplicate routes, and 8 Chromium scenarios.
 
 ## Recent Hardening — 2026-07-27
 

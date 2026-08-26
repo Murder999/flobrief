@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.models.agency import Agency
 from app.models.demo_sandbox import DemoSandbox
 from app.models.enums import (
@@ -29,6 +29,7 @@ from app.repositories.user import UserRepository
 from app.schemas.invitation import (
     AgencyInviteRequest,
     BrandInviteRequest,
+    InvitationExistingAccountRequest,
     InvitationSignupRequest,
 )
 from app.services import email_service
@@ -415,6 +416,70 @@ class InvitationService:
                 _409,
                 "INVITATION_SIGNUP_CONFLICT",
                 "Hesap veya üyelik eş zamanlı olarak oluşturuldu. Davet sayfasını yenileyin.",
+            ) from exc
+
+        redirect_to = "/brand/dashboard" if invitation.invitation_type == "brand" else "/dashboard"
+        return user, access_token, refresh_token, redirect_to
+
+    async def authenticate_and_accept(
+        self,
+        token: str,
+        data: InvitationExistingAccountRequest,
+        *,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> tuple[User, str, str, str]:
+        """Verify an existing recipient and activate the invited membership atomically."""
+        invitation = await self.get_by_token(token, lock=True)
+        self._require_pending(invitation)
+        await self._validate_target(invitation)
+
+        user = await self.db.scalar(
+            select(User)
+            .where(User.email == invitation.email.lower(), User.deleted_at.is_(None))
+            .with_for_update()
+        )
+        if user is None:
+            raise self._domain_error(
+                _409,
+                "INVITATION_ACCOUNT_NOT_FOUND",
+                "Bu davet için mevcut hesap bulunamadı. Davet sayfasını yenileyin.",
+            )
+        if not verify_password(data.password, user.password_hash):
+            raise self._domain_error(
+                status.HTTP_401_UNAUTHORIZED,
+                "INVITATION_INVALID_CREDENTIALS",
+                "E-posta adresi veya şifre hatalı.",
+            )
+        if not user.is_active:
+            raise self._domain_error(
+                _403,
+                "INVITATION_ACCOUNT_DISABLED",
+                "Hesap devre dışı. Destek ekibiyle iletişime geçin.",
+            )
+
+        self._require_compatible_user(invitation, user)
+        await self._ensure_external_invitation_allowed(invitation.agency_id, user)
+
+        # Possession of the single-use invitation plus the existing password
+        # proves mailbox control without a second verification loop.
+        user.is_verified = True
+        self.db.add(user)
+
+        try:
+            await self._accept_pending_invitation(invitation, user)
+            access_token, refresh_token = await AuthService(self.db).create_session(
+                user,
+                ip=ip,
+                user_agent=user_agent,
+            )
+            await self.db.commit()
+        except IntegrityError as exc:
+            await self.db.rollback()
+            raise self._domain_error(
+                _409,
+                "INVITATION_ACCEPT_CONFLICT",
+                "Üyelik eş zamanlı olarak oluşturuldu. Davet sayfasını yenileyin.",
             ) from exc
 
         redirect_to = "/brand/dashboard" if invitation.invitation_type == "brand" else "/dashboard"

@@ -20,6 +20,7 @@ from app.repositories.user import UserRepository
 from app.schemas.invitation import (
     AgencyInviteRequest,
     BrandInviteRequest,
+    InvitationExistingAccountRequest,
     InvitationPreview,
     InvitationRead,
     InvitationSignupRequest,
@@ -121,6 +122,35 @@ async def signup_and_accept_invitation(
 ) -> InvitationSignupResponse:
     svc = InvitationService(db)
     user, access_token, refresh_token, redirect_to = await svc.signup_and_accept(
+        token,
+        data,
+        ip=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+    set_refresh_cookie(response, refresh_token, user.user_type)
+    return InvitationSignupResponse(
+        access_token=access_token,
+        expires_in=get_access_token_expire_minutes(user.user_type) * 60,
+        redirect_to=redirect_to,
+    )
+
+
+@invitation_router.post(
+    "/activate/{token}",
+    response_model=InvitationSignupResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def authenticate_and_accept_invitation(
+    token: str,
+    data: InvitationExistingAccountRequest,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit_invitation_signup),
+) -> InvitationSignupResponse:
+    """Authenticate an existing recipient and activate the invited membership in one step."""
+    svc = InvitationService(db)
+    user, access_token, refresh_token, redirect_to = await svc.authenticate_and_accept(
         token,
         data,
         ip=get_client_ip(request),

@@ -10,7 +10,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select
 
-from app.core.security import create_access_token
+from app.core.security import create_access_token, hash_password
 from app.db.session import AsyncSessionLocal
 from app.models.activity import ActivityLog
 from app.models.agency import Agency
@@ -163,15 +163,19 @@ async def _create_existing_user(
     *,
     email: str,
     user_type: str,
+    password: str | None = None,
+    is_verified: bool = True,
 ) -> User:
     async with AsyncSessionLocal() as session:
         user = User(
             email=email,
-            password_hash="not-a-real-hash-test-fixture-only",
+            password_hash=(
+                hash_password(password) if password else "not-a-real-hash-test-fixture-only"
+            ),
             full_name="Existing Recipient",
             user_type=user_type,
             is_active=True,
-            is_verified=True,
+            is_verified=is_verified,
         )
         session.add(user)
         await session.commit()
@@ -407,6 +411,83 @@ class TestInvitationSignup:
 
 
 class TestExistingInvitationRecipient:
+    async def test_existing_brand_recipient_activates_membership_and_session_inline(
+        self, client: AsyncClient, invite_context: InviteContext
+    ) -> None:
+        email = f"activate-{uuid.uuid4().hex[:8]}@test.local"
+        password = "ExistingPass123!"
+        user = await _create_existing_user(
+            invite_context,
+            email=email,
+            user_type=UserType.BRAND_USER.value,
+            password=password,
+            is_verified=False,
+        )
+        invitation_id, token = await _create_invitation(
+            invite_context,
+            invitation_type="brand",
+            email=email,
+            role=BrandMemberRole.BRAND_MANAGER.value,
+        )
+
+        response = await client.post(
+            f"/api/v1/invitations/activate/{token}",
+            json={"password": password},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["redirect_to"] == "/brand/dashboard"
+        assert response.cookies.get("refresh_token")
+        async with AsyncSessionLocal() as session:
+            persisted_user = await session.get(User, user.id)
+            invitation = await session.get(Invitation, invitation_id)
+            member = await session.scalar(
+                select(BrandMember).where(
+                    BrandMember.brand_id == invite_context.brand_id,
+                    BrandMember.user_id == user.id,
+                )
+            )
+            assert persisted_user is not None and persisted_user.is_verified is True
+            assert invitation is not None and invitation.accepted_at is not None
+            assert member is not None
+            assert member.role == BrandMemberRole.BRAND_MANAGER.value
+            assert member.status == BrandMemberStatus.ACTIVE.value
+
+    async def test_existing_recipient_wrong_password_preserves_pending_invitation(
+        self, client: AsyncClient, invite_context: InviteContext
+    ) -> None:
+        email = f"activate-wrong-{uuid.uuid4().hex[:8]}@test.local"
+        user = await _create_existing_user(
+            invite_context,
+            email=email,
+            user_type=UserType.BRAND_USER.value,
+            password="ExistingPass123!",
+        )
+        invitation_id, token = await _create_invitation(
+            invite_context,
+            invitation_type="brand",
+            email=email,
+            role=BrandMemberRole.BRAND_MANAGER.value,
+        )
+
+        response = await client.post(
+            f"/api/v1/invitations/activate/{token}",
+            json={"password": "WrongPass123!"},
+        )
+
+        assert response.status_code == 401
+        assert response.json()["detail"]["code"] == "INVITATION_INVALID_CREDENTIALS"
+        async with AsyncSessionLocal() as session:
+            invitation = await session.get(Invitation, invitation_id)
+            member = await session.scalar(
+                select(BrandMember).where(
+                    BrandMember.brand_id == invite_context.brand_id,
+                    BrandMember.user_id == user.id,
+                )
+            )
+            assert invitation is not None and invitation.accepted_at is None
+            assert member is None
+
     async def test_compatible_existing_brand_user_accepts(
         self, client: AsyncClient, invite_context: InviteContext
     ) -> None:

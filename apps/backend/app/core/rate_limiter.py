@@ -195,7 +195,11 @@ async def rate_limit_invitation_signup(request: Request, token: str) -> None:
     token_digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
     await _enforce(
         key=f"ratelimit:invite-signup:ip:{ip}",
-        max_attempts=settings.AUTH_RATE_LIMIT_ATTEMPTS,
+        # Several legitimate recipients may activate distinct invitations
+        # behind the same office/mobile NAT. The per-token bucket below stays
+        # strict against credential guessing while the shared IP bucket only
+        # catches broader abuse.
+        max_attempts=max(settings.AUTH_RATE_LIMIT_ATTEMPTS * 4, 20),
         window_seconds=settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
     )
     await _enforce(

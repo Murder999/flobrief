@@ -1,4 +1,4 @@
-# Flobrief — Next Work
+# PostPiloter — Next Work
 
 The historical 15-part implementation plan is complete. Production release remains conditional on the readiness checklist.
 
@@ -8,6 +8,8 @@ The historical 15-part implementation plan is complete. Production release remai
 2. Complete every applicable item in `docs/LAUNCH_CHECKLIST.md`.
 
 Completed locally in the latest hardening pass: isolated self-service demo implementation, local Turbopack/API-port performance hardening, five bilingual public SEO landing pages plus localized terms, privacy, refund, and contact routes for Paddle review, complete typed EN/TR catalogs and persisted user locale, one shared premium TR/EN home composition with copy-only locale changes, the supplied transparent PostPiloter master logo shared across public and login surfaces, and SVG flag controls, public login-modal and platform-route disclosure hardening, Ruff check/format, backend regression coverage, TypeScript, production build (94/94 static pages), SEO/legal/login/security Chromium checks, the Resend/realtime regression suite, commercial-metric exclusion checks, and the prior critical Playwright release matrix against the current API and live WebSocket.
+
+Also completed locally: invitation-aware Agency/Brand account creation and acceptance, inline password-confirmed activation for compatible existing recipients, exact portal-type conflict handling, canonical invitation links, and audited Platform Admin Agency/Brand provisioning and membership recovery. Deployment and live-provider smoke tests remain separate release work.
 
 ## Platform access hardening
 
