@@ -1,13 +1,22 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { agencyApi, invitationApi, type AgencyMemberRead, type InvitationRead } from "@/lib/api-client";
+import {
+  agencyApi,
+  invitationApi,
+  partnershipInvitationApi,
+  type AgencyMemberRead,
+  type InvitationRead,
+  type PartnershipInvitationRead,
+} from "@/lib/api-client";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/context/workspace-context";
 import { Button } from "@/components/ui/button";
 import { RoleBadge } from "@/components/team/role-badge";
 import { InviteModal } from "@/components/team/invite-modal";
 import { useLocale } from "@/context/locale-context";
+import { Input } from "@/components/ui/input";
+import { Handshake, Mail } from "lucide-react";
 
 function SkeletonRow() {
   return (
@@ -29,25 +38,36 @@ export default function MembersPage() {
 
   const [members, setMembers] = useState<AgencyMemberRead[]>([]);
   const [invitations, setInvitations] = useState<InvitationRead[]>([]);
+  const [partnerInvitations, setPartnerInvitations] = useState<PartnershipInvitationRead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [tab, setTab] = useState<"members" | "invitations">("members");
+  const [tab, setTab] = useState<"members" | "invitations" | "partners">("members");
+  const [partnerEmail, setPartnerEmail] = useState("");
+  const [partnerMessage, setPartnerMessage] = useState("");
+  const [partnerError, setPartnerError] = useState<string | null>(null);
+  const [partnerSubmitting, setPartnerSubmitting] = useState(false);
+  const canManageMembers =
+    activeAgency?.member_role === "owner" || activeAgency?.member_role === "admin";
 
   const loadData = useCallback(async () => {
     if (!activeAgency || !accessToken) return;
 
     setIsLoading(true);
     try {
-      const [mems, invs] = await Promise.all([
+      const [mems, invs, partnerInvites] = await Promise.all([
         agencyApi.listMembers(activeAgency.id, accessToken),
         invitationApi.listAgencyInvitations(activeAgency.id, accessToken),
+        canManageMembers
+          ? partnershipInvitationApi.listForAgency(activeAgency.id, accessToken)
+          : Promise.resolve([]),
       ]);
       setMembers(mems);
       setInvitations(invs);
+      setPartnerInvitations(partnerInvites);
     } finally {
       setIsLoading(false);
     }
-  }, [activeAgency, accessToken]);
+  }, [activeAgency, accessToken, canManageMembers]);
 
   useEffect(() => {
     if (workspaceReady && !workspaceLoading && !activeAgency) {
@@ -70,10 +90,28 @@ export default function MembersPage() {
     await invitationApi.resendById(invitationId, activeAgency.id, accessToken);
   };
 
-  const canManageMembers =
-    activeAgency?.member_role === "owner" || activeAgency?.member_role === "admin";
-
   const pendingCount = invitations.filter((i) => i.is_pending).length;
+
+  const handlePartnerInvite = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!activeAgency || !accessToken) return;
+    setPartnerError(null);
+    setPartnerSubmitting(true);
+    try {
+      await partnershipInvitationApi.createFromAgency(
+        { email: partnerEmail.trim(), message: partnerMessage.trim() || null },
+        activeAgency.id,
+        accessToken
+      );
+      setPartnerEmail("");
+      setPartnerMessage("");
+      await loadData();
+    } catch (err) {
+      setPartnerError(err instanceof Error ? err.message : t("settings.members.partner.empty"));
+    } finally {
+      setPartnerSubmitting(false);
+    }
+  };
 
   if (!isLoading && !activeAgency) {
     return (
@@ -93,7 +131,7 @@ export default function MembersPage() {
   return (
     <div>
       <div className="mb-6 flex justify-end">
-        {canManageMembers && (
+        {canManageMembers && tab !== "partners" && (
           <Button onClick={() => setShowInviteModal(true)}>
             {t("settings.members.invite")}
           </Button>
@@ -101,7 +139,7 @@ export default function MembersPage() {
       </div>
 
       <div className="flex gap-1 p-1 bg-surface-2 rounded-xl mb-6 w-fit">
-        {(["members", "invitations"] as const).map((tabKey) => (
+        {(["members", "invitations", "partners"] as const).map((tabKey) => (
           <button
             key={tabKey}
             onClick={() => setTab(tabKey)}
@@ -111,7 +149,13 @@ export default function MembersPage() {
                 : "text-text-muted hover:text-text"
             }`}
           >
-            {t(tabKey === "members" ? "settings.members.tab.members" : "settings.members.tab.invitations")}
+            {t(
+              tabKey === "members"
+                ? "settings.members.tab.members"
+                : tabKey === "invitations"
+                  ? "settings.members.tab.invitations"
+                  : "settings.members.tab.partners"
+            )}
             {tabKey === "invitations" && pendingCount > 0 && (
               <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 bg-accent text-white text-xs rounded-full">
                 {pendingCount}
@@ -237,6 +281,82 @@ export default function MembersPage() {
               })
             )}
           </>
+        )}
+
+        {tab === "partners" && (
+          <div className="space-y-0">
+            {canManageMembers && (
+              <form onSubmit={handlePartnerInvite} className="space-y-4 border-b border-border p-5">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <Handshake className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-semibold text-text">{t("settings.members.partner.title")}</h2>
+                    <p className="mt-1 max-w-2xl text-xs leading-relaxed text-text-muted">
+                      {t("settings.members.partner.description")}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input
+                    label={t("settings.members.partner.email")}
+                    type="email"
+                    required
+                    value={partnerEmail}
+                    onChange={(event) => setPartnerEmail(event.target.value)}
+                  />
+                  <Input
+                    label={t("settings.members.partner.message")}
+                    value={partnerMessage}
+                    maxLength={500}
+                    onChange={(event) => setPartnerMessage(event.target.value)}
+                  />
+                </div>
+                {partnerError && <p className="text-xs text-danger">{partnerError}</p>}
+                <Button type="submit" disabled={partnerSubmitting}>
+                  <Mail className="h-4 w-4" aria-hidden="true" />
+                  {t(partnerSubmitting ? "settings.members.partner.sending" : "settings.members.partner.send")}
+                </Button>
+              </form>
+            )}
+            {partnerInvitations.length === 0 ? (
+              <p className="px-5 py-10 text-center text-sm text-text-muted">
+                {t("settings.members.partner.empty")}
+              </p>
+            ) : (
+              partnerInvitations.map((invitation) => (
+                <div key={invitation.id} className="flex items-center gap-4 border-b border-border px-5 py-4 last:border-0">
+                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-surface-2">
+                    <Handshake className="h-4 w-4 text-text-muted" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-text">{invitation.email}</p>
+                    <p className="text-xs text-text-muted">
+                      {invitation.accepted_at
+                        ? t("settings.members.partner.accepted")
+                        : invitation.revoked_at
+                          ? t("settings.members.partner.revoked")
+                          : t("settings.members.partner.pending")}
+                    </p>
+                  </div>
+                  {canManageMembers && invitation.is_pending && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!accessToken) return;
+                        await partnershipInvitationApi.revoke(invitation.id, accessToken);
+                        await loadData();
+                      }}
+                      className="min-h-9 rounded-lg px-3 text-xs font-medium text-text-muted transition-colors hover:bg-surface-2 hover:text-danger"
+                    >
+                      {t("settings.members.cancel")}
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         )}
       </div>
 

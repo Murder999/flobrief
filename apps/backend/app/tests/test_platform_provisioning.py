@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.core.security import create_access_token
 from app.db.session import AsyncSessionLocal
@@ -229,11 +229,9 @@ class TestPlatformAgencyProvisioning:
             )
             assert member is not None and member.role == "owner"
 
-    async def test_incompatible_owner_attach_rolls_back_agency(
+    async def test_brand_preferred_user_can_own_agency_without_type_conversion(
         self, client: AsyncClient, platform_context: PlatformContext
     ) -> None:
-        async with AsyncSessionLocal() as session:
-            before = await session.scalar(select(func.count(Agency.id)))
         response = await client.post(
             "/api/v1/platform/agencies",
             json=_agency_payload(
@@ -244,11 +242,18 @@ class TestPlatformAgencyProvisioning:
             ),
             headers=_headers(platform_context.admin_token),
         )
-        assert response.status_code == 409
-        assert response.json()["detail"]["code"] == "USER_TYPE_CONFLICT"
+        assert response.status_code == 201
+        agency_id = uuid.UUID(response.json()["agency"]["id"])
+        platform_context.created_agency_ids.append(agency_id)
         async with AsyncSessionLocal() as session:
-            after = await session.scalar(select(func.count(Agency.id)))
-            assert after == before
+            member = await session.scalar(
+                select(AgencyMember).where(AgencyMember.agency_id == agency_id)
+            )
+            owner = await session.scalar(
+                select(User).where(User.email == platform_context.brand_user_email)
+            )
+            assert member is not None and member.role == "owner"
+            assert owner is not None and owner.user_type == UserType.BRAND_USER.value
 
     async def test_duplicate_names_receive_distinct_slugs(
         self, client: AsyncClient, platform_context: PlatformContext

@@ -34,6 +34,7 @@ class PlanRead(BaseModel):
 class SubscriptionRead(BaseModel):
     id: uuid.UUID
     agency_id: uuid.UUID | None
+    brand_id: uuid.UUID | None
     plan_id: uuid.UUID
     plan: PlanRead
     status: str

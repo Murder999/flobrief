@@ -27,7 +27,7 @@ import redis.asyncio as redis
 from fastapi import HTTPException, Request, status
 
 from app.core.config import settings
-from app.schemas.auth import LoginRequest, PasswordResetRequest
+from app.schemas.auth import LoginRequest, PasswordResetRequest, RegisterRequest
 from app.schemas.platform import MfaRecoveryRequest, MfaVerifyRequest
 
 logger = logging.getLogger(__name__)
@@ -189,6 +189,21 @@ async def rate_limit_password_reset(request: Request, data: PasswordResetRequest
     )
 
 
+async def rate_limit_registration(request: Request, data: RegisterRequest) -> None:
+    """Limit public tenant/workspace creation by source and normalized account."""
+    ip = get_client_ip(request)
+    await _enforce(
+        key=f"ratelimit:register:ip:{ip}",
+        max_attempts=max(settings.AUTH_RATE_LIMIT_ATTEMPTS, 5),
+        window_seconds=settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+    await _enforce(
+        key=f"ratelimit:register:acct:{_normalize_account_key(data.email)}",
+        max_attempts=3,
+        window_seconds=settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+
+
 async def rate_limit_invitation_signup(request: Request, token: str) -> None:
     """Limit public invite onboarding without placing plaintext tokens in Redis keys."""
     ip = get_client_ip(request)
@@ -206,6 +221,15 @@ async def rate_limit_invitation_signup(request: Request, token: str) -> None:
         key=f"ratelimit:invite-signup:token:{token_digest}",
         max_attempts=settings.AUTH_RATE_LIMIT_ATTEMPTS,
         window_seconds=settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+
+
+async def rate_limit_partnership_invitation(user_id: str) -> None:
+    """Bound outbound partnership mail even for authenticated workspace managers."""
+    await _enforce(
+        key=f"ratelimit:partnership-invite:acct:{user_id}",
+        max_attempts=10,
+        window_seconds=3600,
     )
 
 

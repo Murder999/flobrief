@@ -65,6 +65,10 @@ class UrlBuilder:
         return f"{_base()}/invite/{quote(token, safe='')}"
 
     @staticmethod
+    def partnership_invite_link(token: str) -> str:
+        return f"{_base()}/partner-invite/{quote(token, safe='')}"
+
+    @staticmethod
     def verification_link(token: str) -> str:
         return f"{_base()}/auth/verify-email?token={quote(token, safe='')}"
 

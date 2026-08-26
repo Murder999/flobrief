@@ -19,10 +19,10 @@
 
 ## Current Scale
 
-- 84 database tables.
-- 50 Alembic migration files; one head required before release.
-- 415 API route decorators after duplicate asset routes were removed.
-- 104 frontend pages, 118 components, 27 Playwright specs.
+- 85 database tables.
+- 61 Alembic migration files; one head required before release.
+- 459 API route decorators after duplicate asset routes were removed.
+- 109 frontend pages, 141 components, 32 Playwright specs.
 
 ## Security Boundaries
 
@@ -35,14 +35,16 @@
 - iyzico and Twilio webhooks fail closed on missing/invalid signatures.
 - Provider credentials are encrypted with `FLOBRIEF_SECRET_ENCRYPTION_KEY`.
 
-## Invitation and platform provisioning hardening — 2026-08-25
+## Unified identity, workspaces, invitations, and billing — 2026-08-26
 
-- Public invitation preview is token-scoped, exposes no tenant IDs, and discloses exact-account existence only for a valid pending invitation.
-- Net-new Agency and Brand recipients create the correct portal user and exact invited membership atomically, with invitation-derived authority and a rotating authenticated session.
-- A valid pending single-use invitation is accepted as mailbox proof; invite-created users are verified. Compatible existing recipients verify their password and activate the exact invited membership/session inline without a generic-login round trip. Existing incompatible portal identities are never converted and leave the invitation pending for support.
+- One login identity may hold active agency and brand memberships; legacy tenant `user_type` is only a preferred starting portal, while exact workspace access is membership-derived. `platform_admin` remains isolated.
+- Public registration asks for Agency or Brand as the first workspace, creates that workspace plus owner membership atomically, and keeps production access e-mail-verification gated and rate-limited.
+- Exact agency and brand context validates active tenant plus active membership; multi-brand users must send `X-Brand-ID`, and platform authorization checks the current database role rather than trusting a stale JWT claim.
+- Team invitations and agency-brand partnership invitations are separate capabilities. Tokens are single-use and hashed, acceptance is e-mail/owner scoped and row-locked, and a partnership never grants team membership.
+- Independent brands can invite their own team, own a subscription, view invoices/limits, and enter checkout; brand billing mutations require the exact active `brand_owner` membership.
 - The existing Platform Agencies/Brands surface now creates real non-demo tenants, provisions explicit manual subscriptions, sends owner/contact invitations, or attaches compatible users only after confirmation.
 - Agency/Brand detail recovery supports invite, resend, revoke, attach, and audited member changes. Every platform write remains under `get_platform_admin_user` and emits safe platform audit metadata.
-- No database migration was required. Focused validation: Ruff, 122 backend tests, typecheck, build (97 pages), zero duplicate routes, and 8 Chromium scenarios.
+- Migrations `z9a0b1c2d3e4` and `a0b1c2d3e4f5` add partnership invitations and agency-less brand team invitations. Current validation: Ruff/format, 176 focused regression tests, 5 unified-flow cases, route uniqueness, TypeScript, and a successful 98-page production build.
 
 ## Recent Hardening — 2026-07-27
 
@@ -185,7 +187,7 @@
 | Backend Pytest | PASS — 1777 tests |
 | Frontend TypeScript | PASS |
 | Frontend lint | PASS — no errors; raw-image optimization warnings remain |
-| Frontend production build | PASS — 94/94 static pages generated; Node 20.x remains the release runtime contract |
+| Frontend production build | PASS — 98/98 static pages generated; Node 20.x remains the release runtime contract |
 | SEO landing Playwright suite | PASS — 9/9 on Chromium production build |
 | Playwright critical release matrix | PASS — 42/42 on Node 20 production build, current API, PostgreSQL, Redis, and live WebSocket |
 

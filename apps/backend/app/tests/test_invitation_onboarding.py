@@ -550,7 +550,7 @@ class TestExistingInvitationRecipient:
             invitation = await session.get(Invitation, invitation_id)
             assert invitation is not None and invitation.accepted_at is None
 
-    async def test_incompatible_existing_user_is_rejected_without_conversion(
+    async def test_existing_agency_user_can_accept_brand_membership_without_conversion(
         self, client: AsyncClient, invite_context: InviteContext
     ) -> None:
         email = f"incompatible-{uuid.uuid4().hex[:8]}@test.local"
@@ -572,11 +572,19 @@ class TestExistingInvitationRecipient:
             headers={"Authorization": f"Bearer {access}"},
         )
 
-        assert response.status_code == 409
-        assert response.json()["detail"]["code"] == "INVITATION_ACCOUNT_TYPE_CONFLICT"
+        assert response.status_code == 204
         async with AsyncSessionLocal() as session:
             persisted_user = await session.get(User, user.id)
             invitation = await session.get(Invitation, invitation_id)
+            membership = await session.scalar(
+                select(BrandMember).where(
+                    BrandMember.brand_id == invite_context.brand_id,
+                    BrandMember.user_id == user.id,
+                )
+            )
             assert persisted_user is not None
             assert persisted_user.user_type == UserType.AGENCY_USER.value
-            assert invitation is not None and invitation.accepted_at is None
+            assert invitation is not None and invitation.accepted_at is not None
+            assert membership is not None
+            assert membership.role == BrandMemberRole.BRAND_OWNER.value
+            assert membership.status == BrandMemberStatus.ACTIVE.value

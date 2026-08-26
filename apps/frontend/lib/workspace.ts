@@ -1,6 +1,7 @@
 import { translateCurrent } from "@/lib/i18n/current";
 
 const ACTIVE_AGENCY_KEY = "flobrief_active_agency_id";
+const ACTIVE_BRAND_KEY = "postpiloter_active_brand_id";
 
 export function getStoredAgencyId(): string | null {
   if (typeof window === "undefined") return null;
@@ -15,6 +16,21 @@ export function storeAgencyId(agencyId: string): void {
 export function clearStoredAgencyId(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ACTIVE_AGENCY_KEY);
+}
+
+export function getStoredBrandId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(ACTIVE_BRAND_KEY);
+}
+
+export function storeBrandId(brandId: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(ACTIVE_BRAND_KEY, brandId);
+}
+
+export function clearStoredBrandId(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(ACTIVE_BRAND_KEY);
 }
 
 const PENDING_PLAN_KEY = "flobrief_pending_plan";

@@ -9,16 +9,24 @@ import {
   type ReactNode,
 } from "react";
 import { workspaceApi } from "@/lib/api-client";
-import type { WorkspaceAgency } from "@/lib/workspace";
-import { getStoredAgencyId, storeAgencyId } from "@/lib/workspace";
+import type { WorkspaceAgency, WorkspaceBrand } from "@/lib/workspace";
+import {
+  getStoredAgencyId,
+  getStoredBrandId,
+  storeAgencyId,
+  storeBrandId,
+} from "@/lib/workspace";
 import { useAuth } from "@/hooks/useAuth";
 
 interface WorkspaceContextValue {
   agencies: WorkspaceAgency[];
+  brands: WorkspaceBrand[];
   activeAgency: WorkspaceAgency | null;
+  activeBrand: WorkspaceBrand | null;
   isLoading: boolean;
   isInitialized: boolean;
   switchAgency: (agencyId: string) => void;
+  switchBrand: (brandId: string) => void;
   refreshWorkspaces: () => Promise<void>;
 }
 
@@ -27,7 +35,9 @@ const WorkspaceCtx = createContext<WorkspaceContextValue | null>(null);
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user, accessToken } = useAuth();
   const [agencies, setAgencies] = useState<WorkspaceAgency[]>([]);
+  const [brands, setBrands] = useState<WorkspaceBrand[]>([]);
   const [activeAgencyId, setActiveAgencyId] = useState<string | null>(null);
+  const [activeBrandId, setActiveBrandId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -37,7 +47,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const data = await workspaceApi.list(accessToken);
       const agencyList = Array.isArray(data?.agencies) ? data.agencies : [];
+      const brandList = Array.isArray(data?.brands) ? data.brands : [];
       setAgencies(agencyList);
+      setBrands(brandList);
 
       const stored = getStoredAgencyId();
       const found = agencyList.find((a) => a.id === stored);
@@ -50,6 +62,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       } else {
         setActiveAgencyId(null);
       }
+
+      const storedBrand = getStoredBrandId();
+      const foundBrand = brandList.find((brand) => brand.id === storedBrand);
+      if (foundBrand) {
+        setActiveBrandId(foundBrand.id);
+      } else if (brandList.length > 0) {
+        const firstBrand = brandList[0];
+        setActiveBrandId(firstBrand.id);
+        storeBrandId(firstBrand.id);
+      } else {
+        setActiveBrandId(null);
+      }
     } catch {
       // silent — workspace load failure should not crash the app
     } finally {
@@ -59,17 +83,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [accessToken]);
 
   useEffect(() => {
-    if (user?.user_type === "agency_user" && accessToken) {
+    if (user && user.user_type !== "platform_admin" && accessToken) {
       refreshWorkspaces();
     } else if (user) {
-      // Brand and platform identities never carry agency workspace state.
       setAgencies([]);
+      setBrands([]);
       setActiveAgencyId(null);
+      setActiveBrandId(null);
       setIsLoading(false);
       setIsInitialized(true);
     } else {
       setAgencies([]);
+      setBrands([]);
       setActiveAgencyId(null);
+      setActiveBrandId(null);
       setIsLoading(false);
       setIsInitialized(false);
     }
@@ -80,11 +107,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     storeAgencyId(agencyId);
   }, []);
 
+  const switchBrand = useCallback((brandId: string) => {
+    setActiveBrandId(brandId);
+    storeBrandId(brandId);
+  }, []);
+
   const activeAgency = (agencies ?? []).find((a) => a.id === activeAgencyId) ?? null;
+  const activeBrand = (brands ?? []).find((brand) => brand.id === activeBrandId) ?? null;
 
   return (
     <WorkspaceCtx.Provider
-      value={{ agencies, activeAgency, isLoading, isInitialized, switchAgency, refreshWorkspaces }}
+      value={{
+        agencies,
+        brands,
+        activeAgency,
+        activeBrand,
+        isLoading,
+        isInitialized,
+        switchAgency,
+        switchBrand,
+        refreshWorkspaces,
+      }}
     >
       {children}
     </WorkspaceCtx.Provider>

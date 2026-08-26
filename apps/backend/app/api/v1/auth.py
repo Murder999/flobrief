@@ -21,6 +21,7 @@ from app.core.rate_limiter import (
     get_client_ip,
     rate_limit_login,
     rate_limit_password_reset,
+    rate_limit_registration,
     reset_login_rate_limit,
 )
 from app.db.session import get_db
@@ -101,6 +102,7 @@ async def register(
     data: RegisterRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit_registration),
 ) -> User:
     svc = AuthService(db)
     return await svc.register(

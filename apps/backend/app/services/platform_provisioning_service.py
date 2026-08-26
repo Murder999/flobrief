@@ -135,10 +135,10 @@ class PlatformProvisioningService:
         user = await self.users.get_by_email(email)
         if user is None:
             raise self._error("USER_NOT_FOUND", "Bu e-posta ile mevcut kullanıcı bulunamadı")
-        if user.user_type != expected_type:
+        if user.user_type == UserType.PLATFORM_ADMIN.value:
             raise self._error(
                 "USER_TYPE_CONFLICT",
-                "Kullanıcı farklı bir portal türüne ait. Hesap türü değiştirilmedi.",
+                "Platform yöneticisi tenant çalışma alanına bağlanamaz.",
             )
         if not user.is_active:
             raise self._error("USER_INACTIVE", "Devre dışı kullanıcı bağlanamaz")

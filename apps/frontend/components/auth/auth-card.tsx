@@ -5,7 +5,13 @@ import type { ReactNode } from "react";
 import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useLocale } from "@/context/locale-context";
 
-export function AuthCard({ children }: { children: ReactNode }) {
+export function AuthCard({
+  children,
+  wide = false,
+}: {
+  children: ReactNode;
+  wide?: boolean;
+}) {
   const { locale } = useLocale();
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
@@ -14,7 +20,7 @@ export function AuthCard({ children }: { children: ReactNode }) {
       <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-purple/4 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-accent/3 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative w-full max-w-md">
+      <div className={`relative w-full ${wide ? "max-w-2xl" : "max-w-md"}`}>
         {/* Logo */}
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2.5 group">

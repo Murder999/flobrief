@@ -60,7 +60,7 @@ async def get_platform_admin_user(
     result = await db.execute(select(User).where(User.id == user_id, User.deleted_at.is_(None)))
     user = result.scalar_one_or_none()
 
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.user_type != UserType.PLATFORM_ADMIN.value:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or inactive",

@@ -188,9 +188,7 @@ async def test_verification_resend_rotates_token_then_calls_email_service() -> N
     service.token_repo.revoke_all_for_user.assert_awaited_once()
     service.token_repo.create.assert_awaited_once()
     db.commit.assert_awaited_once()
-    send.assert_awaited_once_with(
-        db, "member@example.com", "Member", "new-verify-token", "tr"
-    )
+    send.assert_awaited_once_with(db, "member@example.com", "Member", "new-verify-token", "tr")
 
 
 @pytest.mark.asyncio
@@ -219,9 +217,7 @@ async def test_forgot_password_rotates_token_then_calls_email_service() -> None:
     service.token_repo.revoke_all_for_user.assert_awaited_once()
     service.token_repo.create.assert_awaited_once()
     db.commit.assert_awaited_once()
-    send.assert_awaited_once_with(
-        db, "member@example.com", "Member", "new-reset-token", "en"
-    )
+    send.assert_awaited_once_with(db, "member@example.com", "Member", "new-reset-token", "en")
 
 
 @pytest.mark.asyncio

@@ -39,8 +39,17 @@ class BillingService:
     async def get_subscription(self, agency_id: uuid.UUID) -> tuple[Subscription, Plan] | None:
         return await self.sub_repo.get_for_agency_with_plan(agency_id)
 
+    async def get_brand_subscription(self, brand_id: uuid.UUID) -> tuple[Subscription, Plan] | None:
+        return await self.sub_repo.get_for_brand_with_plan(brand_id)
+
     async def list_invoices(self, agency_id: uuid.UUID) -> list:
         sub = await self.sub_repo.get_for_agency(agency_id)
+        if sub is None:
+            return []
+        return await self.inv_repo.list_for_subscription(sub.id)
+
+    async def list_brand_invoices(self, brand_id: uuid.UUID) -> list:
+        sub = await self.sub_repo.get_for_brand(brand_id)
         if sub is None:
             return []
         return await self.inv_repo.list_for_subscription(sub.id)
@@ -56,6 +65,48 @@ class BillingService:
         buyer_id: str,
         buyer_ip: str,
         yearly: bool = False,
+    ) -> dict:
+        return await self._create_checkout_session(
+            plan_id=plan_id,
+            buyer_email=buyer_email,
+            buyer_name=buyer_name,
+            buyer_id=buyer_id,
+            buyer_ip=buyer_ip,
+            yearly=yearly,
+            callback_path="/dashboard/settings/billing?checkout=result",
+        )
+
+    async def create_brand_checkout_session(
+        self,
+        brand_id: uuid.UUID,
+        plan_id: uuid.UUID,
+        buyer_email: str,
+        buyer_name: str,
+        buyer_id: str,
+        buyer_ip: str,
+        yearly: bool = False,
+    ) -> dict:
+        del brand_id  # Authorization is performed by the exact brand context.
+        return await self._create_checkout_session(
+            plan_id=plan_id,
+            buyer_email=buyer_email,
+            buyer_name=buyer_name,
+            buyer_id=buyer_id,
+            buyer_ip=buyer_ip,
+            yearly=yearly,
+            callback_path="/brand/settings/billing?checkout=result",
+        )
+
+    async def _create_checkout_session(
+        self,
+        *,
+        plan_id: uuid.UUID,
+        buyer_email: str,
+        buyer_name: str,
+        buyer_id: str,
+        buyer_ip: str,
+        yearly: bool,
+        callback_path: str,
     ) -> dict:
         """Returns checkout token and payment page URL for iyzico checkout form."""
         plan = await self.plan_repo.get_by_id(plan_id)
@@ -80,7 +131,7 @@ class BillingService:
                 "sandbox": True,
             }
 
-        callback_url = f"{settings.FRONTEND_URL}/dashboard/settings/billing?checkout=result"
+        callback_url = f"{settings.FRONTEND_URL}{callback_path}"
         try:
             data = await provider.create_checkout_session(
                 price_cents=price_cents,
@@ -136,6 +187,30 @@ class BillingService:
         await self.db.refresh(sub)
         return sub
 
+    async def change_brand_plan(
+        self,
+        brand_id: uuid.UUID,
+        new_plan_id: uuid.UUID,
+    ) -> Subscription:
+        sub = await self.sub_repo.get_for_brand(brand_id)
+        new_plan = await self.plan_repo.get_by_id(new_plan_id)
+        if new_plan is None:
+            raise HTTPException(_404, "Plan bulunamadı")
+        if sub is None:
+            sub = await self.sub_repo.create(
+                brand_id=brand_id,
+                plan_id=new_plan_id,
+                status=SubscriptionStatus.ACTIVE.value,
+                billing_provider=BillingProvider.MANUAL.value,
+                current_period_start=datetime.now(UTC),
+            )
+        else:
+            sub.plan_id = new_plan_id
+            self.db.add(sub)
+        await self.db.commit()
+        await self.db.refresh(sub)
+        return sub
+
     # ── Cancellation ──────────────────────────────────────────────────────────
 
     async def cancel_subscription(self, agency_id: uuid.UUID) -> Subscription:
@@ -143,6 +218,28 @@ class BillingService:
         if sub is None:
             raise HTTPException(_404, "Aktif abonelik bulunamadı")
 
+        if sub.provider_subscription_id and sub.billing_provider == BillingProvider.IYZICO.value:
+            import contextlib
+
+            provider = IyzicoProvider()
+            if provider.is_configured():
+                with contextlib.suppress(IyzicoError):
+                    await provider.cancel_subscription(sub.provider_subscription_id)
+
+        sub.status = SubscriptionStatus.CANCELLED.value
+        sub.cancel_at_period_end = True
+        self.db.add(sub)
+        await self.db.commit()
+        await self.db.refresh(sub)
+        return sub
+
+    async def cancel_brand_subscription(self, brand_id: uuid.UUID) -> Subscription:
+        sub = await self.sub_repo.get_for_brand(brand_id)
+        if sub is None:
+            raise HTTPException(_404, "Aktif abonelik bulunamadı")
+        return await self._cancel_subscription(sub)
+
+    async def _cancel_subscription(self, sub: Subscription) -> Subscription:
         if sub.provider_subscription_id and sub.billing_provider == BillingProvider.IYZICO.value:
             import contextlib
 

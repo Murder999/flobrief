@@ -88,20 +88,21 @@ class InvitationService:
                 "INVITATION_TARGET_MISSING",
                 "Davet hedefi geçersiz",
             )
-        agency = await self.agency_repo.get_by_id(invitation.agency_id)
-        if agency is None:
-            raise self._domain_error(
-                _410,
-                "INVITATION_TARGET_MISSING",
-                "Davet hedefi artık mevcut değil",
-            )
-        if invitation.invitation_type == "brand":
+        if invitation.invitation_type == "agency":
+            if invitation.agency_id is None:
+                raise self._domain_error(_410, "INVITATION_TARGET_MISSING", "Davet hedefi geçersiz")
+            agency = await self.agency_repo.get_by_id(invitation.agency_id)
+            if agency is None:
+                raise self._domain_error(
+                    _410,
+                    "INVITATION_TARGET_MISSING",
+                    "Davet hedefi artık mevcut değil",
+                )
+        else:
             if invitation.brand_id is None:
                 raise self._domain_error(_410, "INVITATION_TARGET_MISSING", "Davet hedefi geçersiz")
-            brand = await self.brand_repo.get_by_id_and_agency(
-                invitation.brand_id, invitation.agency_id
-            )
-            if brand is None:
+            brand = await self.brand_repo.get_by_id(invitation.brand_id)
+            if brand is None or brand.agency_id != invitation.agency_id:
                 raise self._domain_error(
                     _410, "INVITATION_TARGET_MISSING", "Davet edilen marka artık mevcut değil"
                 )
@@ -124,27 +125,27 @@ class InvitationService:
         )
 
     def _require_compatible_user(self, invitation: Invitation, user: User) -> None:
-        expected = self.expected_user_type(invitation)
-        if user.user_type != expected:
+        if user.user_type == UserType.PLATFORM_ADMIN.value:
             raise self._domain_error(
                 _409,
                 "INVITATION_ACCOUNT_TYPE_CONFLICT",
-                "Bu hesap türü davet edilen portal ile uyumlu değil. "
-                "Destek ekibiyle iletişime geçin.",
+                "Platform yöneticisi tenant davetlerini kabul edemez.",
             )
 
     async def _ensure_external_invitation_allowed(
         self,
-        agency_id: uuid.UUID,
+        agency_id: uuid.UUID | None,
         actor: User,
     ) -> None:
-        demo_agency = await self.db.scalar(
-            select(Agency.id).where(
-                Agency.id == agency_id,
-                Agency.is_demo.is_(True),
-                Agency.deleted_at.is_(None),
+        demo_agency = None
+        if agency_id is not None:
+            demo_agency = await self.db.scalar(
+                select(Agency.id).where(
+                    Agency.id == agency_id,
+                    Agency.is_demo.is_(True),
+                    Agency.deleted_at.is_(None),
+                )
             )
-        )
         demo_actor = await self.db.scalar(
             select(DemoSandbox.id).where(
                 or_(
@@ -251,19 +252,23 @@ class InvitationService:
     async def create_brand_invite(
         self,
         brand_id: uuid.UUID,
-        agency_id: uuid.UUID,
+        agency_id: uuid.UUID | None,
         data: BrandInviteRequest,
         inviter: User,
     ) -> tuple[Invitation, str]:
-        brand = await self.brand_repo.get_by_id_and_agency(brand_id, agency_id)
-        if brand is None:
+        brand = await self.brand_repo.get_by_id(brand_id)
+        if brand is None or brand.agency_id != agency_id:
             raise HTTPException(_404, "Marka bulunamadı")
         await self._ensure_external_invitation_allowed(agency_id, inviter)
 
         from app.models.enums import AgencyMemberRole, BrandMemberRole
 
         # Either an agency owner/admin, or the brand's own owner/manager, may invite.
-        agency_member = await self.agency_member_repo.get_membership(agency_id, inviter.id)
+        agency_member = (
+            await self.agency_member_repo.get_membership(agency_id, inviter.id)
+            if agency_id is not None
+            else None
+        )
         agency_can_invite = agency_member is not None and agency_member.role in {
             AgencyMemberRole.OWNER.value,
             AgencyMemberRole.ADMIN.value,
@@ -292,9 +297,9 @@ class InvitationService:
                 raise HTTPException(_409, "Bu kullanıcı zaten bu markaya üye")
 
         existing_invite = await self.invite_repo.get_pending_for_email_and_agency(
-            data.email, agency_id, "brand"
+            data.email, agency_id, "brand", brand_id
         )
-        if existing_invite and existing_invite.brand_id == brand_id:
+        if existing_invite:
             raise HTTPException(_409, "Bu e-posta için bekleyen bir davet zaten var")
 
         plaintext = generate_token(48)
@@ -332,8 +337,8 @@ class InvitationService:
         await self.db.commit()
         await self.db.refresh(invitation)
 
-        agency = await self.agency_repo.get_by_id(agency_id)
-        agency_name = agency.name if agency else ""
+        agency = await self.agency_repo.get_by_id(agency_id) if agency_id else None
+        agency_name = agency.name if agency else brand.name
 
         await self._send_brand_invite_email(
             to_email=data.email,
@@ -500,6 +505,7 @@ class InvitationService:
         entitlements = EntitlementService(self.db)
         joined_at = datetime.now(UTC)
         if invitation.invitation_type == "agency":
+            assert invitation.agency_id is not None
             existing = await self.agency_member_repo.get_membership(invitation.agency_id, user.id)
             if existing is not None:
                 raise self._domain_error(
@@ -570,13 +576,7 @@ class InvitationService:
 
         invitation = await self.get_by_token(token)
 
-        inviter_member = await self.agency_member_repo.get_membership(
-            invitation.agency_id, actor.id
-        )
-        from app.models.enums import AgencyMemberRole
-
-        allowed = {AgencyMemberRole.OWNER.value, AgencyMemberRole.ADMIN.value}
-        if inviter_member is None or inviter_member.role not in allowed:
+        if not await self._can_manage_invitation(invitation, actor):
             raise HTTPException(_403, "Davet iptal etme yetkiniz yok")
 
         if not invitation.is_pending:
@@ -672,7 +672,9 @@ class InvitationService:
         await self.db.commit()
         await self.db.refresh(invitation)
 
-        agency = await self.agency_repo.get_by_id(invitation.agency_id)
+        agency = (
+            await self.agency_repo.get_by_id(invitation.agency_id) if invitation.agency_id else None
+        )
         agency_name = agency.name if agency else ""
 
         if invitation.invitation_type == "agency":
@@ -704,20 +706,34 @@ class InvitationService:
         can manage that brand's invites."""
         from app.models.enums import AgencyMemberRole, BrandMemberRole
 
-        agency_member = await self.agency_member_repo.get_membership(invitation.agency_id, actor.id)
-        if agency_member is not None and agency_member.role in {
-            AgencyMemberRole.OWNER.value,
-            AgencyMemberRole.ADMIN.value,
-        }:
+        agency_member = (
+            await self.agency_member_repo.get_membership(invitation.agency_id, actor.id)
+            if invitation.agency_id is not None
+            else None
+        )
+        if (
+            agency_member is not None
+            and agency_member.status == AgencyMemberStatus.ACTIVE.value
+            and agency_member.role
+            in {
+                AgencyMemberRole.OWNER.value,
+                AgencyMemberRole.ADMIN.value,
+            }
+        ):
             return True
         if invitation.invitation_type == "brand" and invitation.brand_id is not None:
             brand_member = await self.brand_member_repo.get_membership(
                 invitation.brand_id, actor.id
             )
-            if brand_member is not None and brand_member.role in {
-                BrandMemberRole.BRAND_OWNER.value,
-                BrandMemberRole.BRAND_MANAGER.value,
-            }:
+            if (
+                brand_member is not None
+                and brand_member.status == BrandMemberStatus.ACTIVE.value
+                and brand_member.role
+                in {
+                    BrandMemberRole.BRAND_OWNER.value,
+                    BrandMemberRole.BRAND_MANAGER.value,
+                }
+            ):
                 return True
         return False
 
@@ -780,7 +796,11 @@ class InvitationService:
         inviter_name: str,
         locale: str | None = None,
     ) -> None:
-        agency = await self.agency_repo.get_by_id(invitation.agency_id)
+        agency = (
+            await self.agency_repo.get_by_id(invitation.agency_id)
+            if invitation.agency_id is not None
+            else None
+        )
         agency_name = agency.name if agency else ""
         if invitation.invitation_type == "agency":
             await self._send_agency_invite_email(
@@ -799,6 +819,8 @@ class InvitationService:
             if invitation.brand_id is not None
             else None
         )
+        if not agency_name and brand is not None:
+            agency_name = brand.name
         await self._send_brand_invite_email(
             to_email=invitation.email,
             agency_name=agency_name,
@@ -881,13 +903,7 @@ class InvitationService:
         invitation = await self.get_by_token(token)
         await self._ensure_external_invitation_allowed(invitation.agency_id, actor)
 
-        inviter_member = await self.agency_member_repo.get_membership(
-            invitation.agency_id, actor.id
-        )
-        from app.models.enums import AgencyMemberRole
-
-        allowed = {AgencyMemberRole.OWNER.value, AgencyMemberRole.ADMIN.value}
-        if inviter_member is None or inviter_member.role not in allowed:
+        if not await self._can_manage_invitation(invitation, actor):
             raise HTTPException(_403, "Davet yeniden gönderme yetkiniz yok")
 
         if not invitation.is_pending:
@@ -908,7 +924,11 @@ class InvitationService:
         await self.db.commit()
         await self.db.refresh(invitation)
 
-        agency = await self.agency_repo.get_by_id(invitation.agency_id)
+        agency = (
+            await self.agency_repo.get_by_id(invitation.agency_id)
+            if invitation.agency_id is not None
+            else None
+        )
         agency_name = agency.name if agency else ""
 
         if invitation.invitation_type == "agency":
@@ -923,6 +943,8 @@ class InvitationService:
         else:
             brand = await self.brand_repo.get_by_id(invitation.brand_id)  # type: ignore[arg-type]
             brand_name = brand.name if brand else ""
+            if not agency_name:
+                agency_name = brand_name
             await self._send_brand_invite_email(
                 to_email=invitation.email,
                 agency_name=agency_name,

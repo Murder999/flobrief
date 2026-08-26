@@ -552,9 +552,7 @@ class NotificationDispatcher:
                     brief_title=brief_title,
                     revision_note=p.get(
                         "reason",
-                        "Revizyon talep edildi."
-                        if is_tr
-                        else "A revision was requested.",
+                        "Revizyon talep edildi." if is_tr else "A revision was requested.",
                     ),
                     brief_url=brief_url,
                     locale=user.locale,

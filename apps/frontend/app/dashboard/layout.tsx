@@ -70,10 +70,9 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Ekip",
+    label: "Kaynak Planlama",
     items: [
       { href: "/dashboard/capacity",         label: "Kapasite",     icon: Gauge },
-      { href: "/dashboard/invitations",      label: "Davetlerim",   icon: Mail, badge: true },
     ],
   },
   {
@@ -105,6 +104,8 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/dashboard/settings/profile",       label: "Profilim",        icon: User },
       { href: "/dashboard/settings/agency",        label: "Ajans Ayarları",  icon: Settings2 },
+      { href: "/dashboard/settings/members",       label: "Ekip ve Davetler", icon: Mail, badge: true },
+      { href: "/dashboard/invitations",            label: "Gelen Davetler",   icon: Bell, badge: true },
     ],
   },
   {
@@ -291,7 +292,11 @@ function Sidebar({ isOwner, pendingInviteCount, notificationSource, pathname }: 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { t } = useLocale();
   const { user, logout, accessToken, isLoading, isInitialized } = useAuth();
-  const { activeAgency } = useWorkspace();
+  const {
+    activeAgency,
+    brands,
+    isInitialized: isWorkspaceInitialized,
+  } = useWorkspace();
   const router = useRouter();
   const pathname = usePathname();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -343,13 +348,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!isInitialized || isLoading) return;
+    if (!isInitialized || isLoading || !isWorkspaceInitialized) return;
     if (!user) {
       router.replace("/auth/login");
-    } else if (user.user_type === "brand_user") {
+    } else if (user.user_type === "platform_admin") {
+      router.replace("/platform");
+    } else if (!activeAgency && brands.length > 0) {
       router.replace("/brand/dashboard");
     }
-  }, [isInitialized, isLoading, user, router]);
+  }, [activeAgency, brands.length, isInitialized, isLoading, isWorkspaceInitialized, user, router]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -362,7 +369,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  if (!isInitialized || isLoading) {
+  if (!isInitialized || isLoading || !isWorkspaceInitialized) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">

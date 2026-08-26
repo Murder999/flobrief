@@ -15,7 +15,7 @@ from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.agency import Agency
 from app.models.agency_member import AgencyMember
-from app.models.enums import UserType
+from app.models.enums import AgencyMemberStatus, AgencyStatus, UserType
 from app.models.user import User
 from app.services.demo_access import (
     enforce_demo_workspace_request,
@@ -131,7 +131,11 @@ async def get_workspace_context(
         ) from err
 
     agency_result = await db.execute(
-        select(Agency).where(Agency.id == agency_id, Agency.deleted_at.is_(None))
+        select(Agency).where(
+            Agency.id == agency_id,
+            Agency.status == AgencyStatus.ACTIVE.value,
+            Agency.deleted_at.is_(None),
+        )
     )
     agency = agency_result.scalar_one_or_none()
     if agency is None:
@@ -142,6 +146,7 @@ async def get_workspace_context(
         select(AgencyMember).where(
             AgencyMember.agency_id == agency_id,
             AgencyMember.user_id == current_user.id,
+            AgencyMember.status == AgencyMemberStatus.ACTIVE.value,
             AgencyMember.deleted_at.is_(None),
         )
     )
@@ -149,7 +154,7 @@ async def get_workspace_context(
     if member is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bu agency'ye erişim yetkiniz yok",
+            detail="Bu agency için aktif üyeliğiniz bulunmuyor",
         )
 
     permissions = get_permissions_for_agency_role(member.role)

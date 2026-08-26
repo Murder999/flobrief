@@ -1,4 +1,5 @@
 import { localizeApiErrorMessage } from "@/lib/i18n/error";
+import { getStoredBrandId } from "@/lib/workspace";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -96,6 +97,7 @@ export class ApiError extends Error {
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   agencyId?: string | null;
+  brandId?: string | null;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -143,7 +145,13 @@ async function request<T>(
     headers["X-Agency-ID"] = options.agencyId;
   }
 
-  const { body, agencyId: _agencyId, ...rest } = options;
+  const selectedBrandId =
+    options.brandId ?? (path.startsWith("/api/v1/brand-portal") ? getStoredBrandId() : null);
+  if (selectedBrandId) {
+    headers["X-Brand-ID"] = selectedBrandId;
+  }
+
+  const { body, agencyId: _agencyId, brandId: _brandId, ...rest } = options;
 
   const response = await fetch(`${API_BASE}${path}`, {
     ...rest,
@@ -188,6 +196,8 @@ export interface RegisterRequest {
   phone_number?: string | null;
   whatsapp_opt_in?: boolean;
   locale?: "en" | "tr";
+  workspace_type?: "agency" | "brand";
+  workspace_name?: string | null;
 }
 
 export interface LoginRequest {
@@ -772,6 +782,96 @@ export const invitationApi = {
 
   acceptById: (id: string, accessToken: string) =>
     request<void>(`/api/v1/invitations/${id}/accept`, { method: "POST" }, accessToken),
+};
+
+export interface PartnershipInvitationRead {
+  id: string;
+  direction: "agency_invites_brand" | "brand_invites_agency";
+  agency_id: string | null;
+  brand_id: string | null;
+  email: string;
+  invited_by: string;
+  expires_at: string;
+  accepted_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  is_pending: boolean;
+}
+
+export interface PartnershipInvitationPreview {
+  direction: "agency_invites_brand" | "brand_invites_agency";
+  source_name: string;
+  email: string;
+  expires_at: string;
+  state: "pending" | "accepted" | "expired" | "revoked";
+  required_workspace_type: "agency" | "brand";
+}
+
+export interface PartnershipAcceptResponse {
+  agency_id: string;
+  brand_id: string;
+  redirect_to: "/dashboard" | "/brand/dashboard";
+}
+
+export const partnershipInvitationApi = {
+  createFromAgency: (
+    data: { email: string; message?: string | null },
+    agencyId: string,
+    accessToken: string
+  ) =>
+    request<PartnershipInvitationRead>(
+      "/api/v1/partnership-invitations/agency",
+      { method: "POST", body: data, agencyId },
+      accessToken
+    ),
+  createFromBrand: (
+    data: { email: string; message?: string | null },
+    brandId: string,
+    accessToken: string
+  ) =>
+    request<PartnershipInvitationRead>(
+      "/api/v1/partnership-invitations/brand",
+      { method: "POST", body: data, brandId },
+      accessToken
+    ),
+  listForAgency: (agencyId: string, accessToken: string) =>
+    request<PartnershipInvitationRead[]>(
+      "/api/v1/partnership-invitations/agency",
+      { agencyId },
+      accessToken
+    ),
+  listForBrand: (brandId: string, accessToken: string) =>
+    request<PartnershipInvitationRead[]>(
+      "/api/v1/partnership-invitations/brand",
+      { brandId },
+      accessToken
+    ),
+  listIncoming: (accessToken: string) =>
+    request<PartnershipInvitationRead[]>(
+      "/api/v1/partnership-invitations/incoming",
+      {},
+      accessToken
+    ),
+  preview: (token: string) =>
+    request<PartnershipInvitationPreview>(
+      `/api/v1/partnership-invitations/preview/${encodeURIComponent(token)}`
+    ),
+  accept: (
+    token: string,
+    data: { target_workspace_id?: string | null; new_workspace_name?: string | null },
+    accessToken: string
+  ) =>
+    request<PartnershipAcceptResponse>(
+      `/api/v1/partnership-invitations/accept/${encodeURIComponent(token)}`,
+      { method: "POST", body: data },
+      accessToken
+    ),
+  revoke: (invitationId: string, accessToken: string) =>
+    request<void>(
+      `/api/v1/partnership-invitations/${invitationId}/revoke`,
+      { method: "POST" },
+      accessToken
+    ),
 };
 
 export const participantApi = {
@@ -3860,7 +3960,8 @@ export interface PlanRead {
 
 export interface SubscriptionRead {
   id: string;
-  agency_id: string;
+  agency_id: string | null;
+  brand_id: string | null;
   plan_id: string;
   plan: PlanRead;
   status: string;
@@ -3957,6 +4058,37 @@ export const billingApi = {
       body: { feature },
       agencyId,
     }, accessToken),
+};
+
+export const brandBillingApi = {
+  getSubscription: (accessToken: string, brandId: string) =>
+    request<SubscriptionRead>("/api/v1/brand-portal/billing/subscription", { brandId }, accessToken),
+
+  createCheckout: (body: CheckoutRequest, accessToken: string, brandId: string) =>
+    request<CheckoutResponse>("/api/v1/brand-portal/billing/checkout", {
+      method: "POST",
+      body,
+      brandId,
+    }, accessToken),
+
+  cancelSubscription: (accessToken: string, brandId: string) =>
+    request<void>("/api/v1/brand-portal/billing/cancel", {
+      method: "POST",
+      brandId,
+    }, accessToken),
+
+  changePlan: (planId: string, accessToken: string, brandId: string) =>
+    request<void>("/api/v1/brand-portal/billing/change-plan", {
+      method: "POST",
+      body: { plan_id: planId },
+      brandId,
+    }, accessToken),
+
+  listInvoices: (accessToken: string, brandId: string) =>
+    request<InvoiceRead[]>("/api/v1/brand-portal/billing/invoices", { brandId }, accessToken),
+
+  getEntitlements: (accessToken: string, brandId: string) =>
+    request<UsageSummary>("/api/v1/brand-portal/billing/entitlements", { brandId }, accessToken),
 };
 
 // ── Brand Portal API (brand_user only, no X-Agency-ID) ───────────────────────
@@ -4333,10 +4465,14 @@ export const brandPortalApi = {
 
   uploadBriefAsset: (briefId: string, file: File, accessToken: string) => {
     const form = new FormData();
+    const brandId = getStoredBrandId();
     form.append("file", file);
     return fetch(`${API_BASE}/api/v1/brand-portal/briefs/${briefId}/assets`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...(brandId ? { "X-Brand-ID": brandId } : {}),
+      },
       body: form,
       credentials: "include",
     }).then(async (r) => {
@@ -4378,13 +4514,15 @@ export const brandPortalApi = {
   getInvoice: (invoiceId: string, accessToken: string) =>
     request<BrandInvoiceWithLines>(`/api/v1/brand-portal/invoices/${invoiceId}`, {}, accessToken),
 
-  /** Blob-fetch pattern mirrors `financeApi.downloadInvoicePdf` — no
-   * `X-Agency-ID` header here since brand-portal auth is a separate
-   * context keyed only on the bearer token (matches every other
-   * `brandPortalApi` call). */
+  /** Blob-fetch pattern mirrors `financeApi.downloadInvoicePdf`; brand
+   * workspace selection is still explicit for multi-brand identities. */
   downloadInvoicePdf: async (invoiceId: string, accessToken: string): Promise<Blob> => {
+    const brandId = getStoredBrandId();
     const response = await fetch(`${API_BASE}/api/v1/brand-portal/invoices/${invoiceId}/pdf`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...(brandId ? { "X-Brand-ID": brandId } : {}),
+      },
       credentials: "include",
     });
     if (!response.ok) {
@@ -5362,10 +5500,14 @@ export const brandPortalIdentityApi = {
 
   uploadDocument: (file: File, accessToken: string) => {
     const form = new FormData();
+    const brandId = getStoredBrandId();
     form.append("file", file);
     return fetch(`${API_BASE}/api/v1/brand-portal/identity/documents`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...(brandId ? { "X-Brand-ID": brandId } : {}),
+      },
       body: form,
       credentials: "include",
     }).then(async (r) => {

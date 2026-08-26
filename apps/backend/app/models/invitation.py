@@ -20,10 +20,10 @@ class Invitation(BaseModel):
         Index("ix_invitation_expires_at", "expires_at"),
     )
 
-    agency_id: Mapped[uuid.UUID] = mapped_column(
+    agency_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("agencies.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     brand_id: Mapped[uuid.UUID | None] = mapped_column(

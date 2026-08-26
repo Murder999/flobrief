@@ -539,12 +539,32 @@ bağımlılık açısından da daha doğrudur.
 **Reason**: Payment-provider review requires discoverable policy and contact pages, but repeated page markup and placeholder metadata would create drift and weak crawl signals. One system keeps design, locale behavior, contact paths, and policy navigation consistent while allowing policy-specific content.
 **Trade-off**: This release publishes operational policy text, not legal advice or a substitute for counsel. Policy wording, dates, supported mailboxes, Paddle account status, consumer-law obligations, and actual processor/subprocessor behavior must be kept aligned with production operations whenever those facts change.
 
-### DECISION-096: A valid pending invitation is mailbox proof, but never permission to change an existing portal identity
-**Decision**: Invitation signup derives e-mail, `user_type`, tenant, role, and redirect exclusively from the locked hashed-token invitation. The user, exact-role membership, acceptance timestamp, tenant activity, verified state, and normal refresh session commit in one transaction. Compatible existing recipients verify their password directly on the invitation page; exact-role membership, acceptance, verified state, and a normal refresh session are then committed atomically without a generic-login round trip. Existing users must already have the invitation's exact Agency/Brand portal type; conflicts return a structured support error without changing `user_type` or consuming the invitation.
-**Reason**: The single-use link proves access to the invited mailbox and enables immediate onboarding without a second e-mail loop, while exact type matching preserves the current single-portal routing and RBAC model.
-**Trade-off**: One e-mail cannot automatically cross Agency and Brand portal identities under the current schema; Platform Admin must resolve legitimate conflicts explicitly.
+### DECISION-096: A valid pending invitation is mailbox proof, but tenant access remains membership-derived
+**Decision**: Invitation signup derives e-mail, target tenant, role, and redirect exclusively from the locked hashed-token invitation. The user, exact-role membership, acceptance timestamp, tenant activity, verified state, and normal refresh session commit in one transaction. Compatible existing non-platform recipients verify their password directly on the invitation page and receive the invited membership without mutating their legacy preferred portal type.
+**Reason**: The single-use link proves access to the invited mailbox while exact active membership—not a permanent account-type flag—remains the authorization boundary.
+**Trade-off**: Legacy `agency_user`/`brand_user` values remain during the compatibility window as a default landing preference; they no longer prevent legitimate cross-portal membership.
 
 ### DECISION-097: Platform provisioning creates real tenants with manual entitlements and invitation-first ownership
 **Decision**: The existing Platform Agencies/Brands surface creates non-demo tenants through platform-admin-only schemas and a dedicated transactional service. Agency subscriptions use the existing `manual` billing provider without forged Paddle IDs. New owners/contacts receive normal hashed-token invitations; compatible existing users require an explicit confirmation before attach. Recovery actions and every write emit immutable PlatformAuditLog records with safe metadata.
 **Reason**: Support needs a bounded recovery path that preserves customer passwords, tenant isolation, plan enforcement, and payment truth while remaining in the existing admin system.
 **Trade-off**: Agency ownership may remain temporarily null when invited or deliberately deferred, which the current model supports; the pending invitation is the visible ownership-in-progress state rather than a new agency status.
+
+### DECISION-098: Tenant identity is one login with explicit workspace memberships
+**Decision**: Agency and Brand are first-workspace choices, not permanent user classes. Every tenant request resolves an active membership for the exact selected workspace; `X-Agency-ID` and `X-Brand-ID` identify context but never convey role. Legacy tenant `user_type` remains only for default landing compatibility, while `platform_admin` remains a separate database-verified identity with no tenant memberships.
+**Reason**: A real person may own a brand, work in an agency, or do both. Membership evidence supports that without account duplication or weakening tenant isolation.
+**Trade-off**: Compatibility redirects still consult the legacy preference until all old clients are migrated to an explicit preferred-workspace setting.
+
+### DECISION-099: Team invitations and business partnerships are separate security capabilities
+**Decision**: Membership invitations grant one explicit role inside one workspace. `partnership_invitations` instead links one owner-controlled brand to one agency after e-mail match, owner proof, expiry/state validation, and row locking; it creates no team membership. Direction and source IDs are constrained in PostgreSQL, tokens are hashed, and acceptance is audited.
+**Reason**: Treating a commercial relationship as a staff invitation would silently grant excessive access and make revocation semantics ambiguous.
+**Trade-off**: A brand can currently have only one operational agency because existing brief/report authorization is built around that relationship. Multi-agency collaboration requires a later scoped-access model, not a nullable-FK shortcut.
+
+### DECISION-100: Independent brands own billing and team limits at brand scope
+**Decision**: A brand may own its subscription, invoices, entitlements, and team invitation limits without an agency. Brand-owned plan data takes precedence; a linked agency plan is a compatibility fallback when no brand subscription exists. Billing reads and mutations require the exact active brand plus `brand_owner`; brand managers cannot purchase, change, or cancel plans.
+**Reason**: Brands can buy PostPiloter directly while payment authority stays with the workspace owner and does not leak through a linked agency or broader manager role.
+**Trade-off**: The existing iyzico checkout/provider verification remains a production release gate for both agency and brand purchasers; this decision reuses that provider path rather than fabricating a second payment implementation.
+
+### DECISION-101: Public registration creates the selected first workspace before verification
+**Decision**: Registration atomically creates the user, Agency or independent Brand, and owner membership. Production users remain unable to enter tenant endpoints until e-mail verification; registration is rate-limited by IP and normalized e-mail. The chosen workspace label is validated and produces a tenant-local unique slug.
+**Reason**: The account is immediately structurally complete, but an unverified mailbox cannot use the reserved workspace or its owner privileges.
+**Trade-off**: Abandoned unverified registrations may leave dormant workspaces and should be handled by a later retention cleanup job rather than weakening verification or creating the workspace in an unreliable browser callback.

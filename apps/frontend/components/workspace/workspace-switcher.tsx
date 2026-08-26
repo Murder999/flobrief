@@ -1,55 +1,88 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { useWorkspace } from "@/context/workspace-context";
 import { ROLE_LABELS } from "@/lib/workspace";
+import { useLocale } from "@/context/locale-context";
+import type { TranslationKey } from "@/messages";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-function AgencyAvatar({ name, logoUrl, size = 6 }: { name: string; logoUrl?: string | null; size?: number }) {
-  const sz = `w-${size} h-${size}`;
+function WorkspaceAvatar({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
   if (logoUrl) {
     return (
-      <div className={`${sz} rounded overflow-hidden flex-shrink-0 bg-surface-2`}>
-        <img src={API_BASE + logoUrl} alt={name} className="w-full h-full object-contain" />
+      <div className="h-6 w-6 flex-shrink-0 overflow-hidden rounded bg-surface-2">
+        <Image
+          src={API_BASE + logoUrl}
+          alt={name}
+          width={24}
+          height={24}
+          unoptimized
+          className="h-full w-full object-contain"
+        />
       </div>
     );
   }
   return (
-    <div className={`${sz} bg-accent/20 rounded flex items-center justify-center flex-shrink-0`}>
-      <span className="text-xs font-bold text-accent uppercase">{name.charAt(0)}</span>
+    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-accent/20">
+      <span className="text-xs font-bold uppercase text-accent">{name.charAt(0)}</span>
     </div>
   );
 }
 
-function roleLabel(role: string): string {
-  return ROLE_LABELS[role] ?? role;
-}
+const ROLE_KEYS: Record<string, TranslationKey> = {
+  owner: "settings.role.owner",
+  admin: "settings.role.admin",
+  brand_manager: "settings.role.brandManager",
+  designer: "settings.role.designer",
+  developer: "settings.role.developer",
+  social_media: "settings.role.socialMedia",
+  viewer: "settings.role.viewer",
+  brand_owner: "settings.role.brandOwner",
+  brand_viewer: "settings.role.viewer",
+  external_approver: "settings.role.externalApprover",
+};
 
 export function WorkspaceSwitcher() {
-  const { agencies, activeAgency, switchAgency, isLoading } = useWorkspace();
+  const {
+    agencies,
+    brands,
+    activeAgency,
+    activeBrand,
+    switchAgency,
+    switchBrand,
+    isLoading,
+  } = useWorkspace();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
+  const inBrandPortal = pathname.startsWith("/brand");
+  const activeWorkspace = inBrandPortal ? activeBrand : activeAgency;
+  const roleLabel = (role: string) => (ROLE_KEYS[role] ? t(ROLE_KEYS[role]) : ROLE_LABELS[role] ?? role);
 
   if (isLoading) {
     return (
-      <div className="px-3 py-2 animate-pulse">
-        <div className="h-4 bg-surface-2 rounded w-24" />
+      <div className="animate-pulse px-3 py-2">
+        <div className="h-4 w-24 rounded bg-surface-2" />
       </div>
     );
   }
 
-  if (!activeAgency) {
+  if (!activeWorkspace) {
     return (
       <a
-        href="/onboarding/create-agency"
-        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface-2 transition-colors text-left"
+        href="/auth/register"
+        className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface-2"
       >
-        <div className="w-6 h-6 border-2 border-dashed border-border rounded flex items-center justify-center flex-shrink-0">
-          <span className="text-text-muted text-xs font-bold">+</span>
+        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border-2 border-dashed border-border">
+          <span className="text-xs font-bold text-text-muted">+</span>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-text-muted">Ajans seçilmedi</p>
-          <p className="text-[11px] text-accent">Ajans oluştur →</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-text-muted">{t("settings.workspace.none")}</p>
+          <p className="text-[11px] text-accent">{t("settings.workspace.create")}</p>
         </div>
       </a>
     );
@@ -58,66 +91,80 @@ export function WorkspaceSwitcher() {
   return (
     <div className="relative">
       <button
-        onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface-2
-          transition-colors text-left group"
+        type="button"
+        aria-expanded={open}
+        aria-label={t("settings.workspace.switch")}
+        onClick={() => setOpen((previous) => !previous)}
+        className="group flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface-2"
       >
-        <AgencyAvatar name={activeAgency.name} logoUrl={activeAgency.logo_url} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-text truncate">{activeAgency.name}</p>
-          <p className="text-xs text-text-muted truncate">{roleLabel(activeAgency.member_role)}</p>
+        <WorkspaceAvatar
+          name={activeWorkspace.name}
+          logoUrl={"logo_url" in activeWorkspace ? activeWorkspace.logo_url : null}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-text">{activeWorkspace.name}</p>
+          <p className="truncate text-xs text-text-muted">
+            {inBrandPortal ? t("settings.workspace.brandPortal") : t("settings.workspace.agencyPortal")} · {roleLabel(activeWorkspace.member_role)}
+          </p>
         </div>
         <svg
-          className={`w-3.5 h-3.5 text-text-muted flex-shrink-0 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`h-3.5 w-3.5 flex-shrink-0 text-text-muted transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          aria-hidden="true"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
-      {open && agencies.length > 1 && (
+      {open && agencies.length + brands.length > 1 && (
         <>
-          <div
-            className="fixed inset-0 z-10"
+          <button
+            type="button"
+            className="fixed inset-0 z-10 cursor-default"
+            aria-label={t("settings.workspace.close")}
             onClick={() => setOpen(false)}
           />
-          <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-surface border border-border rounded-xl shadow-xl overflow-hidden">
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-80 overflow-y-auto rounded-xl border border-border bg-surface shadow-xl">
             {agencies.map((agency) => (
               <button
+                type="button"
                 key={agency.id}
                 onClick={() => {
                   switchAgency(agency.id);
                   setOpen(false);
+                  router.push("/dashboard");
                 }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-surface-2
-                  transition-colors text-left ${
-                    agency.id === activeAgency.id ? "bg-accent-subtle" : ""
-                  }`}
+                className={`flex min-h-11 w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-surface-2 ${
+                  !inBrandPortal && agency.id === activeAgency?.id ? "bg-accent-subtle" : ""
+                }`}
               >
-                <AgencyAvatar name={agency.name} logoUrl={agency.logo_url} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text truncate">{agency.name}</p>
-                  <p className="text-xs text-text-muted">{roleLabel(agency.member_role)}</p>
+                <WorkspaceAvatar name={agency.name} logoUrl={agency.logo_url} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-text">{agency.name}</p>
+                  <p className="text-xs text-text-muted">{t("settings.workspace.agencyPortal")} · {roleLabel(agency.member_role)}</p>
                 </div>
-                {agency.id === activeAgency.id && (
-                  <svg
-                    className="w-4 h-4 text-accent flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
+              </button>
+            ))}
+            {brands.map((brand) => (
+              <button
+                type="button"
+                key={brand.id}
+                onClick={() => {
+                  switchBrand(brand.id);
+                  setOpen(false);
+                  router.push("/brand/dashboard");
+                }}
+                className={`flex min-h-11 w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-surface-2 ${
+                  inBrandPortal && brand.id === activeBrand?.id ? "bg-accent-subtle" : ""
+                }`}
+              >
+                <WorkspaceAvatar name={brand.name} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-text">{brand.name}</p>
+                  <p className="text-xs text-text-muted">{t("settings.workspace.brandPortal")} · {roleLabel(brand.member_role)}</p>
+                </div>
               </button>
             ))}
           </div>

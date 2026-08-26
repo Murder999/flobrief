@@ -36,6 +36,29 @@ class SubscriptionRepository:
         row = result.first()
         return (row[0], row[1]) if row else None
 
+    async def get_for_brand(self, brand_id: uuid.UUID) -> Subscription | None:
+        result = await self.db.execute(
+            select(Subscription).where(
+                Subscription.brand_id == brand_id,
+                Subscription.deleted_at.is_(None),
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_for_brand_with_plan(
+        self, brand_id: uuid.UUID
+    ) -> tuple[Subscription, Plan] | None:
+        result = await self.db.execute(
+            select(Subscription, Plan)
+            .join(Plan, Plan.id == Subscription.plan_id)
+            .where(
+                Subscription.brand_id == brand_id,
+                Subscription.deleted_at.is_(None),
+            )
+        )
+        row = result.first()
+        return (row[0], row[1]) if row else None
+
     async def get_by_id(self, subscription_id: uuid.UUID) -> Subscription | None:
         result = await self.db.execute(
             select(Subscription).where(

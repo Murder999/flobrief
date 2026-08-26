@@ -7,6 +7,7 @@ from app.api.v1.approvals import approval_router, public_approval_router
 from app.api.v1.assets import asset_router
 from app.api.v1.auth import auth_router
 from app.api.v1.billing import billing_router, plans_router
+from app.api.v1.brand_billing import brand_billing_router
 from app.api.v1.brand_finance import brand_finance_router
 from app.api.v1.brand_identity import brand_identity_router
 from app.api.v1.brand_portal import brand_portal_router
@@ -30,6 +31,7 @@ from app.api.v1.mentions import mention_router
 from app.api.v1.notifications import notification_router
 from app.api.v1.onboarding import onboarding_router
 from app.api.v1.owner import owner_router
+from app.api.v1.partnership_invitations import partnership_invitation_router
 from app.api.v1.payments import payment_router
 from app.api.v1.platform.router import platform_router
 from app.api.v1.profitability import profitability_router
@@ -52,6 +54,7 @@ api_router.include_router(agency_router)
 api_router.include_router(brand_router)
 api_router.include_router(brand_identity_router)
 api_router.include_router(invitation_router)
+api_router.include_router(partnership_invitation_router)
 api_router.include_router(template_router)
 api_router.include_router(industry_router)
 api_router.include_router(brief_router)
@@ -85,6 +88,7 @@ api_router.include_router(branding_router)
 api_router.include_router(public_branding_router)
 api_router.include_router(public_seo_router)
 api_router.include_router(brand_portal_router)
+api_router.include_router(brand_billing_router)
 api_router.include_router(brand_finance_router)
 api_router.include_router(brand_preview_router)
 api_router.include_router(webhook_router)

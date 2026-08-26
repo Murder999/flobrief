@@ -45,6 +45,8 @@ class RegisterRequest(BaseModel):
     phone_number: str | None = None
     whatsapp_opt_in: bool = False
     locale: Literal["en", "tr"] = "en"
+    workspace_type: Literal["agency", "brand"] = "agency"
+    workspace_name: str | None = None
 
     @field_validator("email", mode="before")
     @classmethod
@@ -57,6 +59,18 @@ class RegisterRequest(BaseModel):
         stripped = v.strip()
         if len(stripped) < 2:
             raise ValueError("Ad en az 2 karakter olmalıdır")
+        return stripped
+
+    @field_validator("workspace_name", mode="before")
+    @classmethod
+    def strip_workspace_name(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        stripped = v.strip()
+        if not stripped:
+            return None
+        if len(stripped) < 2 or len(stripped) > 120:
+            raise ValueError("Çalışma alanı adı 2-120 karakter olmalıdır")
         return stripped
 
     @field_validator("password")

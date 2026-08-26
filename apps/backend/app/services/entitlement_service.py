@@ -55,6 +55,31 @@ class EntitlementService:
         )
         return result.scalar_one_or_none()
 
+    async def get_brand_plan(
+        self, brand_id: uuid.UUID, agency_id: uuid.UUID | None = None
+    ) -> Plan | None:
+        """Return the brand-owned plan, falling back to its linked agency plan."""
+        result = await self.db.execute(
+            select(Plan)
+            .join(Subscription, Subscription.plan_id == Plan.id)
+            .where(
+                Subscription.brand_id == brand_id,
+                Subscription.deleted_at.is_(None),
+                Subscription.status.in_(
+                    [
+                        SubscriptionStatus.TRIALING.value,
+                        SubscriptionStatus.ACTIVE.value,
+                        SubscriptionStatus.PAST_DUE.value,
+                    ]
+                ),
+                Plan.deleted_at.is_(None),
+            )
+        )
+        plan = result.scalar_one_or_none()
+        if plan is not None or agency_id is None:
+            return plan
+        return await self.get_plan(agency_id)
+
     async def _count_active_brands(self, agency_id: uuid.UUID) -> int:
         result = await self.db.execute(
             select(func.count(Brand.id)).where(
@@ -218,7 +243,7 @@ class EntitlementService:
 
     async def check_brand_user_limit(
         self,
-        agency_id: uuid.UUID,
+        agency_id: uuid.UUID | None,
         brand_id: uuid.UUID,
         *,
         lock: bool = False,
@@ -226,7 +251,7 @@ class EntitlementService:
     ) -> None:
         if lock:
             await self._lock_brand(brand_id)
-        plan = await self.get_plan(agency_id)
+        plan = await self.get_brand_plan(brand_id, agency_id)
         plan_limit = plan.max_brand_users if plan else None
         limit = await self._resolve_limit(
             agency_id=None, brand_id=brand_id, limit_key="max_brand_users", plan_value=plan_limit
@@ -254,13 +279,15 @@ class EntitlementService:
 
     async def check_pending_invite_limit(
         self,
-        agency_id: uuid.UUID,
+        agency_id: uuid.UUID | None,
         brand_id: uuid.UUID | None = None,
         *,
         lock: bool = False,
     ) -> None:
         """Independent cap on outstanding invitations, separate from the seat count."""
         if brand_id is None:
+            if agency_id is None:
+                raise ValueError("Agency invitation limits require agency_id")
             if lock:
                 await self._lock_agency(agency_id)
             plan = await self.get_plan(agency_id)
@@ -278,7 +305,7 @@ class EntitlementService:
         else:
             if lock:
                 await self._lock_brand(brand_id)
-            plan = await self.get_plan(agency_id)
+            plan = await self.get_brand_plan(brand_id, agency_id)
             plan_limit = plan.max_pending_brand_invites if plan else None
             limit = await self._resolve_limit(
                 agency_id=None,
@@ -337,9 +364,11 @@ class EntitlementService:
 
     # ── Brand-scoped usage summary ──────────────────────────────────────────────
 
-    async def get_brand_usage_summary(self, agency_id: uuid.UUID, brand_id: uuid.UUID) -> dict:
+    async def get_brand_usage_summary(
+        self, agency_id: uuid.UUID | None, brand_id: uuid.UUID
+    ) -> dict:
         """Current seat/invite usage vs. limits for one brand's team page."""
-        plan = await self.get_plan(agency_id)
+        plan = await self.get_brand_plan(brand_id, agency_id)
         user_limit = await self._resolve_limit(
             agency_id=None,
             brand_id=brand_id,
@@ -367,6 +396,30 @@ class EntitlementService:
             "pending_invites": {
                 "used": pending,
                 "limit": invite_limit,
+            },
+        }
+
+    async def get_brand_billing_summary(
+        self, agency_id: uuid.UUID | None, brand_id: uuid.UUID
+    ) -> dict:
+        """Billing-page summary for a brand-owned or agency-backed workspace."""
+        team = await self.get_brand_usage_summary(agency_id, brand_id)
+        plan = await self.get_brand_plan(brand_id, agency_id)
+        return {
+            "plan_code": team["plan_code"],
+            "plan_name": team["plan_name"],
+            "brands": {"used": 1, "limit": 1},
+            "users": team["users"],
+            "brief_templates": {"used": 0, "limit": None},
+            "storage_gb": {"used": 0, "limit": plan.max_storage_gb if plan else None},
+            "features": {
+                "white_label_enabled": plan.white_label_enabled if plan else False,
+                "advanced_reporting_enabled": plan.advanced_reporting_enabled if plan else False,
+                "pdf_export_enabled": plan.pdf_export_enabled if plan else False,
+                "public_report_link_enabled": (plan.public_report_link_enabled if plan else False),
+                "whatsapp_infrastructure_enabled": (
+                    plan.whatsapp_infrastructure_enabled if plan else False
+                ),
             },
         }
 

@@ -13,6 +13,7 @@ from app.core.auth_dependencies import (
 )
 from app.core.rate_limiter import get_client_ip, rate_limit_invitation_signup
 from app.db.session import get_db
+from app.models.enums import UserType
 from app.models.user import User
 from app.repositories.agency import AgencyRepository
 from app.repositories.brand import BrandRepository
@@ -78,7 +79,11 @@ async def preview_invitation(
     invitation = await svc.get_by_token(token)
 
     agency_repo = AgencyRepository(db)
-    agency = await agency_repo.get_by_id(invitation.agency_id)
+    agency = (
+        await agency_repo.get_by_id(invitation.agency_id)
+        if invitation.agency_id is not None
+        else None
+    )
     agency_name = agency.name if agency else ""
 
     brand_name: str | None = None
@@ -86,6 +91,8 @@ async def preview_invitation(
         brand_repo = BrandRepository(db)
         brand = await brand_repo.get_by_id(invitation.brand_id)
         brand_name = brand.name if brand else None
+        if not agency_name and brand_name:
+            agency_name = brand_name
 
     existing_user = (
         await UserRepository(db).get_by_email(invitation.email) if invitation.is_pending else None
@@ -100,7 +107,7 @@ async def preview_invitation(
         state=svc.invitation_state(invitation),
         account_exists=existing_user is not None if invitation.is_pending else None,
         account_type_compatible=(
-            existing_user.user_type == svc.expected_user_type(invitation)
+            existing_user.user_type != UserType.PLATFORM_ADMIN.value
             if existing_user is not None
             else None
         ),

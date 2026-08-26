@@ -3,9 +3,11 @@
 import { useAuth } from "@/hooks/useAuth";
 import {
   brandPortalApi,
+  partnershipInvitationApi,
   ApiError,
   type BrandTeamResponse,
   type BrandTeamUsage,
+  type PartnershipInvitationRead,
 } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { useCallback, useEffect, useState } from "react";
 import { UserPlus, Mail, X, RotateCw, ShieldAlert, Users } from "lucide-react";
+import { Handshake } from "lucide-react";
+import { useWorkspace } from "@/context/workspace-context";
+import { useLocale } from "@/context/locale-context";
 
 const ROLE_OPTIONS = [
   { value: "brand_manager", label: "Marka Yöneticisi" },
@@ -40,6 +45,8 @@ function TeamSkeleton() {
 
 export default function BrandTeamPage() {
   const { accessToken } = useAuth();
+  const { activeBrand } = useWorkspace();
+  const { t } = useLocale();
   const { toast, confirm } = useToast();
 
   const [team, setTeam] = useState<BrandTeamResponse | null>(null);
@@ -53,18 +60,28 @@ export default function BrandTeamPage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"team" | "partner">("team");
+  const [partnerInvitations, setPartnerInvitations] = useState<PartnershipInvitationRead[]>([]);
+  const [partnerEmail, setPartnerEmail] = useState("");
+  const [partnerMessage, setPartnerMessage] = useState("");
+  const [partnerError, setPartnerError] = useState<string | null>(null);
+  const [partnerSubmitting, setPartnerSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     if (!accessToken) return;
     setLoading(true);
     setForbidden(false);
     try {
-      const [teamData, usageData] = await Promise.all([
+      const [teamData, usageData, partnerData] = await Promise.all([
         brandPortalApi.getTeam(accessToken),
         brandPortalApi.getTeamUsage(accessToken),
+        activeBrand
+          ? partnershipInvitationApi.listForBrand(activeBrand.id, accessToken)
+          : Promise.resolve([]),
       ]);
       setTeam(teamData);
       setUsage(usageData);
+      setPartnerInvitations(partnerData);
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
         setForbidden(true);
@@ -74,7 +91,7 @@ export default function BrandTeamPage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, toast]);
+  }, [accessToken, activeBrand, toast]);
 
   useEffect(() => {
     load();
@@ -148,6 +165,29 @@ export default function BrandTeamPage() {
     }
   };
 
+  const handlePartnerInvite = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!accessToken || !activeBrand) return;
+    setPartnerError(null);
+    setPartnerSubmitting(true);
+    try {
+      await partnershipInvitationApi.createFromBrand(
+        { email: partnerEmail.trim(), message: partnerMessage.trim() || null },
+        activeBrand.id,
+        accessToken
+      );
+      setPartnerEmail("");
+      setPartnerMessage("");
+      await load();
+    } catch (error) {
+      setPartnerError(
+        error instanceof Error ? error.message : t("settings.members.partner.sendError")
+      );
+    } finally {
+      setPartnerSubmitting(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-8 max-w-4xl mx-auto"><TeamSkeleton /></div>;
   }
@@ -172,9 +212,103 @@ export default function BrandTeamPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-text">Ekip</h1>
-        <p className="text-sm text-text-muted mt-1">Marka ekibinizi yönetin ve yeni üyeler davet edin.</p>
+        <h1 className="text-2xl font-semibold text-text">{t("settings.members.brandTeam.title")}</h1>
+        <p className="text-sm text-text-muted mt-1">{t("settings.members.brandTeam.description")}</p>
       </div>
+
+      <div className="flex w-fit gap-1 rounded-xl bg-surface-2 p-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab("team")}
+          className={`min-h-9 rounded-lg px-4 text-sm font-medium ${activeTab === "team" ? "bg-surface text-text shadow-sm" : "text-text-muted"}`}
+        >
+          {t("settings.members.brandTeam.teamTab")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("partner")}
+          className={`min-h-9 rounded-lg px-4 text-sm font-medium ${activeTab === "partner" ? "bg-surface text-text shadow-sm" : "text-text-muted"}`}
+        >
+          {t("settings.members.brandTeam.partnerTab")}
+        </button>
+      </div>
+
+      {activeTab === "partner" && (
+        <div className="space-y-5">
+          <form onSubmit={handlePartnerInvite} className="space-y-4 rounded-xl border border-border bg-surface p-5">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                <Handshake className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="text-sm font-semibold text-text">{t("settings.members.agencyPartner.title")}</h2>
+                <p className="mt-1 text-xs leading-relaxed text-text-muted">{t("settings.members.agencyPartner.description")}</p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label={t("settings.members.agencyPartner.email")}
+                type="email"
+                required
+                value={partnerEmail}
+                onChange={(event) => setPartnerEmail(event.target.value)}
+              />
+              <Input
+                label={t("settings.members.partner.message")}
+                maxLength={500}
+                value={partnerMessage}
+                onChange={(event) => setPartnerMessage(event.target.value)}
+              />
+            </div>
+            {partnerError && <p className="text-xs text-danger">{partnerError}</p>}
+            <Button type="submit" disabled={partnerSubmitting || Boolean(activeBrand?.agency_id)}>
+              <Mail className="h-4 w-4" aria-hidden="true" />
+              {t(partnerSubmitting ? "settings.members.partner.sending" : "settings.members.partner.send")}
+            </Button>
+            {Boolean(activeBrand?.agency_id) && (
+              <p className="text-xs text-text-muted">
+                {t("settings.members.agencyPartner.connected")}
+              </p>
+            )}
+          </form>
+          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+            {partnerInvitations.length === 0 ? (
+              <p className="px-5 py-10 text-center text-sm text-text-muted">{t("settings.members.partner.empty")}</p>
+            ) : (
+              partnerInvitations.map((invitation) => (
+                <div key={invitation.id} className="flex items-center gap-3 border-b border-border px-5 py-4 last:border-0">
+                  <Handshake className="h-4 w-4 text-text-muted" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-text">{invitation.email}</p>
+                    <p className="text-xs text-text-muted">
+                      {invitation.accepted_at
+                        ? t("settings.members.partner.accepted")
+                        : invitation.revoked_at
+                          ? t("settings.members.partner.revoked")
+                          : t("settings.members.partner.pending")}
+                    </p>
+                  </div>
+                  {invitation.is_pending && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!accessToken) return;
+                        await partnershipInvitationApi.revoke(invitation.id, accessToken);
+                        await load();
+                      }}
+                      className="min-h-9 rounded-lg px-3 text-xs font-medium text-text-muted hover:bg-surface-2 hover:text-danger"
+                    >
+                      {t("settings.members.cancel")}
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "team" && <>
 
       {/* Quota card */}
       {usage && (
@@ -296,6 +430,7 @@ export default function BrandTeamPage() {
           ))
         )}
       </div>
+      </>}
     </div>
   );
 }

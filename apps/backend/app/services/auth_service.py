@@ -7,8 +7,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
-from app.models.enums import UserType
+from app.models.agency import Agency
+from app.models.agency_member import AgencyMember
+from app.models.brand import Brand
+from app.models.brand_member import BrandMember
+from app.models.enums import (
+    AgencyMemberRole,
+    AgencyMemberStatus,
+    AgencyStatus,
+    BrandMemberRole,
+    BrandMemberStatus,
+    BrandStatus,
+    UserType,
+)
 from app.models.user import User
+from app.repositories.agency import AgencyRepository
+from app.repositories.brand import BrandRepository
 from app.repositories.user import UserRepository
 from app.repositories.user_token import UserTokenRepository
 from app.schemas.auth import (
@@ -65,11 +79,16 @@ class AuthService:
                 detail="Bu e-posta adresi zaten kayıtlı",
             )
 
+        preferred_user_type = (
+            UserType.BRAND_USER.value
+            if data.workspace_type == "brand"
+            else UserType.AGENCY_USER.value
+        )
         user = await self.user_repo.create(
             email=data.email,
             password_hash=hash_password(data.password),
             full_name=data.full_name,
-            user_type=UserType.AGENCY_USER.value,
+            user_type=preferred_user_type,
             is_active=True,
             is_verified=settings.is_development,
             phone_number=data.phone_number,
@@ -78,6 +97,50 @@ class AuthService:
         )
         if data.whatsapp_opt_in:
             user.whatsapp_opt_in_at = datetime.now(UTC)
+
+        workspace_name = data.workspace_name or data.full_name
+        joined_at = datetime.now(UTC)
+        if data.workspace_type == "brand":
+            brand_repo = BrandRepository(self.db)
+            brand = Brand(
+                agency_id=None,
+                name=workspace_name,
+                slug=await brand_repo.generate_unique_slug(workspace_name, None),
+                status=BrandStatus.ACTIVE.value,
+                default_language=data.locale,
+                contact_email=data.email,
+            )
+            self.db.add(brand)
+            await self.db.flush()
+            self.db.add(
+                BrandMember(
+                    brand_id=brand.id,
+                    user_id=user.id,
+                    role=BrandMemberRole.BRAND_OWNER.value,
+                    status=BrandMemberStatus.ACTIVE.value,
+                    joined_at=joined_at,
+                )
+            )
+        else:
+            agency_repo = AgencyRepository(self.db)
+            agency = Agency(
+                name=workspace_name,
+                slug=await agency_repo.generate_unique_slug(workspace_name),
+                status=AgencyStatus.ACTIVE.value,
+                owner_user_id=user.id,
+            )
+            self.db.add(agency)
+            await self.db.flush()
+            self.db.add(
+                AgencyMember(
+                    agency_id=agency.id,
+                    user_id=user.id,
+                    role=AgencyMemberRole.OWNER.value,
+                    status=AgencyMemberStatus.ACTIVE.value,
+                    joined_at=joined_at,
+                )
+            )
+        await self.db.flush()
 
         if not settings.is_development:
             token_plaintext = generate_token()

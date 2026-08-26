@@ -10,6 +10,8 @@ import { BrandOnboardingWizard } from "@/components/onboarding/OnboardingWizard"
 import { PostPiloterLogo } from "@/components/brand/PostPiloterLogo";
 import { useOnboardingPageSeen } from "@/hooks/useOnboardingPageSeen";
 import { ResponsiveAppShell } from "@/components/shell/ResponsiveAppShell";
+import { WorkspaceSwitcher } from "@/components/workspace/workspace-switcher";
+import { useWorkspace } from "@/context/workspace-context";
 import type { BottomNavItem, NavDrawerGroup, NavIcon } from "@/components/shell/types";
 import { useLocale } from "@/context/locale-context";
 import { translateAppNavigationLabel } from "@/lib/i18n/app-navigation";
@@ -21,6 +23,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   LayoutDashboard, CheckCircle, FileText, Calendar,
   FolderOpen, BarChart3, Settings2, LogOut, PlusSquare, Dna, Users, Bell, Receipt, Info,
+  CreditCard,
 } from "lucide-react";
 
 const BRAND_MANAGER_ROLES = new Set(["brand_owner", "brand_manager"]);
@@ -74,10 +77,15 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    title: "Hesap",
+    items: [
+      { href: "/brand/settings", label: "Ayarlar", icon: Settings2 },
+    ],
+  },
+  {
     title: "Diğer",
     items: [
       { href: "/brand/reports", label: "Raporlar", icon: BarChart3 },
-      { href: "/brand/settings", label: "Ayarlar", icon: Settings2 },
     ],
   },
 ];
@@ -173,6 +181,10 @@ function BrandSidebar({ isManager, membershipRole, brandName, notificationSource
         <NotificationBell source={notificationSource} basePath="/brand/notifications" />
       </div>
 
+      <div className="relative shrink-0 border-b border-border px-2.5 py-2">
+        <WorkspaceSwitcher />
+      </div>
+
       {seatWarning && (
         <div className="relative mx-2.5 mt-2.5 shrink-0 rounded-lg border border-warning/30 bg-warning/10 px-2.5 py-2 text-[11px] font-medium text-warning">
           {seatWarning}
@@ -253,6 +265,11 @@ function BrandSidebar({ isManager, membershipRole, brandName, notificationSource
 export default function BrandLayout({ children }: { children: ReactNode }) {
   const { t } = useLocale();
   const { user, logout, accessToken, isLoading, isInitialized } = useAuth();
+  const {
+    activeBrand,
+    agencies,
+    isInitialized: isWorkspaceInitialized,
+  } = useWorkspace();
   const router = useRouter();
   const pathname = usePathname();
   const [membershipRole, setMembershipRole] = useState<string | null>(null);
@@ -268,7 +285,7 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    if (!accessToken) {
+    if (!accessToken || !activeBrand) {
       setMembershipRole(null);
       setBrandName(null);
       return;
@@ -283,7 +300,7 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
         setMembershipRole(null);
         setBrandName(null);
       });
-  }, [accessToken]);
+  }, [accessToken, activeBrand]);
 
   const notificationSource: NotificationFeedSource | null = useMemo(() => {
     if (!accessToken) return null;
@@ -304,9 +321,23 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
         }))
       : NAV_SECTIONS;
     if (!isManager) return roleScopedSections;
-    const teamItem: NavItem = { href: "/brand/team", label: "Ekip", icon: Users };
+    const teamItem: NavItem = { href: "/brand/team", label: "Ekip Üyeleri", icon: Users };
+    const billingItem: NavItem = {
+      href: "/brand/settings/billing",
+      label: "Faturalama",
+      icon: CreditCard,
+    };
     return roleScopedSections.map((section) =>
-      section.title === "Marka" ? { ...section, items: [...section.items, teamItem] } : section
+      section.title === "Hesap"
+        ? {
+            ...section,
+            items: [
+              ...section.items,
+              teamItem,
+              ...(membershipRole === "brand_owner" ? [billingItem] : []),
+            ],
+          }
+        : section
     );
   }, [isManager, membershipRole]);
 
@@ -317,25 +348,25 @@ export default function BrandLayout({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (!isInitialized || isLoading) return;
+    if (!isInitialized || isLoading || !isWorkspaceInitialized) return;
 
     if (isLoginPage) {
-      if (user?.user_type === "brand_user") router.replace("/brand/dashboard");
+      if (user && activeBrand) router.replace("/brand/dashboard");
       return;
     }
 
     if (!user) {
       router.replace("/brand/login");
-    } else if (user.user_type === "agency_user") {
-      router.replace("/dashboard");
     } else if (user.user_type === "platform_admin") {
       router.replace("/platform");
+    } else if (!activeBrand && agencies.length > 0) {
+      router.replace("/dashboard");
     }
-  }, [isInitialized, isLoading, user, router, isLoginPage]);
+  }, [activeBrand, agencies.length, isInitialized, isLoading, isWorkspaceInitialized, user, router, isLoginPage]);
 
   if (isLoginPage) return <>{children}</>;
 
-  if (!isInitialized || isLoading) {
+  if (!isInitialized || isLoading || !isWorkspaceInitialized) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">

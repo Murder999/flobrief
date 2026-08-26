@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   billingApi,
+  brandBillingApi,
   planApi,
   type SubscriptionRead,
   type InvoiceRead,
@@ -80,9 +81,12 @@ function SandboxBanner({ response }: { response: CheckoutResponse }) {
 function BillingPageInner() {
   const { intlLocale, t } = useLocale();
   const { accessToken } = useAuth();
-  const { activeAgency } = useWorkspace();
+  const { activeAgency, activeBrand } = useWorkspace();
   const searchParams = useSearchParams();
-  const agencyId = activeAgency?.id ?? null;
+  const pathname = usePathname();
+  const isBrandPortal = pathname.startsWith("/brand/");
+  const workspaceId = isBrandPortal ? activeBrand?.id ?? null : activeAgency?.id ?? null;
+  const workspaceBillingApi = isBrandPortal ? brandBillingApi : billingApi;
   const { confirm, toast } = useToast();
 
   const [subscription, setSubscription] = useState<SubscriptionRead | null>(null);
@@ -105,13 +109,13 @@ function BillingPageInner() {
   }, [searchParams]);
 
   const load = useCallback(async () => {
-    if (!accessToken || !agencyId) return;
+    if (!accessToken || !workspaceId) return;
     setLoading(true);
     try {
       const [sub, inv, sum, allPlans] = await Promise.allSettled([
-        billingApi.getSubscription(accessToken, agencyId),
-        billingApi.listInvoices(accessToken, agencyId),
-        billingApi.getEntitlements(accessToken, agencyId),
+        workspaceBillingApi.getSubscription(accessToken, workspaceId),
+        workspaceBillingApi.listInvoices(accessToken, workspaceId),
+        workspaceBillingApi.getEntitlements(accessToken, workspaceId),
         planApi.list(),
       ]);
       if (sub.status === "fulfilled") setSubscription(sub.value);
@@ -121,14 +125,14 @@ function BillingPageInner() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, agencyId]);
+  }, [accessToken, workspaceBillingApi, workspaceId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   async function handleUpgrade(plan: PlanRead) {
-    if (!accessToken || !agencyId) return;
+    if (!accessToken || !workspaceId) return;
     if (plan.monthly_price_cents === 0) {
       window.location.href = "mailto:sales@postpiloter.com?subject=Enterprise Plan";
       return;
@@ -136,10 +140,10 @@ function BillingPageInner() {
     setActionLoading(true);
     setError(null);
     try {
-      const resp = await billingApi.createCheckout(
+      const resp = await workspaceBillingApi.createCheckout(
         { plan_id: plan.id, yearly },
         accessToken,
-        agencyId
+        workspaceId
       );
       if (resp.sandbox) {
         setSandboxResponse(resp);
@@ -154,7 +158,7 @@ function BillingPageInner() {
   }
 
   async function handleCancel() {
-    if (!accessToken || !agencyId) return;
+    if (!accessToken || !workspaceId) return;
     const ok = await confirm({
       title: t("settings.billing.cancel.title"),
       message: t("settings.billing.cancel.message"),
@@ -165,7 +169,7 @@ function BillingPageInner() {
     setActionLoading(true);
     setError(null);
     try {
-      await billingApi.cancelSubscription(accessToken, agencyId);
+      await workspaceBillingApi.cancelSubscription(accessToken, workspaceId);
       toast(t("settings.billing.cancel.success"), "success");
       await load();
     } catch (e: unknown) {

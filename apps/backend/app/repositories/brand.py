@@ -31,7 +31,7 @@ class BrandRepository(BaseRepository[Brand]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_slug_and_agency(self, slug: str, agency_id: UUID) -> Brand | None:
+    async def get_by_slug_and_agency(self, slug: str, agency_id: UUID | None) -> Brand | None:
         stmt = select(Brand).where(
             Brand.slug == slug,
             Brand.agency_id == agency_id,
@@ -50,10 +50,10 @@ class BrandRepository(BaseRepository[Brand]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def slug_exists_in_agency(self, slug: str, agency_id: UUID) -> bool:
+    async def slug_exists_in_agency(self, slug: str, agency_id: UUID | None) -> bool:
         return await self.get_by_slug_and_agency(slug, agency_id) is not None
 
-    async def generate_unique_slug(self, name: str, agency_id: UUID) -> str:
+    async def generate_unique_slug(self, name: str, agency_id: UUID | None) -> str:
         base = _make_base_slug(name)
         slug = base
         while await self.slug_exists_in_agency(slug, agency_id):
@@ -69,8 +69,10 @@ class BrandRepository(BaseRepository[Brand]):
             .join(BrandMember, BrandMember.brand_id == Brand.id)
             .where(
                 BrandMember.user_id == user_id,
+                BrandMember.status == "active",
                 BrandMember.deleted_at.is_(None),
                 Brand.deleted_at.is_(None),
+                Brand.status == "active",
             )
             .order_by(Brand.name)
         )

@@ -21,7 +21,9 @@ def upgrade() -> None:
         op.add_column("agency_branding_settings", sa.Column(name, sa.String(7), nullable=True))
     for name in ("support_email", "footer_company_name"):
         op.add_column("agency_branding_settings", sa.Column(name, sa.String(255), nullable=True))
-    op.add_column("agency_branding_settings", sa.Column("support_phone", sa.String(50), nullable=True))
+    op.add_column(
+        "agency_branding_settings", sa.Column("support_phone", sa.String(50), nullable=True)
+    )
     for name in ("website_url", "copyright_text"):
         op.add_column("agency_branding_settings", sa.Column(name, sa.String(500), nullable=True))
     for name in ("dark_logo_asset_id", "og_image_asset_id"):
@@ -38,16 +40,38 @@ def upgrade() -> None:
             ondelete="SET NULL",
         )
 
-    op.add_column("platform_branding_defaults", sa.Column("secondary_color", sa.String(7), nullable=True))
-    op.add_column("platform_branding_defaults", sa.Column("border_color", sa.String(7), nullable=True))
-    op.add_column("platform_branding_defaults", sa.Column("og_image_storage_key", sa.String(500), nullable=True))
-    op.add_column("platform_branding_defaults", sa.Column("og_image_mime_type", sa.String(127), nullable=True))
-    op.add_column("platform_branding_defaults", sa.Column("support_phone", sa.String(50), nullable=True))
-    op.add_column("platform_branding_defaults", sa.Column("website_url", sa.String(500), nullable=True))
-    op.add_column("platform_branding_defaults", sa.Column("footer_company_name", sa.String(255), nullable=True))
-    op.add_column("platform_branding_defaults", sa.Column("copyright_text", sa.String(500), nullable=True))
-    op.add_column("platform_branding_defaults", sa.Column("public_title", sa.String(200), nullable=True))
-    op.add_column("platform_branding_defaults", sa.Column("public_description", sa.String(500), nullable=True))
+    op.add_column(
+        "platform_branding_defaults", sa.Column("secondary_color", sa.String(7), nullable=True)
+    )
+    op.add_column(
+        "platform_branding_defaults", sa.Column("border_color", sa.String(7), nullable=True)
+    )
+    op.add_column(
+        "platform_branding_defaults",
+        sa.Column("og_image_storage_key", sa.String(500), nullable=True),
+    )
+    op.add_column(
+        "platform_branding_defaults", sa.Column("og_image_mime_type", sa.String(127), nullable=True)
+    )
+    op.add_column(
+        "platform_branding_defaults", sa.Column("support_phone", sa.String(50), nullable=True)
+    )
+    op.add_column(
+        "platform_branding_defaults", sa.Column("website_url", sa.String(500), nullable=True)
+    )
+    op.add_column(
+        "platform_branding_defaults",
+        sa.Column("footer_company_name", sa.String(255), nullable=True),
+    )
+    op.add_column(
+        "platform_branding_defaults", sa.Column("copyright_text", sa.String(500), nullable=True)
+    )
+    op.add_column(
+        "platform_branding_defaults", sa.Column("public_title", sa.String(200), nullable=True)
+    )
+    op.add_column(
+        "platform_branding_defaults", sa.Column("public_description", sa.String(500), nullable=True)
+    )
 
     op.create_unique_constraint("uq_domain_hostname", "custom_domain_settings", ["domain"])
     op.execute(
@@ -80,16 +104,32 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_constraint("uq_domain_hostname", "custom_domain_settings", type_="unique")
     for name in (
-        "public_description", "public_title", "copyright_text", "footer_company_name",
-        "website_url", "support_phone", "og_image_mime_type", "og_image_storage_key",
-        "border_color", "secondary_color",
+        "public_description",
+        "public_title",
+        "copyright_text",
+        "footer_company_name",
+        "website_url",
+        "support_phone",
+        "og_image_mime_type",
+        "og_image_storage_key",
+        "border_color",
+        "secondary_color",
     ):
         op.drop_column("platform_branding_defaults", name)
     for name in ("og_image_asset_id", "dark_logo_asset_id"):
-        op.drop_constraint(f"fk_agency_branding_{name}", "agency_branding_settings", type_="foreignkey")
+        op.drop_constraint(
+            f"fk_agency_branding_{name}", "agency_branding_settings", type_="foreignkey"
+        )
         op.drop_column("agency_branding_settings", name)
     for name in (
-        "copyright_text", "website_url", "support_phone", "footer_company_name",
-        "support_email", "border_color", "text_color", "surface_color", "background_color",
+        "copyright_text",
+        "website_url",
+        "support_phone",
+        "footer_company_name",
+        "support_email",
+        "border_color",
+        "text_color",
+        "surface_color",
+        "background_color",
     ):
         op.drop_column("agency_branding_settings", name)

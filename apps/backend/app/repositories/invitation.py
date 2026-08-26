@@ -24,8 +24,9 @@ class InvitationRepository(BaseRepository[Invitation]):
     async def get_pending_for_email_and_agency(
         self,
         email: str,
-        agency_id: UUID,
+        agency_id: UUID | None,
         invitation_type: str = "agency",
+        brand_id: UUID | None = None,
     ) -> Invitation | None:
         """Return the most recent pending invitation for email+agency."""
         from datetime import UTC, datetime
@@ -45,6 +46,8 @@ class InvitationRepository(BaseRepository[Invitation]):
             .order_by(Invitation.created_at.desc())
             .limit(1)
         )
+        if brand_id is not None:
+            stmt = stmt.where(Invitation.brand_id == brand_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 

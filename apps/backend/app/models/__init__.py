@@ -113,6 +113,7 @@ from app.models.notification import (
     NotificationPreference,
 )
 from app.models.onboarding import OnboardingProgress, OnboardingStepState
+from app.models.partnership_invitation import PartnershipInvitation
 from app.models.payment_customer import PaymentCustomer
 from app.models.plan import Plan
 from app.models.platform_audit_log import PlatformAuditLog
@@ -173,6 +174,7 @@ __all__ = [
     "Brand",
     "BrandMember",
     "Invitation",
+    "PartnershipInvitation",
     "Plan",
     "EntitlementOverride",
     "Subscription",

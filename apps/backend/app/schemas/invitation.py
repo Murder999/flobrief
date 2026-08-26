@@ -54,7 +54,7 @@ class InvitationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    agency_id: uuid.UUID
+    agency_id: uuid.UUID | None
     brand_id: uuid.UUID | None
     invitation_type: str
     email: str

@@ -504,6 +504,51 @@ async def send_agency_invite_email(
     )
 
 
+async def send_partnership_invite_email(
+    db: AsyncSession,
+    *,
+    to_email: str,
+    source_name: str,
+    inviter_name: str,
+    direction: str,
+    token: str,
+    message: str | None = None,
+    locale: str | None = None,
+) -> EmailDeliveryResult:
+    lang = normalize_email_locale(locale)
+    if direction == "agency_invites_brand":
+        title = "Marka iş ortaklığı daveti" if lang == "tr" else "Brand partnership invitation"
+        body = (
+            f"{escape(inviter_name)} sizi {escape(source_name)} ajansıyla marka iş ortaklığı kurmaya davet etti."
+            if lang == "tr"
+            else f"{escape(inviter_name)} invited your brand to partner with {escape(source_name)}."
+        )
+    else:
+        title = "Ajans iş ortaklığı daveti" if lang == "tr" else "Agency partnership invitation"
+        body = (
+            f"{escape(inviter_name)} sizi {escape(source_name)} markasının ajans iş ortağı olmaya davet etti."
+            if lang == "tr"
+            else f"{escape(inviter_name)} invited your agency to partner with {escape(source_name)}."
+        )
+    extra = f'<p style="color:#8888A8;margin:12px 0">{escape(message)}</p>' if message else ""
+    html = render_email(
+        title=title,
+        recipient_name=None,
+        body=body,
+        action_url=url_builder.partnership_invite_link(token),
+        action_label="Daveti incele" if lang == "tr" else "Review invitation",
+        locale=lang,
+        extra_html=extra,
+    )
+    return await deliver_transactional_email(
+        db,
+        to_email=to_email,
+        subject=f"{settings.EMAIL_FROM_NAME} — {title}",
+        html_body=html,
+        message_type="partnership_invitation",
+    )
+
+
 async def send_brief_approval_request_email(
     db: AsyncSession,
     to_email: str,

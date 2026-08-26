@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth_dependencies import require_verified
 from app.core.rbac import get_permissions_for_user_type
 from app.db.session import get_db
+from app.models.enums import AgencyMemberStatus
 from app.models.user import User
 from app.schemas.permission import PermissionResponse
 from app.schemas.workspace import WorkspaceListResponse
@@ -24,7 +25,7 @@ async def list_workspaces(
 
 @workspace_router.get("/permissions", response_model=PermissionResponse)
 async def my_permissions(
-    x_agency_id: str | None = None,
+    x_agency_id: str | None = Header(default=None, alias="X-Agency-ID"),
     current_user: User = Depends(require_verified),
     db: AsyncSession = Depends(get_db),
 ) -> PermissionResponse:
@@ -49,6 +50,7 @@ async def my_permissions(
                 select(AgencyMember).where(
                     AgencyMember.agency_id == agency_uuid,
                     AgencyMember.user_id == current_user.id,
+                    AgencyMember.status == AgencyMemberStatus.ACTIVE.value,
                     AgencyMember.deleted_at.is_(None),
                 )
             )

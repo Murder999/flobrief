@@ -57,8 +57,10 @@ class AgencyRepository(BaseRepository[Agency]):
             .join(AgencyMember, AgencyMember.agency_id == Agency.id)
             .where(
                 AgencyMember.user_id == user_id,
+                AgencyMember.status == "active",
                 AgencyMember.deleted_at.is_(None),
                 Agency.deleted_at.is_(None),
+                Agency.status == "active",
             )
             .order_by(Agency.name)
         )

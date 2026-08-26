@@ -61,6 +61,7 @@ async def get_subscription(
     return SubscriptionRead(
         id=sub.id,
         agency_id=sub.agency_id,
+        brand_id=sub.brand_id,
         plan_id=sub.plan_id,
         plan=PlanRead.model_validate(plan),
         status=sub.status,
